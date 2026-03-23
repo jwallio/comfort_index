@@ -360,6 +360,7 @@ It:
 - installs the project dependencies
 - runs the archived pilot-day workflow
 - uploads `output/archive/` as a workflow artifact
+- deploys the staged archive landing page to GitHub Pages on `main`
 
 The workflow command is:
 
@@ -368,6 +369,8 @@ python -m nicewx.main --pilot-day-archive --source openmeteo --publish-preset st
 ```
 
 It also stages a `site/` copy of `output/archive/` as a second artifact so the archive landing page can later be connected to GitHub Pages without changing the product build itself.
+
+To view runs on the web, enable GitHub Pages for the repository and set the build source to **GitHub Actions**. After the workflow completes on `main`, the archived landing page and dated run folders are deployed through GitHub Pages.
 
 ## First Rollout Checklist
 
@@ -378,7 +381,8 @@ Before trusting the daily schedule:
    - `nicewx/mapping/data/us_states.geojson`
 3. Open the `Daily Pilot Day` workflow in GitHub Actions and run it manually once with `workflow_dispatch`.
 4. Inspect the uploaded `nicewx-archive` artifact and confirm the archived landing page, pilot-day index, stitched CONUS presentation maps, and pilot-day status summary look correct.
-5. Only after that manual check passes should you rely on the scheduled daily run.
+5. Confirm the GitHub Pages deployment succeeded and the published archive landing page loads correctly.
+6. Only after that manual check passes should you rely on the scheduled daily run.
 
 Branding and theme knobs live in `nicewx/config.py`:
 

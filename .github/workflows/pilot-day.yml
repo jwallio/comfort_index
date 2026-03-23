@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: daily-pilot-day
@@ -38,6 +40,9 @@ jobs:
           pip install -r requirements.txt
           pip install cartopy
 
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
       - name: Verify required local rendering asset
         run: |
           test -f nicewx/mapping/data/us_states.geojson
@@ -66,7 +71,19 @@ jobs:
         if: always()
         run: |
           mkdir -p site
-          if [ -d output/archive ]; then cp -r output/archive/. site/; fi
+          if [ -d output/archive ]; then
+            cp -r output/archive/. site/
+          else
+            cat > site/index.html <<'EOF'
+            <html>
+              <head><meta charset="utf-8"><title>Comfort Index Archive</title></head>
+              <body>
+                <h1>Comfort Index Archive</h1>
+                <p>The latest scheduled build did not produce an archive directory. Check the GitHub Actions run logs and artifacts for details.</p>
+              </body>
+            </html>
+            EOF
+          fi
 
       - name: Upload Pages preview artifact
         if: always()
@@ -76,3 +93,22 @@ jobs:
           path: site/
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Upload GitHub Pages artifact
+        if: always()
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/
+
+  deploy-pages:
+    if: github.ref == 'refs/heads/main'
+    needs: build-pilot-day
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
