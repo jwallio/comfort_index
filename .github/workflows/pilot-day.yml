@@ -42,22 +42,22 @@ jobs:
           pip install -r requirements.txt
           pip install cartopy
 
-      - name: Configure GitHub Pages
-        id: pages
-        continue-on-error: true
-        uses: actions/configure-pages@v5
-
-      - name: Record GitHub Pages availability
+      - name: Detect GitHub Pages availability
         id: pages_status
-        if: always()
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "${{ steps.pages.outcome }}" = "success" ]; then
+          if gh api "repos/${{ github.repository }}/pages" >/dev/null 2>&1; then
             echo "pages_available=true" >> "$GITHUB_OUTPUT"
           else
             echo "pages_available=false" >> "$GITHUB_OUTPUT"
             echo "GitHub Pages is not enabled for this repository. Archive artifacts will still be uploaded."
           fi
+
+      - name: Configure GitHub Pages
+        if: steps.pages_status.outputs.pages_available == 'true'
+        uses: actions/configure-pages@v5
 
       - name: Verify required local rendering asset
         run: |
