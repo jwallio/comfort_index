@@ -18,6 +18,8 @@ jobs:
   build-pilot-day:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    outputs:
+      pages_available: ${{ steps.pages_status.outputs.pages_available }}
 
     steps:
       - name: Check out repository
@@ -41,7 +43,21 @@ jobs:
           pip install cartopy
 
       - name: Configure GitHub Pages
+        id: pages
+        continue-on-error: true
         uses: actions/configure-pages@v5
+
+      - name: Record GitHub Pages availability
+        id: pages_status
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.pages.outcome }}" = "success" ]; then
+            echo "pages_available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pages_available=false" >> "$GITHUB_OUTPUT"
+            echo "GitHub Pages is not enabled for this repository. Archive artifacts will still be uploaded."
+          fi
 
       - name: Verify required local rendering asset
         run: |
@@ -74,15 +90,14 @@ jobs:
           if [ -d output/archive ]; then
             cp -r output/archive/. site/
           else
-            cat > site/index.html <<'EOF'
-            <html>
-              <head><meta charset="utf-8"><title>Comfort Index Archive</title></head>
-              <body>
-                <h1>Comfort Index Archive</h1>
-                <p>The latest scheduled build did not produce an archive directory. Check the GitHub Actions run logs and artifacts for details.</p>
-              </body>
-            </html>
-            EOF
+            printf '%s\n' \
+              '<html>' \
+              '  <head><meta charset="utf-8"><title>Comfort Index Archive</title></head>' \
+              '  <body>' \
+              '    <h1>Comfort Index Archive</h1>' \
+              '    <p>The latest scheduled build did not produce an archive directory. Check the GitHub Actions run logs and artifacts for details.</p>' \
+              '  </body>' \
+              '</html>' > site/index.html
           fi
 
       - name: Upload Pages preview artifact
@@ -95,13 +110,13 @@ jobs:
           retention-days: 14
 
       - name: Upload GitHub Pages artifact
-        if: always()
+        if: always() && steps.pages_status.outputs.pages_available == 'true'
         uses: actions/upload-pages-artifact@v4
         with:
           path: site/
 
   deploy-pages:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && needs.build-pilot-day.result == 'success' && needs.build-pilot-day.outputs.pages_available == 'true'
     needs: build-pilot-day
     runs-on: ubuntu-latest
     environment:

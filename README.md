@@ -372,6 +372,8 @@ It also stages a `site/` copy of `output/archive/` as a second artifact so the a
 
 To view runs on the web, enable GitHub Pages for the repository and set the build source to **GitHub Actions**. After the workflow completes on `main`, the archived landing page and dated run folders are deployed through GitHub Pages.
 
+If GitHub Pages is not available for the repository yet, the workflow now falls back cleanly: it still builds the archive and uploads the archive and preview artifacts without failing the whole run on the Pages setup step.
+
 ## First Rollout Checklist
 
 Before trusting the daily schedule:
@@ -381,7 +383,7 @@ Before trusting the daily schedule:
    - `nicewx/mapping/data/us_states.geojson`
 3. Open the `Comfort Index Daily Pilot Day` workflow in GitHub Actions and run it manually once with `workflow_dispatch`.
 4. Inspect the uploaded `comfortwx-archive` artifact and confirm the archived landing page, pilot-day index, stitched CONUS presentation maps, and pilot-day status summary look correct.
-5. Confirm the GitHub Pages deployment succeeded and the published archive landing page loads correctly.
+5. If GitHub Pages is enabled for the repository, confirm the Pages deployment succeeded and the published archive landing page loads correctly.
 6. Only after that manual check passes should you rely on the scheduled daily run.
 
 Branding and theme knobs live in `nicewx/config.py`:
