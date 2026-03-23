@@ -1,6 +1,6 @@
-# Nice Weather Map Generator
+# Comfort Index Map Generator
 
-Nice Weather Map Generator is a production-style V1 Python project for scoring hourly outdoor-weather pleasantness and turning that into a daily CONUS map. It is built to be meteorologically interpretable, tunable, and extendable rather than a toy weighted-average script.
+Comfort Index Map Generator is a production-style V1 Python project for scoring hourly outdoor-weather pleasantness and turning that into a daily CONUS map. It is built to be meteorologically interpretable, tunable, and extendable rather than a toy weighted-average script.
 
 The first version ships with a deterministic synthetic forecast loader so the full pipeline runs end to end today. The scoring engine is kept model-agnostic so real forecast sources can replace the mock loader later.
 
@@ -262,7 +262,7 @@ Open-Meteo requests now also have lightweight reliability hardening:
 
 For direct real-data runs, verification runs, and pilot-day runs, the request diagnostics are written alongside the normal outputs using `*_openmeteo_request_summary.csv` and `*_openmeteo_request_detail.csv` naming.
 
-Pilot-day and pilot-day-archive runs now also write a compact operational status artifact, `nicewx_pilot_day_<source>_<date>_status.csv` plus JSON, summarizing:
+Pilot-day and pilot-day-archive runs now also write a compact operational status artifact for each run, as both CSV and JSON, summarizing:
 
 - attempted vs completed product count
 - regions fetched vs reused from cache
@@ -328,17 +328,17 @@ output/
     YYYY/
       MM/
         DD/
-          nicewx_pilot_day_<source>_<date>_index.csv
-          nicewx_pilot_day_<source>_<date>_index.json
-          nicewx_pilot_day_<source>_<date>_index.html
+          pilot-day index CSV
+          pilot-day index JSON
+          pilot-day index HTML
           ...pilot-day product files...
 ```
 
 The archive root also gets a landing page and archive-wide indexes:
 
 - `output/archive/index.html`
-- `output/archive/nicewx_archive_index.csv`
-- `output/archive/nicewx_archive_index.json`
+- archive index CSV
+- archive index JSON
 
 The landing page lists archived pilot-day runs and links to:
 
@@ -379,8 +379,8 @@ Before trusting the daily schedule:
 1. Create a new GitHub repository and push this project.
 2. Confirm the required checked-in rendering asset exists in the repo:
    - `nicewx/mapping/data/us_states.geojson`
-3. Open the `Daily Pilot Day` workflow in GitHub Actions and run it manually once with `workflow_dispatch`.
-4. Inspect the uploaded `nicewx-archive` artifact and confirm the archived landing page, pilot-day index, stitched CONUS presentation maps, and pilot-day status summary look correct.
+3. Open the `Comfort Index Daily Pilot Day` workflow in GitHub Actions and run it manually once with `workflow_dispatch`.
+4. Inspect the uploaded `comfortwx-archive` artifact and confirm the archived landing page, pilot-day index, stitched CONUS presentation maps, and pilot-day status summary look correct.
 5. Confirm the GitHub Pages deployment succeeded and the published archive landing page loads correctly.
 6. Only after that manual check passes should you rely on the scheduled daily run.
 
