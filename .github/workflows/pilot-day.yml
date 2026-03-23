@@ -1,0 +1,78 @@
+name: Daily Pilot Day
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "20 12 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-pilot-day
+  cancel-in-progress: false
+
+jobs:
+  build-pilot-day:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgeos-dev libproj-dev proj-data proj-bin libpython3-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install cartopy
+
+      - name: Verify required local rendering asset
+        run: |
+          test -f nicewx/mapping/data/us_states.geojson
+
+      - name: Run daily archived pilot-day build
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python -m nicewx.main \
+            --pilot-day-archive \
+            --source openmeteo \
+            --publish-preset standard \
+            --presentation-theme shareable \
+            --pilot-cache-mode reuse
+
+      - name: Upload archive artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nicewx-archive
+          path: output/archive/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Prepare GitHub Pages preview artifact
+        if: always()
+        run: |
+          mkdir -p site
+          if [ -d output/archive ]; then cp -r output/archive/. site/; fi
+
+      - name: Upload Pages preview artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nicewx-pages-preview
+          path: site/
+          if-no-files-found: warn
+          retention-days: 14
