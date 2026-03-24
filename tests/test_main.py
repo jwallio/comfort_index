@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from comfortwx.main import _mosaic_file_prefix, _pilot_day_row, _region_file_prefix
+import pytest
+
+from comfortwx.main import _iter_pilot_valid_dates, _mosaic_file_prefix, _pilot_day_row, _region_file_prefix
 
 
 def test_output_file_prefixes_preserve_existing_standard_names() -> None:
@@ -36,3 +38,14 @@ def test_pilot_day_row_captures_status_metadata() -> None:
     assert row["build_source"] == "missing_regional_cache"
     assert row["notes"] == "Missing plains"
     assert row["daily_fields_path"].endswith("example.nc")
+
+
+def test_iter_pilot_valid_dates_expands_consecutive_days() -> None:
+    valid_dates = _iter_pilot_valid_dates(date(2026, 3, 24), 3)
+
+    assert valid_dates == [date(2026, 3, 24), date(2026, 3, 25), date(2026, 3, 26)]
+
+
+def test_iter_pilot_valid_dates_rejects_nonpositive_span() -> None:
+    with pytest.raises(ValueError):
+        _iter_pilot_valid_dates(date(2026, 3, 24), 0)

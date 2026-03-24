@@ -2,6 +2,29 @@ name: Comfort Index Daily Pilot Day
 
 on:
   workflow_dispatch:
+    inputs:
+      run_mode:
+        description: Product workflow to run
+        required: true
+        default: pilot-day-archive
+        type: choice
+        options:
+          - pilot-day-archive
+          - pilot-day
+      forecast_days:
+        description: Consecutive valid dates to build
+        required: true
+        default: "7"
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
+          - "7"
+      start_date:
+        description: Optional start valid date in YYYY-MM-DD format. Leave blank for today.
+        required: false
+        default: ""
   schedule:
     - cron: "20 12 * * *"
 
@@ -66,13 +89,34 @@ jobs:
       - name: Run daily archived pilot-day build
         env:
           PYTHONUNBUFFERED: "1"
+          WORKFLOW_RUN_MODE: ${{ github.event.inputs.run_mode }}
+          WORKFLOW_FORECAST_DAYS: ${{ github.event.inputs.forecast_days }}
+          WORKFLOW_START_DATE: ${{ github.event.inputs.start_date }}
         run: |
-          python -m comfortwx.main \
-            --pilot-day-archive \
-            --source openmeteo \
-            --publish-preset standard \
-            --presentation-theme shareable \
+          run_mode="${WORKFLOW_RUN_MODE:-pilot-day-archive}"
+          forecast_days="${WORKFLOW_FORECAST_DAYS:-7}"
+          start_date="${WORKFLOW_START_DATE:-}"
+
+          cmd=(
+            python -m comfortwx.main
+            --source openmeteo
+            --publish-preset standard
+            --presentation-theme shareable
             --pilot-cache-mode reuse
+            --pilot-span-days "$forecast_days"
+          )
+
+          if [ "$run_mode" = "pilot-day" ]; then
+            cmd+=(--pilot-day)
+          else
+            cmd+=(--pilot-day-archive)
+          fi
+
+          if [ -n "$start_date" ]; then
+            cmd+=(--date "$start_date")
+          fi
+
+          "${cmd[@]}"
 
       - name: Upload archive artifact
         if: always()

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -76,6 +76,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--presentation-theme", default="default", help="Presentation theme for polished maps. Default: default.")
     parser.add_argument("--pilot-day", action="store_true", help="Run all currently supported real pilot regions and seam mosaics for one date.")
     parser.add_argument("--pilot-day-archive", action="store_true", help="Run pilot-day mode into a dated archive folder and refresh the archive landing page.")
+    parser.add_argument(
+        "--pilot-span-days",
+        type=int,
+        default=1,
+        help="Number of consecutive valid dates for pilot-day or pilot-day-archive workflows. Default: 1.",
+    )
     parser.add_argument(
         "--pilot-cache-mode",
         default=PILOT_DAY_CACHE_DEFAULT_MODE,
@@ -786,6 +792,12 @@ def _pilot_day_row(
     }
 
 
+def _iter_pilot_valid_dates(start_valid_date: date, span_days: int) -> list[date]:
+    if span_days < 1:
+        raise ValueError("Pilot span days must be at least 1.")
+    return [start_valid_date + timedelta(days=offset) for offset in range(span_days)]
+
+
 def run_pilot_day(
     *,
     valid_date: date,
@@ -1124,6 +1136,69 @@ def run_pilot_day_archive(
     }
 
 
+def run_pilot_day_series(
+    *,
+    start_valid_date: date,
+    span_days: int,
+    archive_mode: bool,
+    loader_name: str,
+    output_dir: Path,
+    archive_root: Path | None,
+    archive_layout: str,
+    publish_preset_name: str,
+    presentation_theme: str,
+    lat_points: int,
+    lon_points: int,
+    mesh_profile: str,
+    mosaic_blend_method: str,
+    mosaic_target_grid: str,
+    aggregation_mode: str,
+    pilot_cache_mode: str,
+) -> dict[str, Path]:
+    valid_dates = _iter_pilot_valid_dates(start_valid_date, span_days)
+    last_outputs: dict[str, Path] = {}
+    for index, current_valid_date in enumerate(valid_dates, start=1):
+        print(f"Running pilot-day product build {index}/{len(valid_dates)} for {current_valid_date:%Y-%m-%d}")
+        if archive_mode:
+            last_outputs = run_pilot_day_archive(
+                valid_date=current_valid_date,
+                loader_name=loader_name,
+                output_dir=output_dir,
+                archive_root=archive_root,
+                archive_layout=archive_layout,
+                publish_preset_name=publish_preset_name,
+                presentation_theme=presentation_theme,
+                lat_points=lat_points,
+                lon_points=lon_points,
+                mesh_profile=mesh_profile,
+                mosaic_blend_method=mosaic_blend_method,
+                mosaic_target_grid=mosaic_target_grid,
+                aggregation_mode=aggregation_mode,
+                pilot_cache_mode=pilot_cache_mode,
+            )
+        else:
+            last_outputs = run_pilot_day(
+                valid_date=current_valid_date,
+                loader_name=loader_name,
+                output_dir=output_dir,
+                publish_preset_name=publish_preset_name,
+                presentation_theme=presentation_theme,
+                lat_points=lat_points,
+                lon_points=lon_points,
+                mesh_profile=mesh_profile,
+                mosaic_blend_method=mosaic_blend_method,
+                mosaic_target_grid=mosaic_target_grid,
+                aggregation_mode=aggregation_mode,
+                pilot_cache_mode=pilot_cache_mode,
+            )
+    if len(valid_dates) > 1:
+        print(
+            f"Pilot-day span complete: {len(valid_dates)} dates from "
+            f"{valid_dates[0]:%Y-%m-%d} through {valid_dates[-1]:%Y-%m-%d}"
+        )
+    return last_outputs
+
+
 def main() -> None:
     args = _parse_args()
     valid_date = datetime.strptime(args.date, "%Y-%m-%d").date()
@@ -1133,8 +1208,10 @@ def main() -> None:
     else:
         loader_name = args.source
     if args.pilot_day_archive:
-        run_pilot_day_archive(
-            valid_date=valid_date,
+        run_pilot_day_series(
+            start_valid_date=valid_date,
+            span_days=args.pilot_span_days,
+            archive_mode=True,
             loader_name=loader_name,
             output_dir=Path(args.output_dir),
             archive_root=Path(args.archive_root) if args.archive_root else None,
@@ -1151,10 +1228,14 @@ def main() -> None:
         )
         return
     if args.pilot_day:
-        run_pilot_day(
-            valid_date=valid_date,
+        run_pilot_day_series(
+            start_valid_date=valid_date,
+            span_days=args.pilot_span_days,
+            archive_mode=False,
             loader_name=loader_name,
             output_dir=Path(args.output_dir),
+            archive_root=None,
+            archive_layout=args.archive_layout,
             publish_preset_name=args.publish_preset or "standard",
             presentation_theme=args.presentation_theme,
             lat_points=args.lat_points,

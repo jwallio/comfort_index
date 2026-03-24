@@ -29,6 +29,12 @@ Run the archived pilot-day workflow locally:
 python -m comfortwx.main --pilot-day-archive --source openmeteo --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse
 ```
 
+Run a multi-day archived forecast sequence locally:
+
+```powershell
+python -m comfortwx.main --pilot-day-archive --source openmeteo --pilot-span-days 7 --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse
+```
+
 ## Main Commands
 
 Regional run:
@@ -81,12 +87,17 @@ The repository includes a daily workflow:
 It runs:
 
 ```powershell
-python -m comfortwx.main --pilot-day-archive --source openmeteo --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse
+python -m comfortwx.main --pilot-day-archive --source openmeteo --pilot-span-days 7 --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse
 ```
 
 The workflow uploads:
 - `comfortwx-archive`
 - `comfortwx-pages-preview`
+
+When run manually from GitHub Actions, the workflow menu lets you choose:
+- `pilot-day` or `pilot-day-archive`
+- `1`, `2`, `3`, or `7` consecutive forecast days
+- an optional start date in `YYYY-MM-DD`
 
 If GitHub Pages is enabled for the repository, the workflow is also prepared to publish the archived run output as a site. If Pages is not available, the archive build still completes and uploads artifacts.
 
