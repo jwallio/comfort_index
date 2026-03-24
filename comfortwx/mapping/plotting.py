@@ -322,6 +322,51 @@ def _add_score_key(cbar, *, presentation_style: dict[str, str | float | int] | N
     )
 
 
+def _build_category_legend_handles(
+    *,
+    category_palette: tuple[str, ...] | list[str],
+    presentation: bool,
+    stitched_conus: bool,
+    presentation_style: dict[str, str | float | int] | None = None,
+    include_no_coverage: bool = False,
+    include_borderline: bool = False,
+) -> list[Patch]:
+    style = presentation_style or PRESENTATION_PLOT_STYLE
+    legend_handles = [
+        Patch(
+            facecolor=color,
+            edgecolor=str(style["legend_edgecolor"]) if presentation and stitched_conus else "none",
+            linewidth=0.55 if presentation and stitched_conus else 0.0,
+            label=label,
+        )
+        for label, color in zip(category_labels(), category_palette, strict=False)
+    ]
+    if include_no_coverage and presentation and stitched_conus:
+        legend_handles.append(
+            Patch(
+                facecolor=str(STITCHED_CONUS_PRESENTATION["coverage_fill_color"]),
+                edgecolor=str(STITCHED_CONUS_PRESENTATION["coverage_outline_color"]),
+                linewidth=0.8,
+                label="No coverage",
+                alpha=float(STITCHED_CONUS_PRESENTATION["coverage_fill_alpha"]),
+            )
+        )
+    if include_borderline and presentation:
+        lower_bound = float(PRESENTATION_LOW_END_BORDERLINE["lower_bound"])
+        upper_bound = float(PRESENTATION_LOW_END_BORDERLINE["upper_bound"])
+        legend_handles.append(
+            Patch(
+                facecolor="#f4ead8",
+                edgecolor=category_palette[1],
+                linestyle="--",
+                linewidth=1.0,
+                label=f"Borderline {lower_bound:.0f}-{upper_bound:.0f} (display only)",
+                alpha=0.9,
+            )
+        )
+    return legend_handles
+
+
 def _project_field_coords(field: xr.DataArray) -> tuple[np.ndarray, np.ndarray]:
     lon_values, lat_values = np.meshgrid(field["lon"].values, field["lat"].values)
     return _lambert_conformal_project(lon_values, lat_values)
@@ -860,6 +905,37 @@ def plot_raw_score_map(
         )
         cbar.set_label(str(presentation_style.get("stitched_colorbar_label", "Comfort Index score")))
         _add_score_key(cbar, presentation_style=presentation_style)
+        score_legend = ax.legend(
+            handles=_build_category_legend_handles(
+                category_palette=theme["category_colors"] if theme else PRESENTATION_CATEGORY_COLORS,
+                presentation=presentation,
+                stitched_conus=stitched_conus,
+                presentation_style=presentation_style,
+                include_no_coverage=True,
+            ),
+            title=str(presentation_style.get("stitched_legend_title", "Categories")),
+            loc="lower left",
+            bbox_to_anchor=(
+                float(presentation_style.get("stitched_legend_bbox_x", 0.012)),
+                float(presentation_style.get("stitched_legend_bbox_y", 0.018)),
+            ),
+            ncol=int(presentation_style.get("stitched_legend_ncol", 2)),
+            labelspacing=float(presentation_style["legend_labelspacing"]),
+            borderpad=float(presentation_style["legend_borderpad"]),
+            handlelength=float(presentation_style["legend_handlelength"]),
+            handleheight=float(presentation_style.get("legend_handleheight", 0.9)),
+            handletextpad=float(presentation_style["legend_handletextpad"]),
+            columnspacing=float(presentation_style["legend_columnspacing"]),
+            fontsize=float(presentation_style["legend_font_size"]),
+            borderaxespad=0.0,
+        )
+        score_legend.get_frame().set_facecolor(str(presentation_style["legend_facecolor"]))
+        score_legend.get_frame().set_edgecolor(str(presentation_style["legend_edgecolor"]))
+        score_legend.get_frame().set_alpha(float(presentation_style["legend_frame_alpha"]))
+        score_legend.get_title().set_fontsize(float(presentation_style["legend_title_size"]))
+        score_legend.get_title().set_fontweight("semibold")
+        for text in score_legend.get_texts():
+            text.set_color(str(presentation_style["title_color"]))
     else:
         cbar = fig.colorbar(
             mesh,
@@ -986,38 +1062,14 @@ def plot_category_map(
         stitched_conus=stitched_conus,
     )
 
-    legend_handles = [
-        Patch(
-            facecolor=color,
-            edgecolor=str(presentation_style["legend_edgecolor"]) if presentation and stitched_conus else "none",
-            linewidth=0.55 if presentation and stitched_conus else 0.0,
-            label=label,
-        )
-        for label, color in zip(category_labels(), category_palette, strict=False)
-    ]
-    if presentation and stitched_conus:
-        legend_handles.append(
-            Patch(
-                facecolor=str(STITCHED_CONUS_PRESENTATION["coverage_fill_color"]),
-                edgecolor=str(STITCHED_CONUS_PRESENTATION["coverage_outline_color"]),
-                linewidth=0.8,
-                label="No coverage",
-                alpha=float(STITCHED_CONUS_PRESENTATION["coverage_fill_alpha"]),
-            )
-        )
-    if presentation and borderline_applied:
-        lower_bound = float(PRESENTATION_LOW_END_BORDERLINE["lower_bound"])
-        upper_bound = float(PRESENTATION_LOW_END_BORDERLINE["upper_bound"])
-        legend_handles.append(
-            Patch(
-                facecolor="#f4ead8",
-                edgecolor=category_palette[1],
-                linestyle="--",
-                linewidth=1.0,
-                label=f"Borderline {lower_bound:.0f}-{upper_bound:.0f} (display only)",
-                alpha=0.9,
-            )
-        )
+    legend_handles = _build_category_legend_handles(
+        category_palette=category_palette,
+        presentation=presentation,
+        stitched_conus=stitched_conus,
+        presentation_style=presentation_style,
+        include_no_coverage=True,
+        include_borderline=borderline_applied,
+    )
     legend = ax.legend(
         handles=legend_handles,
         title=str(presentation_style.get("stitched_legend_title", "Categories")) if presentation and stitched_conus else "Categories",
