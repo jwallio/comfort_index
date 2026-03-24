@@ -357,8 +357,15 @@ def _decorate_map(
                 facecolor=str(STITCHED_CONUS_PRESENTATION["lake_color"]) if stitched_conus else "#eef2f1",
                 alpha=0.65 if stitched_conus else 0.55,
             )
-            ax.outline_patch.set_edgecolor(str(style["border_color"]))
-            ax.outline_patch.set_linewidth(0.7)
+            # Cartopy's visible frame API differs across versions. Prefer the
+            # older outline_patch when available, otherwise fall back to spines.
+            if hasattr(ax, "outline_patch") and ax.outline_patch is not None:
+                ax.outline_patch.set_edgecolor(str(style["border_color"]))
+                ax.outline_patch.set_linewidth(0.7)
+            else:
+                for spine in ax.spines.values():
+                    spine.set_edgecolor(str(style["border_color"]))
+                    spine.set_linewidth(0.7)
         else:
             ax.coastlines(resolution="50m", color=str(PLOT_STYLE["coastline_color"]), linewidth=0.8)
             ax.add_feature(cfeature.BORDERS, edgecolor=str(PLOT_STYLE["border_color"]), linewidth=0.5)
