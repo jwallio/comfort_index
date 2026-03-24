@@ -6,6 +6,7 @@ import json
 import math
 from datetime import date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import matplotlib
 
@@ -90,17 +91,21 @@ def _display_valid_date(valid_date: date) -> str:
     return valid_date.strftime("%b %d, %Y")
 
 
+def _display_timezone_now() -> datetime:
+    return datetime.now(ZoneInfo("America/New_York"))
+
+
 def _display_run_time() -> str:
-    run_time = datetime.now().astimezone()
+    run_time = _display_timezone_now()
     return run_time.strftime("%b %d, %Y %I:%M %p %Z")
 
 
 def _display_public_run_header() -> str:
-    run_time = datetime.now().astimezone()
+    run_time = _display_timezone_now()
     hour = run_time.hour % 12 or 12
     minute_text = f":{run_time.minute:02d}" if run_time.minute else ""
     meridiem = "am" if run_time.hour < 12 else "pm"
-    return f"Run: {run_time.month}/{run_time.day}/{run_time:%y} {hour}{minute_text}{meridiem} EST"
+    return f"Run: {run_time.month}/{run_time.day}/{run_time:%y} {hour}{minute_text}{meridiem} {run_time.strftime('%Z')}"
 
 
 def _display_public_valid_header(valid_date: date) -> str:
