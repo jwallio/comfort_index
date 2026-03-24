@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import math
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import matplotlib
@@ -84,6 +84,66 @@ def _presentation_footer_note(*, low_end_borderline: bool = False) -> str:
         upper_bound = float(PRESENTATION_LOW_END_BORDERLINE["upper_bound"])
         note += f" Borderline {lower_bound:.0f}-{upper_bound:.0f} shading near the Poor/Fair boundary is presentation-only."
     return note
+
+
+def _display_valid_date(valid_date: date) -> str:
+    return valid_date.strftime("%b %d, %Y")
+
+
+def _display_run_time() -> str:
+    run_time = datetime.now().astimezone()
+    return run_time.strftime("%b %d, %Y %I:%M %p %Z")
+
+
+def _display_public_run_header() -> str:
+    run_time = datetime.now().astimezone()
+    hour = run_time.hour % 12 or 12
+    minute_text = f":{run_time.minute:02d}" if run_time.minute else ""
+    meridiem = "am" if run_time.hour < 12 else "pm"
+    return f"Run: {run_time.month}/{run_time.day}/{run_time:%y} {hour}{minute_text}{meridiem} EST"
+
+
+def _display_public_valid_header(valid_date: date) -> str:
+    return f"Valid {valid_date:%A} {valid_date.month}/{valid_date.day}/{valid_date:%y}"
+
+
+def _add_stitched_credit(
+    fig,
+    ax,
+    *,
+    presentation_style: dict[str, str | float | int] | None = None,
+    cbar=None,
+) -> None:
+    style = presentation_style or PRESENTATION_PLOT_STYLE
+    credit_footer = str(STITCHED_CONUS_PRESENTATION.get("credit_footer", "")).strip()
+    if not credit_footer:
+        return
+    axes_box = ax.get_position()
+    if cbar is not None:
+        colorbar_box = cbar.ax.get_position()
+        credit_y = colorbar_box.y1 + max((axes_box.y0 - colorbar_box.y1) * 0.55, 0.012)
+        fig.text(
+            axes_box.x1 - 0.006,
+            credit_y,
+            credit_footer,
+            ha="right",
+            va="center",
+            fontsize=float(style["source_line_size"]),
+            fontweight="bold",
+            color=str(style["title_color"]),
+        )
+        return
+    credit_y = max(axes_box.y0 - 0.022, 0.018)
+    fig.text(
+        axes_box.x1 - 0.006,
+        credit_y,
+        credit_footer,
+        ha="right",
+        va="center",
+        fontsize=float(style["source_line_size"]),
+        fontweight="bold",
+        color=str(style["title_color"]),
+    )
 
 
 def _stitched_conus_extent() -> tuple[float, float, float, float]:
@@ -508,20 +568,28 @@ def _add_titles(
     style = presentation_style or PRESENTATION_PLOT_STYLE
     if presentation:
         ax.set_title("")
-        fig.suptitle(
-            f"{title_root if stitched_conus else title_prefix}",
-            y=float(style.get("stitched_title_y", 0.985)) if stitched_conus else 0.98,
-            fontsize=float(style["title_size"]),
-            fontweight="semibold",
-            color=str(style["title_color"]),
-        )
         if stitched_conus:
+            axes_box = ax.get_position()
+            header_x = axes_box.x0
+            header_right_x = axes_box.x1
+            header_title_y = axes_box.y1 + float(style.get("stitched_header_title_gap", 0.04))
+            header_meta_y = axes_box.y1 + float(style.get("stitched_header_meta_gap", 0.015))
+            fig.text(
+                header_x,
+                header_title_y,
+                f"{title_root}",
+                ha="left",
+                va="center",
+                fontsize=float(style["title_size"]),
+                fontweight="semibold",
+                color=str(style["title_color"]),
+            )
             product_subtitle = metadata.get("product_subtitle", "").strip() or str(
                 STITCHED_CONUS_PRESENTATION["product_subtitle"]
             )
             fig.text(
-                0.015,
-                float(style.get("stitched_subtitle_y", 0.952)),
+                header_x,
+                header_meta_y,
                 product_subtitle,
                 ha="left",
                 va="center",
@@ -529,25 +597,33 @@ def _add_titles(
                 color=str(style["subtitle_color"]),
             )
             fig.text(
-                0.985,
-                float(style.get("stitched_source_y", 0.952)),
-                f"Source: {subtitle_source_line}   Valid: {valid_date:%Y-%m-%d}",
+                header_right_x,
+                header_meta_y,
+                f"{_display_public_run_header()}  |  {_display_public_valid_header(valid_date)}",
                 ha="right",
                 va="center",
                 fontsize=float(style["source_line_size"]),
                 color=str(style["subtitle_color"]),
             )
-            ax.set_title(
-                f"{plot_title}",
-                fontsize=float(style.get("stitched_axes_title_size", style["subtitle_size"])),
-                color=str(style["subtitle_color"]),
-                pad=float(style.get("stitched_axes_title_pad", 14)),
-                loc="left",
-                fontweight="semibold",
-            )
+            if plot_title.strip():
+                ax.set_title(
+                    f"{plot_title}",
+                    fontsize=float(style.get("stitched_axes_title_size", style["subtitle_size"])),
+                    color=str(style["subtitle_color"]),
+                    pad=float(style.get("stitched_axes_title_pad", 14)),
+                    loc="left",
+                    fontweight="semibold",
+                )
         else:
+            fig.suptitle(
+                f"{title_prefix}",
+                y=0.98,
+                fontsize=float(style["title_size"]),
+                fontweight="semibold",
+                color=str(style["title_color"]),
+            )
             ax.set_title(
-                f"{plot_title} | {subtitle_source_line} | Valid {valid_date:%Y-%m-%d}",
+                f"{plot_title} | {subtitle_source_line} | Valid {_display_valid_date(valid_date)}",
                 fontsize=float(style["subtitle_size"]),
                 color=str(style["subtitle_color"]),
                 pad=10,
@@ -874,20 +950,9 @@ def plot_raw_score_map(
                 _draw_projected_stitched_basemap(ax, line_only=True, presentation_style=presentation_style)
 
     _decorate_map(ax, extent=extent, presentation=presentation, presentation_style=presentation_style, stitched_conus=stitched_conus)
-    _add_titles(
-        fig,
-        ax,
-        "Daily Score",
-        valid_date,
-        map_label=map_label,
-        presentation=presentation,
-        footer_note=(
-            _presentation_footer_note(low_end_borderline=borderline_applied)
-            + (" " + str(STITCHED_CONUS_PRESENTATION["footer_suffix"]) if stitched_conus else "")
-        ),
-        presentation_style=presentation_style,
-        product_metadata=product_metadata,
-        stitched_conus=stitched_conus,
+    footer_note = (
+        _presentation_footer_note(low_end_borderline=borderline_applied)
+        + (" " + str(STITCHED_CONUS_PRESENTATION["footer_suffix"]) if stitched_conus else "")
     )
     if presentation and stitched_conus:
         colorbar_ticks = list(score_levels) if score_levels else list(np.arange(0, 101, 20))
@@ -936,6 +1001,19 @@ def plot_raw_score_map(
         score_legend.get_title().set_fontweight("semibold")
         for text in score_legend.get_texts():
             text.set_color(str(presentation_style["title_color"]))
+        _add_titles(
+            fig,
+            ax,
+            "",
+            valid_date,
+            map_label=map_label,
+            presentation=presentation,
+            footer_note=footer_note,
+            presentation_style=presentation_style,
+            product_metadata=product_metadata,
+            stitched_conus=stitched_conus,
+        )
+        _add_stitched_credit(fig, ax, presentation_style=presentation_style, cbar=cbar)
     else:
         cbar = fig.colorbar(
             mesh,
@@ -946,6 +1024,18 @@ def plot_raw_score_map(
             spacing="proportional" if score_levels else "uniform",
         )
         cbar.set_label("Score (0-100)")
+        _add_titles(
+            fig,
+            ax,
+            "",
+            valid_date,
+            map_label=map_label,
+            presentation=presentation,
+            footer_note=footer_note,
+            presentation_style=presentation_style,
+            product_metadata=product_metadata,
+            stitched_conus=stitched_conus,
+        )
     if presentation:
         cbar.outline.set_edgecolor(str(presentation_style["border_color"]))
         cbar.ax.tick_params(labelsize=9)
@@ -1049,7 +1139,7 @@ def plot_category_map(
     _add_titles(
         fig,
         ax,
-        "Daily Category",
+        "",
         valid_date,
         map_label=map_label,
         presentation=presentation,
@@ -1099,6 +1189,8 @@ def plot_category_map(
         legend.get_title().set_fontweight("semibold")
         for text in legend.get_texts():
             text.set_color(str(presentation_style["title_color"] if stitched_conus else presentation_style["subtitle_color"]))
+        if stitched_conus:
+            _add_stitched_credit(fig, ax, presentation_style=presentation_style)
     if not (presentation and stitched_conus):
         fig.colorbar(mesh, ax=ax, pad=0.02, shrink=0.86, ticks=np.arange(len(CATEGORIES)))
 
