@@ -5,12 +5,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from nicewx.validation.verify_benchmark import (
+from comfortwx.validation.verify_benchmark import (
     _resolved_cases,
     format_benchmark_table,
     run_verification_benchmark,
 )
-from nicewx.validation.verify_benchmark_cases import DEFAULT_VERIFICATION_BENCHMARK_CASES, VerificationBenchmarkCase
+from comfortwx.validation.verify_benchmark_cases import DEFAULT_VERIFICATION_BENCHMARK_CASES, VerificationBenchmarkCase
 
 
 def test_resolved_cases_cover_required_regions_and_multiple_dates() -> None:
@@ -48,7 +48,7 @@ def test_run_verification_benchmark_collects_summary_rows(monkeypatch, tmp_path:
             },
         }
 
-    monkeypatch.setattr("nicewx.validation.verify_benchmark.run_verification", _fake_run_verification)
+    monkeypatch.setattr("comfortwx.validation.verify_benchmark.run_verification", _fake_run_verification)
     frame = run_verification_benchmark(
         cases=[VerificationBenchmarkCase(region_name="southeast", valid_date=date(2026, 3, 20))],
         output_dir=tmp_path,

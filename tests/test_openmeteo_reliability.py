@@ -5,7 +5,7 @@ from urllib.error import HTTPError
 
 import pandas as pd
 
-from nicewx.data.openmeteo_reliability import (
+from comfortwx.data.openmeteo_reliability import (
     fetch_with_retries,
     openmeteo_request_context,
     reset_openmeteo_request_records,

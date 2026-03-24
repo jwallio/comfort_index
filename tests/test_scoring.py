@@ -5,10 +5,10 @@ from datetime import date
 import numpy as np
 import xarray as xr
 
-from nicewx.data.mock_data import generate_mock_hourly_grid
-from nicewx.scoring.categories import category_name_from_value, categorize_scores
-from nicewx.scoring.daily import aggregate_daily_scores
-from nicewx.scoring.hourly import score_hourly_dataset
+from comfortwx.data.mock_data import generate_mock_hourly_grid
+from comfortwx.scoring.categories import category_name_from_value, categorize_scores
+from comfortwx.scoring.daily import aggregate_daily_scores
+from comfortwx.scoring.hourly import score_hourly_dataset
 
 
 def test_category_thresholds() -> None:

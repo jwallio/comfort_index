@@ -5,7 +5,7 @@ from datetime import date
 import numpy as np
 import xarray as xr
 
-from nicewx.mapping.plotting import render_daily_maps
+from comfortwx.mapping.plotting import render_daily_maps
 
 
 def test_render_daily_maps_writes_debug_and_presentation_outputs(tmp_path) -> None:
@@ -27,7 +27,7 @@ def test_render_daily_maps_writes_debug_and_presentation_outputs(tmp_path) -> No
         include_presentation=True,
         presentation_canvas="stitched_conus",
         product_metadata={
-            "product_title": "Nice Weather Outlook — Stitched CONUS Pilot",
+            "product_title": "Comfort Index - Stitched CONUS Pilot",
             "subtitle_source_line": "Open-Meteo stitched regional pilot",
         },
     )

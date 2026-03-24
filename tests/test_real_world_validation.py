@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-from nicewx.validation.real_world import compare_expected_label
-from nicewx.validation.real_world import format_mismatch_audit_table
+from comfortwx.validation.real_world import compare_expected_label
+from comfortwx.validation.real_world import format_mismatch_audit_table
 
 
 def test_compare_expected_label_exact_match() -> None:

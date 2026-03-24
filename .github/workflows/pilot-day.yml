@@ -61,13 +61,13 @@ jobs:
 
       - name: Verify required local rendering asset
         run: |
-          test -f nicewx/mapping/data/us_states.geojson
+          test -f comfortwx/mapping/data/us_states.geojson
 
       - name: Run daily archived pilot-day build
         env:
           PYTHONUNBUFFERED: "1"
         run: |
-          python -m nicewx.main \
+          python -m comfortwx.main \
             --pilot-day-archive \
             --source openmeteo \
             --publish-preset standard \

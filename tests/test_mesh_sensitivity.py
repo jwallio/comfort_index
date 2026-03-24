@@ -3,12 +3,12 @@ from __future__ import annotations
 import pandas as pd
 import xarray as xr
 
-from nicewx.config import get_openmeteo_mesh_settings
-from nicewx.validation.western_mesh_sensitivity import compare_mosaic_mesh_fields
-from nicewx.validation.western_mosaic_method_sensitivity import compare_mosaic_methods
-from nicewx.validation.western_fair_nice_audit import borderline_fair_nice_agreement, category_index_with_fair_nice_threshold
-from nicewx.validation.western_seam_attribution import summarize_overlap_attribution
-from nicewx.validation.western_threshold_sensitivity import crossed_thresholds, margin_stable_category_agreement
+from comfortwx.config import get_openmeteo_mesh_settings
+from comfortwx.validation.western_mesh_sensitivity import compare_mosaic_mesh_fields
+from comfortwx.validation.western_mosaic_method_sensitivity import compare_mosaic_methods
+from comfortwx.validation.western_poor_fair_audit import borderline_poor_fair_agreement, category_index_with_poor_fair_threshold
+from comfortwx.validation.western_seam_attribution import summarize_overlap_attribution
+from comfortwx.validation.western_threshold_sensitivity import crossed_thresholds, margin_stable_category_agreement
 
 
 def test_get_openmeteo_mesh_settings_returns_fine_profile_for_western_regions() -> None:
@@ -114,8 +114,8 @@ def test_threshold_helpers_identify_crossings_and_margin_stability() -> None:
     assert margin_stable_category_agreement(56.0, 63.0, 1, 2, margin=2.0) is False
 
 
-def test_fair_nice_helpers_support_comparison_only_low_end_diagnostics() -> None:
-    assert category_index_with_fair_nice_threshold(44.4, 45.0) == 0
-    assert category_index_with_fair_nice_threshold(44.4, 44.0) == 1
-    assert borderline_fair_nice_agreement(44.1, 46.2, 0, 1, threshold=45.0, margin=2.0) is True
-    assert borderline_fair_nice_agreement(41.0, 48.5, 0, 1, threshold=45.0, margin=2.0) is False
+def test_poor_fair_helpers_support_comparison_only_low_end_diagnostics() -> None:
+    assert category_index_with_poor_fair_threshold(44.4, 45.0) == 0
+    assert category_index_with_poor_fair_threshold(44.4, 44.0) == 1
+    assert borderline_poor_fair_agreement(44.1, 46.2, 0, 1, threshold=45.0, margin=2.0) is True
+    assert borderline_poor_fair_agreement(41.0, 48.5, 0, 1, threshold=45.0, margin=2.0) is False

@@ -3,14 +3,14 @@ from __future__ import annotations
 import numpy as np
 import xarray as xr
 
-from nicewx.config import WESTERN_MOSAIC_FIXED_TARGET_GRID
-from nicewx.mapping.mosaic import (
+from comfortwx.config import WESTERN_MOSAIC_FIXED_TARGET_GRID
+from comfortwx.mapping.mosaic import (
     RegionalDailyRaster,
     build_common_target_grid,
     build_fixed_target_grid,
     mosaic_regional_rasters,
 )
-from nicewx.mapping.regions import RegionDefinition
+from comfortwx.mapping.regions import RegionDefinition
 
 
 def _daily_dataset(lat_values: list[float], lon_values: list[float], fill_value: float) -> xr.Dataset:

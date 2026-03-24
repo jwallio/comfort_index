@@ -5,8 +5,8 @@ from datetime import date
 import numpy as np
 import xarray as xr
 
-from nicewx.data.openmeteo_verification import _normalize_openmeteo_verification_payload
-from nicewx.validation.verify_model import _verification_summary
+from comfortwx.data.openmeteo_verification import _normalize_openmeteo_verification_payload
+from comfortwx.validation.verify_model import _verification_summary
 
 
 def test_normalize_openmeteo_verification_payload_derives_pop_proxy_and_visibility_units() -> None:

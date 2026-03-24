@@ -29,8 +29,8 @@ This V1 intentionally uses piecewise meteorological rules instead of a single li
 ## Project Layout
 
 ```text
-nice-weather-map-generator/
-  nicewx/
+comfort-index/
+  comfortwx/
     config.py
     main.py
     data/
@@ -114,18 +114,18 @@ Optional:
 From the project root:
 
 ```powershell
-python -m nicewx.main
+python -m comfortwx.main
 ```
 
 Useful options:
 
 ```powershell
-python -m nicewx.main --date 2026-05-18 --lat-points 65 --lon-points 115
-python -m nicewx.main --output-dir .\output
-python -m nicewx.main --inspect-lat 35.8 --inspect-lon -78.6
-python -m nicewx.main --region southeast
-python -m nicewx.main --source openmeteo --region southwest --mesh-profile fine --date 2026-03-24
-python -m nicewx.main --source openmeteo --region southwest --date 2026-03-24 --publish-preset standard --presentation-theme shareable
+python -m comfortwx.main --date 2026-05-18 --lat-points 65 --lon-points 115
+python -m comfortwx.main --output-dir .\output
+python -m comfortwx.main --inspect-lat 35.8 --inspect-lon -78.6
+python -m comfortwx.main --region southeast
+python -m comfortwx.main --source openmeteo --region southwest --mesh-profile fine --date 2026-03-24
+python -m comfortwx.main --source openmeteo --region southwest --date 2026-03-24 --publish-preset standard --presentation-theme shareable
 ```
 
 ### Real Point Mode
@@ -133,7 +133,7 @@ python -m nicewx.main --source openmeteo --region southwest --date 2026-03-24 --
 The first real-data path uses Open-Meteo point forecasts and writes point diagnostics instead of a map:
 
 ```powershell
-python -m nicewx.main --source openmeteo --lat 35.78 --lon -78.64 --date 2026-03-24
+python -m comfortwx.main --source openmeteo --lat 35.78 --lon -78.64 --date 2026-03-24
 ```
 
 This fetches hourly point data, scores it, writes hourly and daily CSV diagnostics to `output/`, and prints a short explanation string.
@@ -141,26 +141,26 @@ This fetches hourly point data, scores it, writes hourly and daily CSV diagnosti
 For a quick calibration pass on the fixed demo cases:
 
 ```powershell
-python -m nicewx.validation.calibration --date 2026-05-18
+python -m comfortwx.validation.calibration --date 2026-05-18
 ```
 
 For a multi-city real-world validation run using the Open-Meteo point path:
 
 ```powershell
-python -m nicewx.validation.real_world --date 2026-03-24
+python -m comfortwx.validation.real_world --date 2026-03-24
 ```
 
 ## Example Outputs
 
 The default run writes files like:
 
-- `output/nicewx_daily_fields_20260518.nc`
-- `output/nicewx_daily_score_20260518.png`
-- `output/nicewx_daily_category_20260518.png`
-- `output/nicewx_demo_cases_20260518.csv`
-- `output/nicewx_demo_case_hourly_20260518.csv`
-- `output/nicewx_point_<lat>_<lon>_<date>_hourly.csv`
-- `output/nicewx_point_<lat>_<lon>_<date>_summary.csv`
+- `output/comfortwx_daily_fields_20260518.nc`
+- `output/comfortwx_daily_score_20260518.png`
+- `output/comfortwx_daily_category_20260518.png`
+- `output/comfortwx_demo_cases_20260518.csv`
+- `output/comfortwx_demo_case_hourly_20260518.csv`
+- `output/comfortwx_point_<lat>_<lon>_<date>_hourly.csv`
+- `output/comfortwx_point_<lat>_<lon>_<date>_summary.csv`
 
 Console output includes a grid summary and demo-case sanity checks.
 
@@ -206,50 +206,50 @@ The project now includes a publish/product preset layer for repeatable regional 
 Example regional publish run:
 
 ```powershell
-python -m nicewx.main --source openmeteo --region southwest --date 2026-03-24 --publish-preset standard --presentation-theme shareable
+python -m comfortwx.main --source openmeteo --region southwest --date 2026-03-24 --publish-preset standard --presentation-theme shareable
 ```
 
 Example mosaic publish run:
 
 ```powershell
-python -m nicewx.main --source openmeteo --mosaic southwest rockies --date 2026-03-24 --publish-preset standard
+python -m comfortwx.main --source openmeteo --mosaic southwest rockies --date 2026-03-24 --publish-preset standard
 ```
 
 Example 4-region mini-CONUS stitched publish run:
 
 ```powershell
-python -m nicewx.main --source openmeteo --mosaic southwest rockies southeast northeast --date 2026-03-24 --publish-preset standard --presentation-theme shareable
+python -m comfortwx.main --source openmeteo --mosaic southwest rockies southeast northeast --date 2026-03-24 --publish-preset standard --presentation-theme shareable
 ```
 
 Example bridge-region stitched runs with plains:
 
 ```powershell
-python -m nicewx.main --source openmeteo --region plains --date 2026-03-24
-python -m nicewx.main --source openmeteo --mosaic southwest rockies plains --date 2026-03-24 --publish-preset standard
-python -m nicewx.main --source openmeteo --mosaic plains southeast --date 2026-03-24 --publish-preset standard
-python -m nicewx.main --source openmeteo --mosaic southwest rockies plains southeast northeast --date 2026-03-24 --publish-preset standard --presentation-theme shareable
+python -m comfortwx.main --source openmeteo --region plains --date 2026-03-24
+python -m comfortwx.main --source openmeteo --mosaic southwest rockies plains --date 2026-03-24 --publish-preset standard
+python -m comfortwx.main --source openmeteo --mosaic plains southeast --date 2026-03-24 --publish-preset standard
+python -m comfortwx.main --source openmeteo --mosaic southwest rockies plains southeast northeast --date 2026-03-24 --publish-preset standard --presentation-theme shareable
 ```
 
 Example northern-coverage bridge runs with great_lakes:
 
 ```powershell
-python -m nicewx.main --source openmeteo --region great_lakes --date 2026-03-24
-python -m nicewx.main --source openmeteo --mosaic plains great_lakes northeast --date 2026-03-24 --publish-preset standard
-python -m nicewx.main --source openmeteo --mosaic southwest rockies plains southeast northeast great_lakes --date 2026-03-24 --publish-preset standard --presentation-theme shareable
+python -m comfortwx.main --source openmeteo --region great_lakes --date 2026-03-24
+python -m comfortwx.main --source openmeteo --mosaic plains great_lakes northeast --date 2026-03-24 --publish-preset standard
+python -m comfortwx.main --source openmeteo --mosaic southwest rockies plains southeast northeast great_lakes --date 2026-03-24 --publish-preset standard --presentation-theme shareable
 ```
 
 Example Pacific-side coverage runs with west_coast:
 
 ```powershell
-python -m nicewx.main --source openmeteo --region west_coast --date 2026-03-24
-python -m nicewx.main --source openmeteo --mosaic west_coast southwest rockies --date 2026-03-24 --publish-preset standard
-python -m nicewx.main --source openmeteo --mosaic west_coast southwest rockies plains southeast northeast great_lakes --date 2026-03-24 --publish-preset standard --presentation-theme shareable
+python -m comfortwx.main --source openmeteo --region west_coast --date 2026-03-24
+python -m comfortwx.main --source openmeteo --mosaic west_coast southwest rockies --date 2026-03-24 --publish-preset standard
+python -m comfortwx.main --source openmeteo --mosaic west_coast southwest rockies plains southeast northeast great_lakes --date 2026-03-24 --publish-preset standard --presentation-theme shareable
 ```
 
 Example one-date pilot-day run across all currently supported real regions and seam mosaics:
 
 ```powershell
-python -m nicewx.main --pilot-day --source openmeteo --date 2026-03-24 --publish-preset standard --presentation-theme shareable
+python -m comfortwx.main --pilot-day --source openmeteo --date 2026-03-24 --publish-preset standard --presentation-theme shareable
 ```
 
 The operational pilot-day workflow is cache-aware by default. In `--pilot-cache-mode reuse`, each regional Open-Meteo build is fetched once, persisted as a regional daily NetCDF, and then reused to build later stitched mosaics and publish bundles without refetching the same regional source data. This reduces rate-limit risk and makes reruns/resumes practical after a partial failure. Use `--pilot-cache-mode refresh` to force a full regional refetch.
@@ -275,13 +275,13 @@ The pilot-day HTML index and archive landing page link to these status summaries
 Example archived operational run:
 
 ```powershell
-python -m nicewx.main --pilot-day-archive --source openmeteo --date 2026-03-24 --publish-preset standard --presentation-theme shareable
+python -m comfortwx.main --pilot-day-archive --source openmeteo --date 2026-03-24 --publish-preset standard --presentation-theme shareable
 ```
 
 For a date-less local daily-style run that uses the current default date handling:
 
 ```powershell
-python -m nicewx.main --pilot-day-archive --source openmeteo --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse
+python -m comfortwx.main --pilot-day-archive --source openmeteo --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse
 ```
 
 The `standard` publish preset writes a bundle manifest alongside the normal outputs. The bundle includes:
@@ -365,7 +365,7 @@ It:
 The workflow command is:
 
 ```bash
-python -m nicewx.main --pilot-day-archive --source openmeteo --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse
+python -m comfortwx.main --pilot-day-archive --source openmeteo --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse
 ```
 
 It also stages a `site/` copy of `output/archive/` as a second artifact so the archive landing page can later be connected to GitHub Pages without changing the product build itself.
@@ -380,13 +380,13 @@ Before trusting the daily schedule:
 
 1. Create a new GitHub repository and push this project.
 2. Confirm the required checked-in rendering asset exists in the repo:
-   - `nicewx/mapping/data/us_states.geojson`
+   - `comfortwx/mapping/data/us_states.geojson`
 3. Open the `Comfort Index Daily Pilot Day` workflow in GitHub Actions and run it manually once with `workflow_dispatch`.
 4. Inspect the uploaded `comfortwx-archive` artifact and confirm the archived landing page, pilot-day index, stitched CONUS presentation maps, and pilot-day status summary look correct.
 5. If GitHub Pages is enabled for the repository, confirm the Pages deployment succeeded and the published archive landing page loads correctly.
 6. Only after that manual check passes should you rely on the scheduled daily run.
 
-Branding and theme knobs live in `nicewx/config.py`:
+Branding and theme knobs live in `comfortwx/config.py`:
 
 - `PRODUCT_METADATA` for product title, source/subtitle line, credit line, and branding footer
 - `PRESENTATION_THEME_PRESETS` for presentation-only themes such as `default`, `shareable`, and the production-facing `public`
@@ -394,7 +394,7 @@ Branding and theme knobs live in `nicewx/config.py`:
 
 ## Tuning
 
-Most thresholds live in `nicewx/config.py`.
+Most thresholds live in `comfortwx/config.py`.
 
 Key tuning surfaces:
 
@@ -407,7 +407,7 @@ Key tuning surfaces:
 
 ## Replacing Mock Data Later
 
-The loader boundary is `nicewx/data/loaders.py`.
+The loader boundary is `comfortwx/data/loaders.py`.
 
 To swap in real forecast data later:
 
@@ -421,7 +421,7 @@ The scoring and plotting layers do not need to know where the data came from.
 
 ## Open-Meteo Real Data Path
 
-The Open-Meteo point loader lives in `nicewx/data/openmeteo.py`.
+The Open-Meteo point loader lives in `comfortwx/data/openmeteo.py`.
 
 It currently requests hourly forecast variables from the weather API:
 
@@ -472,7 +472,7 @@ Next logical step for real data would be a multi-point or tiled regional ingesti
 
 ## Real-World Validation Harness
 
-The real-world validation runner lives in `nicewx/validation/real_world.py`.
+The real-world validation runner lives in `comfortwx/validation/real_world.py`.
 
 Default cases currently include:
 
@@ -526,7 +526,7 @@ This is meant for manual score tuning and calibration, not automated skill verif
 
 ## Forecast-vs-Analysis Verification
 
-The first-pass verification runner lives in `nicewx/validation/verify_model.py`.
+The first-pass verification runner lives in `comfortwx/validation/verify_model.py`.
 
 It compares:
 
@@ -538,7 +538,7 @@ Both sides are normalized into the existing hourly Comfort Index schema, then sc
 Run it with:
 
 ```bash
-python -m nicewx.validation.verify_model --date 2026-03-20 --region southeast
+python -m comfortwx.validation.verify_model --date 2026-03-20 --region southeast
 ```
 
 First-pass outputs include:
@@ -561,7 +561,7 @@ Current limitations:
 For a small multi-date benchmark over representative regions, use:
 
 ```bash
-python -m nicewx.validation.verify_benchmark
+python -m comfortwx.validation.verify_benchmark
 ```
 
 The benchmark runner currently includes configurable default cases for:
@@ -588,7 +588,7 @@ This layout is designed to support:
 
 ## Regional Processing Framework
 
-The project now includes an overlap-aware regional domain layer in `nicewx/mapping/regions.py`.
+The project now includes an overlap-aware regional domain layer in `comfortwx/mapping/regions.py`.
 
 Current regions:
 
@@ -611,31 +611,31 @@ Each region has an overlap buffer so adjacent regional products can later blend 
 Current regional mode:
 
 ```powershell
-python -m nicewx.main --region southeast
+python -m comfortwx.main --region southeast
 ```
 
 Pilot real regional mode:
 
 ```powershell
-python -m nicewx.main --source openmeteo --region southeast --date 2026-03-24
-python -m nicewx.main --source openmeteo --region southwest --date 2026-03-24
-python -m nicewx.main --source openmeteo --region southwest --mesh-profile fine --date 2026-03-24
-python -m nicewx.main --source openmeteo --region rockies --date 2026-03-24
-python -m nicewx.main --source openmeteo --region rockies --mesh-profile fine --date 2026-03-24
-python -m nicewx.main --source openmeteo --region northeast --date 2026-03-24
+python -m comfortwx.main --source openmeteo --region southeast --date 2026-03-24
+python -m comfortwx.main --source openmeteo --region southwest --date 2026-03-24
+python -m comfortwx.main --source openmeteo --region southwest --mesh-profile fine --date 2026-03-24
+python -m comfortwx.main --source openmeteo --region rockies --date 2026-03-24
+python -m comfortwx.main --source openmeteo --region rockies --mesh-profile fine --date 2026-03-24
+python -m comfortwx.main --source openmeteo --region northeast --date 2026-03-24
 ```
 
 Pilot 2-region real mosaic test:
 
 ```powershell
-python -m nicewx.main --source openmeteo --mosaic southeast southwest --date 2026-03-24
-python -m nicewx.main --source openmeteo --mosaic southeast northeast --date 2026-03-24
-python -m nicewx.main --source openmeteo --mosaic southwest rockies --date 2026-03-24
-python -m nicewx.validation.seam_compare --date 2026-03-24
-python -m nicewx.validation.western_mesh_sensitivity --date 2026-03-24
-python -m nicewx.validation.western_mosaic_method_sensitivity --date 2026-03-24
-python -m nicewx.validation.western_seam_attribution --date 2026-03-24
-python -m nicewx.validation.western_aggregation_sensitivity --date 2026-03-24
+python -m comfortwx.main --source openmeteo --mosaic southeast southwest --date 2026-03-24
+python -m comfortwx.main --source openmeteo --mosaic southeast northeast --date 2026-03-24
+python -m comfortwx.main --source openmeteo --mosaic southwest rockies --date 2026-03-24
+python -m comfortwx.validation.seam_compare --date 2026-03-24
+python -m comfortwx.validation.western_mesh_sensitivity --date 2026-03-24
+python -m comfortwx.validation.western_mosaic_method_sensitivity --date 2026-03-24
+python -m comfortwx.validation.western_seam_attribution --date 2026-03-24
+python -m comfortwx.validation.western_aggregation_sensitivity --date 2026-03-24
 ```
 
 This currently works with the mock gridded path and writes:
@@ -683,7 +683,7 @@ Western mesh-sensitivity testing:
 
 - `southwest` and `rockies` can be run with `--mesh-profile fine` to increase Open-Meteo point density without changing the score science
 - this is meant to isolate whether western seam roughness is primarily a mesh-density issue
-- the helper `python -m nicewx.validation.western_mesh_sensitivity --date 2026-03-24` runs both `standard` and `fine` western mosaics and writes comparison CSVs
+- the helper `python -m comfortwx.validation.western_mesh_sensitivity --date 2026-03-24` runs both `standard` and `fine` western mosaics and writes comparison CSVs
 - comparison metrics include seam diagnostics for both profiles plus grid-to-grid daily score change statistics
 
 Western mosaic-method sensitivity:
@@ -697,7 +697,7 @@ Western mosaic-method sensitivity:
   - the current `adaptive` target grid policy
   - an explicit `fixed_western` target grid defined in `config.py`
 - these options are diagnostic only; they do not change the underlying score science
-- use `python -m nicewx.validation.western_mosaic_method_sensitivity --date 2026-03-24` to compare methods
+- use `python -m comfortwx.validation.western_mosaic_method_sensitivity --date 2026-03-24` to compare methods
 - key outputs include overlap diagnostics, pre-blend score-difference distributions, post-blend overlap score distributions, near-threshold overlap counts, and category flips relative to the baseline taper/adaptive mosaic
 
 Western seam attribution:
@@ -714,7 +714,7 @@ Western seam attribution:
   - `daily_score`
   - `category_index`
 - it also includes overlap-zone daily attribution fields like `reliability_score` and `disruption_penalty`
-- use `python -m nicewx.validation.western_seam_attribution --date 2026-03-24` to write:
+- use `python -m comfortwx.validation.western_seam_attribution --date 2026-03-24` to write:
   - one summary CSV
   - one overlap-cell detail CSV
 - this is intended to show whether the western seam is mostly thermodynamic, cloud/precip, or aggregation/reliability driven before changing any score formulas
@@ -727,7 +727,7 @@ Western aggregation sensitivity:
   - grading usable/strong reliability contributions instead of relying only on hard hourly cutoffs
   - softening some rain/gust/score-drop propagation in the disruption layer
 - the default production aggregation remains `baseline`
-- use `python -m nicewx.validation.western_aggregation_sensitivity --date 2026-03-24` to compare:
+- use `python -m comfortwx.validation.western_aggregation_sensitivity --date 2026-03-24` to compare:
   - overlap `reliability_score` roughness
   - overlap `daily_score` roughness
   - overlap category agreement / near agreement
@@ -738,7 +738,7 @@ Western threshold sensitivity:
 
 - the softer aggregation mode improved western raw-score seam metrics, but exact category agreement still got worse because more overlap cells ended up near or across category thresholds
 - this project now includes a threshold-brittleness runner for `southwest + rockies` that compares `baseline` vs `soft_reliability`
-- use `python -m nicewx.validation.western_threshold_sensitivity --date 2026-03-24` to write:
+- use `python -m comfortwx.validation.western_threshold_sensitivity --date 2026-03-24` to write:
   - one summary CSV with threshold-proximity fractions, threshold-crossing counts, category-flip totals, and a small margin-stable comparison metric
   - one overlap-cell detail CSV for the category flips
 - this pass is diagnostic only; it does not change the production thresholds or add spatial smoothing to categories
@@ -747,7 +747,7 @@ Western Poor/Fair boundary audit:
 
 - the threshold-sensitivity pass showed that the western seam flips cluster most strongly at the `45` Poor/Fair boundary
 - this project now includes a low-end audit for `southwest + rockies` that focuses on whether those flips are mostly unavoidable marginal-score behavior or mostly an artifact of the hard category split
-- use `python -m nicewx.validation.western_fair_nice_audit --date 2026-03-24` to write:
+- use `python -m comfortwx.validation.western_poor_fair_audit --date 2026-03-24` to write:
   - one summary CSV with low-end score-band fractions and interpretation
   - one alternatives CSV comparing small diagnostic-only Poor/Fair threshold variants
   - one detail CSV for production Poor/Fair flips
@@ -772,7 +772,7 @@ Current seam diagnostics include:
 For a quick side-by-side comparison of the two adjacent seam regimes, run:
 
 ```powershell
-python -m nicewx.validation.seam_compare --date 2026-03-24
+python -m comfortwx.validation.seam_compare --date 2026-03-24
 ```
 
 That writes a single CSV with the shared seam diagnostic fields for:

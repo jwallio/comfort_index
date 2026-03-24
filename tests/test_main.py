@@ -3,11 +3,11 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from nicewx.main import _mosaic_file_prefix, _pilot_day_row, _region_file_prefix
+from comfortwx.main import _mosaic_file_prefix, _pilot_day_row, _region_file_prefix
 
 
 def test_output_file_prefixes_preserve_existing_standard_names() -> None:
-    assert _region_file_prefix("openmeteo", "southwest", "standard", "baseline") == "nicewx_region_southwest_openmeteo"
+    assert _region_file_prefix("openmeteo", "southwest", "standard", "baseline") == "comfortwx_region_southwest_openmeteo"
     assert (
         _mosaic_file_prefix(
             ["southwest", "rockies"],
@@ -17,7 +17,7 @@ def test_output_file_prefixes_preserve_existing_standard_names() -> None:
             "taper",
             "adaptive",
         )
-        == "nicewx_mosaic_southwest_rockies_openmeteo"
+        == "comfortwx_mosaic_southwest_rockies_openmeteo"
     )
 
 

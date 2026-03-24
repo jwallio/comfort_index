@@ -5,9 +5,9 @@ from datetime import date
 import numpy as np
 import xarray as xr
 
-from nicewx.data.mock_data import generate_mock_hourly_grid
-from nicewx.mapping.mosaic import RegionalDailyRaster, weighted_overlap_merge
-from nicewx.mapping.regions import get_region_definition, region_blend_weights, subset_dataset_to_region
+from comfortwx.data.mock_data import generate_mock_hourly_grid
+from comfortwx.mapping.mosaic import RegionalDailyRaster, weighted_overlap_merge
+from comfortwx.mapping.regions import get_region_definition, region_blend_weights, subset_dataset_to_region
 
 
 def test_region_subset_uses_expanded_bounds() -> None:

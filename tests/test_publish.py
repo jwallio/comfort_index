@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from nicewx.mapping.plotting import resolve_presentation_theme
-from nicewx.publishing import (
+from comfortwx.mapping.plotting import resolve_presentation_theme
+from comfortwx.publishing import (
     build_archive_run_directory,
     resolve_publish_preset,
     write_archive_index,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from nicewx.data.openmeteo import (
+from comfortwx.data.openmeteo import (
     assemble_point_datasets_to_grid,
     merge_openmeteo_air_quality,
     normalize_openmeteo_forecast_response,

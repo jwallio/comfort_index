@@ -5,12 +5,12 @@ from datetime import date
 import numpy as np
 import xarray as xr
 
-from nicewx.validation.score_palette_compare import render_score_palette_variants
+from comfortwx.validation.score_palette_compare import render_score_palette_variants
 
 
 def test_render_score_palette_variants_writes_all_variant_pngs(tmp_path) -> None:
     valid_date = date(2026, 3, 24)
-    daily_fields_path = tmp_path / "nicewx_mosaic_test_daily_fields_20260324.nc"
+    daily_fields_path = tmp_path / "comfortwx_mosaic_test_daily_fields_20260324.nc"
     daily = xr.Dataset(
         {
             "daily_score": (("lat", "lon"), np.array([[15.0, 35.0], [65.0, 92.0]], dtype=float)),
