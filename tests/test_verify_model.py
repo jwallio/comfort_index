@@ -79,3 +79,30 @@ def test_verification_summary_reports_score_and_category_agreement() -> None:
     assert summary["score_max_abs_diff"] == 5.0
     assert summary["exact_category_agreement_fraction"] == 0.75
     assert summary["near_category_agreement_fraction"] == 1.0
+    assert summary["category_disagreement_fraction"] == 0.25
+    assert summary["high_comfort_analysis_cell_count"] == 2
+    assert summary["high_comfort_forecast_cell_count"] == 2
+    assert summary["missed_high_comfort_cell_count"] == 0
+    assert summary["false_high_comfort_cell_count"] == 0
+    assert summary["high_comfort_precision"] == 1.0
+    assert summary["high_comfort_recall"] == 1.0
+
+
+def test_component_summary_fields_are_exposed() -> None:
+    import pandas as pd
+
+    from comfortwx.validation.verify_model import _component_summary_fields
+
+    metrics = _component_summary_fields(
+        pd.DataFrame(
+            [
+                {"component_name": "temp", "bias_mean": 1.2, "mae": 2.5},
+                {"component_name": "reliability_score", "bias_mean": -0.7, "mae": 3.1},
+            ]
+        )
+    )
+
+    assert metrics["temp_bias_mean"] == 1.2
+    assert metrics["temp_mae"] == 2.5
+    assert metrics["reliability_score_bias_mean"] == -0.7
+    assert metrics["reliability_score_mae"] == 3.1

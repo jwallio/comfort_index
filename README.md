@@ -8,6 +8,7 @@ The repository includes:
 - publish bundles and dated archive workflows
 - verification and diagnostics tooling
 - GitHub Actions automation for daily archived runs
+- GitHub Actions automation for verification benchmarks
 
 ## Quick Start
 
@@ -84,6 +85,9 @@ Internal/debug outputs remain available for inspection and validation.
 The repository includes a daily workflow:
 - `Comfort Index Daily Pilot Day`
 
+And a separate verification workflow:
+- `Comfort Index Verification Benchmark`
+
 It runs:
 
 ```powershell
@@ -105,6 +109,43 @@ The public Pages view is map-first by design:
 - the landing page highlights the stitched CONUS images and archived run galleries
 - run pages focus on presentation PNGs
 - supporting CSV, JSON, and NetCDF files remain in the archive but are not the main public navigation
+
+Verification workflow:
+
+```powershell
+python -m comfortwx.validation.verify_benchmark
+```
+
+The `Comfort Index Verification Benchmark` GitHub Actions workflow runs the proxy forecast-vs-analysis benchmark suite and uploads a `comfortwx-verification-benchmark` artifact containing:
+- combined benchmark summary CSV
+- benchmark HTML report
+- benchmark summary PNG charts
+- per-case forecast score maps
+- per-case analysis score maps
+- per-case difference maps
+- per-case absolute error maps
+- per-case category disagreement maps
+- per-case missed high comfort / false high comfort masks
+- per-case component attribution CSVs
+- per-case summary and point CSVs
+
+When run manually from GitHub Actions, the verification workflow lets you choose:
+- optional benchmark date override in `YYYY-MM-DD`
+- mesh profile (`standard` or `fine`)
+
+This workflow is the current backtesting path. It is separate from the daily public product workflow.
+
+The benchmark report layers visuals on top of the CSV outputs:
+- MAE, agreement, bias-vs-RMSE, and ranked-case summary charts
+- MAE, agreement, and bias time-series charts across benchmark dates
+- component MAE heatmap across cases
+- regional rollup CSV/chart with pass-rate and mean error context
+- a simple HTML dashboard with summary metrics and linked map thumbnails
+- threshold flags for MAE, near-category agreement, and mean bias so regressions are easier to spot
+
+Each verification case now also writes a component-attribution CSV that summarizes whether the miss was mainly tied to temperature, dew point, cloud, precipitation, or daily reliability/disruption behavior.
+
+The verification workflow also writes a self-contained verification mini-site under `output/verification_site/latest/`. The daily GitHub Pages build is prepared to pull in the most recent verification artifact and expose it under `/verification/` on the public site when a benchmark artifact is available.
 
 ## Repository Notes
 

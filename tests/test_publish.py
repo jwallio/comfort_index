@@ -149,3 +149,15 @@ def test_write_archive_index_scans_archived_pilot_day_runs(tmp_path) -> None:
     assert "Daily Outdoor Comfort Maps" in html_text
     assert "<img src=" in html_text
     assert "<table" not in html_text
+
+
+def test_write_archive_index_links_verification_dashboard_when_present(tmp_path) -> None:
+    verification_dir = tmp_path / "verification"
+    verification_dir.mkdir(parents=True)
+    (verification_dir / "index.html").write_text("<html>verification</html>", encoding="utf-8")
+
+    _, _, html_path = write_archive_index(archive_root=tmp_path)
+
+    html_text = html_path.read_text(encoding="utf-8")
+    assert "Verification dashboard" in html_text
+    assert "verification/index.html" in html_text

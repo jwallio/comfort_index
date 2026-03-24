@@ -578,6 +578,16 @@ def _build_archive_gallery_html(*, archive_root: Path, run_payloads: list[tuple[
                 "</div>"
             )
 
+    verification_markup = ""
+    verification_index = archive_root / "verification" / "index.html"
+    if verification_index.exists():
+        verification_markup = (
+            "<div class='meta'>"
+            "<span><a href='verification/index.html' style='text-decoration:none;color:inherit;'>Verification dashboard</a></span>"
+            "</div>"
+            "<p class='archive-note'>Verification charts, benchmark stats, and case error maps are available in the verification dashboard.</p>"
+        )
+
     body = [
         "<!doctype html><html><head><meta charset='utf-8'>",
         "<meta name='viewport' content='width=device-width, initial-scale=1'>",
@@ -588,6 +598,7 @@ def _build_archive_gallery_html(*, archive_root: Path, run_payloads: list[tuple[
         "<p class='eyebrow'>Comfort Index</p>",
         "<h1>Daily Outdoor Comfort Maps</h1>",
         "<p class='subtitle'>Browse the latest stitched CONUS maps first, then open any archived run for the full image gallery.</p>",
+        verification_markup,
         latest_markup,
         "<p class='archive-note'>Supporting CSV, JSON, and NetCDF files remain in the archive, but this public view focuses on the maps.</p>",
         "</section>",

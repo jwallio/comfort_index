@@ -1047,6 +1047,13 @@ OPENMETEO_VERIFICATION_SAMPLE_POINT_NAMES: Final[tuple[str, ...]] = (
     "southeast",
 )
 
+VERIFICATION_HIGH_COMFORT_CATEGORY_MIN_INDEX: Final[int] = 3
+VERIFICATION_BENCHMARK_THRESHOLDS: Final[dict[str, float]] = {
+    "score_mae_max": 8.0,
+    "near_category_agreement_min": 0.9,
+    "abs_score_bias_mean_max": 5.0,
+}
+
 
 def get_openmeteo_mesh_settings(region_name: str, mesh_profile: str = OPENMETEO_DEFAULT_MESH_PROFILE) -> dict[str, float | bool]:
     """Return regional Open-Meteo mesh settings for the requested profile."""
