@@ -38,3 +38,6 @@ archive/
 
 # Runtime / logs
 *.log
+
+# Local internal docs
+README.internal.md
