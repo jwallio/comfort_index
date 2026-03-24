@@ -208,6 +208,22 @@ def _polygon_path_from_rings(rings: list[list[tuple[float, float]]]) -> MplPath 
     return MplPath(vertices, codes)
 
 
+def _lonlat_polygon_path_from_rings(rings: list[list[tuple[float, float]]]) -> MplPath | None:
+    vertices: list[tuple[float, float]] = []
+    codes: list[int] = []
+    for ring in rings:
+        if len(ring) < 3:
+            continue
+        ring_vertices = [(float(point[0]), float(point[1])) for point in ring]
+        if ring_vertices[0] != ring_vertices[-1]:
+            ring_vertices.append(ring_vertices[0])
+        vertices.extend(ring_vertices)
+        codes.extend([MplPath.MOVETO] + [MplPath.LINETO] * (len(ring_vertices) - 2) + [MplPath.CLOSEPOLY])
+    if not vertices:
+        return None
+    return MplPath(vertices, codes)
+
+
 def _draw_projected_stitched_basemap(
     ax,
     *,
@@ -247,14 +263,16 @@ def _draw_projected_stitched_basemap(
 def _stitched_land_clip_patch(ax) -> PathPatch | None:
     geometries = _load_stitched_state_geometries()
     compound_path: MplPath | None = None
+    use_cartopy_transform = HAS_CARTOPY and hasattr(ax, "projection")
     for rings in geometries:
-        polygon_path = _polygon_path_from_rings(rings)
+        polygon_path = _lonlat_polygon_path_from_rings(rings) if use_cartopy_transform else _polygon_path_from_rings(rings)
         if polygon_path is None:
             continue
         compound_path = polygon_path if compound_path is None else MplPath.make_compound_path(compound_path, polygon_path)
     if compound_path is None:
         return None
-    return PathPatch(compound_path, transform=ax.transData)
+    transform = ccrs.PlateCarree()._as_mpl_transform(ax) if use_cartopy_transform else ax.transData
+    return PathPatch(compound_path, transform=transform)
 
 
 def _apply_stitched_land_clip(ax, artist) -> None:
@@ -266,6 +284,42 @@ def _apply_stitched_land_clip(ax, artist) -> None:
             collection.set_clip_path(clip_patch)
         return
     artist.set_clip_path(clip_patch)
+
+
+def _add_score_key(cbar, *, presentation_style: dict[str, str | float | int] | None = None) -> None:
+    style = presentation_style or PRESENTATION_PLOT_STYLE
+    label_color = str(style.get("subtitle_color", style.get("border_color", "#505860")))
+    fontsize = float(style.get("stitched_score_key_font_size", 8.4))
+    cbar.ax.text(
+        0.0,
+        float(style.get("stitched_score_key_y", -1.7)),
+        str(STITCHED_CONUS_PRESENTATION.get("score_key_left_label", "Lower comfort")),
+        transform=cbar.ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize=fontsize,
+        color=label_color,
+    )
+    cbar.ax.text(
+        0.5,
+        float(style.get("stitched_score_key_y", -1.7)),
+        str(STITCHED_CONUS_PRESENTATION.get("score_key_center_label", "Mixed conditions")),
+        transform=cbar.ax.transAxes,
+        ha="center",
+        va="top",
+        fontsize=fontsize,
+        color=label_color,
+    )
+    cbar.ax.text(
+        1.0,
+        float(style.get("stitched_score_key_y", -1.7)),
+        str(STITCHED_CONUS_PRESENTATION.get("score_key_right_label", "Higher comfort")),
+        transform=cbar.ax.transAxes,
+        ha="right",
+        va="top",
+        fontsize=fontsize,
+        color=label_color,
+    )
 
 
 def _project_field_coords(field: xr.DataArray) -> tuple[np.ndarray, np.ndarray]:
@@ -501,7 +555,7 @@ def _apply_coverage_outline(
         return
     try:
         if HAS_CARTOPY:
-            ax.contour(
+            contour = ax.contour(
                 coverage_field["lon"],
                 coverage_field["lat"],
                 coverage_field,
@@ -511,6 +565,7 @@ def _apply_coverage_outline(
                 alpha=float(STITCHED_CONUS_PRESENTATION["coverage_outline_alpha"]),
                 transform=ccrs.PlateCarree(),
             )
+            _apply_stitched_land_clip(ax, contour)
         elif projected_stitched_fallback:
             contour = _projected_contour(
                 ax,
@@ -536,7 +591,7 @@ def _apply_coverage_fade(
         return
     try:
         if HAS_CARTOPY:
-            ax.contourf(
+            contourf = ax.contourf(
                 coverage_field["lon"],
                 coverage_field["lat"],
                 coverage_field,
@@ -546,6 +601,7 @@ def _apply_coverage_fade(
                 transform=ccrs.PlateCarree(),
                 zorder=1.4,
             )
+            _apply_stitched_land_clip(ax, contourf)
         elif projected_stitched_fallback:
             contourf = _projected_contourf(
                 ax,
@@ -609,13 +665,14 @@ def _apply_low_end_borderline_overlay(
     gradient_cmap = _continuous_score_cmap((PRESENTATION_CATEGORY_COLORS[0], PRESENTATION_CATEGORY_COLORS[1]))
     kwargs = {"cmap": gradient_cmap, "vmin": lower_bound, "vmax": upper_bound, "shading": "auto", "alpha": style["gradient_alpha"]}
     if HAS_CARTOPY:
-        ax.pcolormesh(
+        mesh = ax.pcolormesh(
             borderline_field["lon"],
             borderline_field["lat"],
             borderline_field,
             transform=ccrs.PlateCarree(),
             **kwargs,
         )
+        _apply_stitched_land_clip(ax, mesh)
     elif projected_stitched_fallback:
         mesh = _projected_pcolormesh(ax, borderline_field, **kwargs)
         _apply_stitched_land_clip(ax, mesh)
@@ -632,13 +689,14 @@ def _apply_low_end_borderline_overlay(
             "alpha": style["band_alpha"],
         }
         if HAS_CARTOPY:
-            ax.pcolormesh(
+            mesh = ax.pcolormesh(
                 neutral_band["lon"],
                 neutral_band["lat"],
                 neutral_band,
                 transform=ccrs.PlateCarree(),
                 **band_kwargs,
             )
+            _apply_stitched_land_clip(ax, mesh)
         elif projected_stitched_fallback:
             mesh = _projected_pcolormesh(ax, neutral_band, **band_kwargs)
             _apply_stitched_land_clip(ax, mesh)
@@ -665,7 +723,10 @@ def _apply_low_end_borderline_overlay(
         threshold_kwargs["transform"] = ccrs.PlateCarree()
 
     try:
-        if projected_stitched_fallback and not HAS_CARTOPY:
+        if HAS_CARTOPY:
+            contour = ax.contour(raw_display["lon"], raw_display["lat"], raw_display, **contour_kwargs)
+            _apply_stitched_land_clip(ax, contour)
+        elif projected_stitched_fallback:
             contour = _projected_contour(ax, raw_display, **contour_kwargs)
             _apply_stitched_land_clip(ax, contour)
         else:
@@ -673,7 +734,10 @@ def _apply_low_end_borderline_overlay(
     except ValueError:
         pass
     try:
-        if projected_stitched_fallback and not HAS_CARTOPY:
+        if HAS_CARTOPY:
+            contour = ax.contour(raw_display["lon"], raw_display["lat"], raw_display, **threshold_kwargs)
+            _apply_stitched_land_clip(ax, contour)
+        elif projected_stitched_fallback:
             contour = _projected_contour(ax, raw_display, **threshold_kwargs)
             _apply_stitched_land_clip(ax, contour)
         else:
@@ -735,6 +799,8 @@ def plot_raw_score_map(
             transform=ccrs.PlateCarree(),
             **kwargs,
         )
+        if stitched_conus:
+            _apply_stitched_land_clip(ax, mesh)
     elif projected_stitched_fallback:
         mesh = _projected_pcolormesh(ax, raw_field, **kwargs)
         _apply_stitched_land_clip(ax, mesh)
@@ -779,6 +845,7 @@ def plot_raw_score_map(
         stitched_conus=stitched_conus,
     )
     if presentation and stitched_conus:
+        colorbar_ticks = list(score_levels) if score_levels else list(np.arange(0, 101, 20))
         cbar = fig.colorbar(
             mesh,
             ax=ax,
@@ -787,11 +854,12 @@ def plot_raw_score_map(
             shrink=float(presentation_style.get("stitched_colorbar_shrink", 0.78)),
             fraction=float(presentation_style.get("stitched_colorbar_fraction", 0.05)),
             aspect=float(presentation_style.get("stitched_colorbar_aspect", 40)),
-            ticks=np.arange(0, 101, 20),
+            ticks=colorbar_ticks,
             boundaries=score_levels if score_levels else None,
             spacing="proportional" if score_levels else "uniform",
         )
-        cbar.set_label(str(presentation_style.get("stitched_colorbar_label", "Outdoor comfort score (0-100)")))
+        cbar.set_label(str(presentation_style.get("stitched_colorbar_label", "Comfort Index score")))
+        _add_score_key(cbar, presentation_style=presentation_style)
     else:
         cbar = fig.colorbar(
             mesh,
@@ -872,6 +940,8 @@ def plot_category_map(
             transform=ccrs.PlateCarree(),
             **kwargs,
         )
+        if stitched_conus:
+            _apply_stitched_land_clip(ax, mesh)
     elif projected_stitched_fallback:
         mesh = _projected_pcolormesh(ax, category_display, **kwargs)
         _apply_stitched_land_clip(ax, mesh)

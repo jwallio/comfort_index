@@ -854,6 +854,9 @@ STITCHED_CONUS_PRESENTATION: Final[dict[str, float | bool | str]] = {
     "title": "Comfort Index",
     "product_subtitle": "Daily Outdoor Comfort Score Across CONUS",
     "subtitle_source_line": "Open-Meteo stitched regional pilot",
+    "score_key_left_label": "Lower comfort",
+    "score_key_center_label": "Mixed conditions",
+    "score_key_right_label": "Higher comfort",
     "footer_suffix": "Display smoothing, coverage fade, and stitched-footprint outline are presentation-only.",
 }
 
