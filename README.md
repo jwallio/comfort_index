@@ -90,6 +90,11 @@ The workflow uploads:
 
 If GitHub Pages is enabled for the repository, the workflow is also prepared to publish the archived run output as a site. If Pages is not available, the archive build still completes and uploads artifacts.
 
+The public Pages view is map-first by design:
+- the landing page highlights the stitched CONUS images and archived run galleries
+- run pages focus on presentation PNGs
+- supporting CSV, JSON, and NetCDF files remain in the archive but are not the main public navigation
+
 ## Repository Notes
 
 - Required checked-in rendering asset:

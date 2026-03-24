@@ -50,6 +50,10 @@ def test_theme_and_publish_preset_resolution_support_named_presets() -> None:
 
 
 def test_write_pilot_day_index_creates_csv_json_and_html(tmp_path) -> None:
+    preview_png = tmp_path / "comfortwx_region_southwest_openmeteo_presentation_score_20260324.png"
+    preview_png.write_text("placeholder", encoding="utf-8")
+    category_png = tmp_path / "comfortwx_region_southwest_openmeteo_presentation_category_20260324.png"
+    category_png.write_text("placeholder", encoding="utf-8")
     status_csv_path, status_json_path = write_pilot_day_status_summary(
         output_dir=tmp_path,
         valid_date=date(2026, 3, 24),
@@ -72,6 +76,9 @@ def test_write_pilot_day_index_creates_csv_json_and_html(tmp_path) -> None:
                 "product_name": "southwest",
                 "valid_date": "2026-03-24",
                 "daily_fields_path": "output/example.nc",
+                "presentation_score_map_path": str(preview_png),
+                "presentation_category_map_path": str(category_png),
+                "status": "completed",
             }
         ],
         status_summary_csv_path=status_csv_path,
@@ -81,6 +88,10 @@ def test_write_pilot_day_index_creates_csv_json_and_html(tmp_path) -> None:
     assert csv_path.exists()
     assert json_path.exists()
     assert html_path.exists()
+    html_text = html_path.read_text(encoding="utf-8")
+    assert "Daily Maps for March 24, 2026" in html_text
+    assert "<img src=" in html_text
+    assert "<table" not in html_text
 
 
 def test_build_archive_run_directory_supports_configured_layouts(tmp_path) -> None:
@@ -94,6 +105,10 @@ def test_build_archive_run_directory_supports_configured_layouts(tmp_path) -> No
 def test_write_archive_index_scans_archived_pilot_day_runs(tmp_path) -> None:
     run_dir = tmp_path / "2026" / "03" / "24"
     run_dir.mkdir(parents=True)
+    preview_png = run_dir / "comfortwx_mosaic_example_presentation_score_20260324.png"
+    preview_png.write_text("placeholder", encoding="utf-8")
+    category_png = run_dir / "comfortwx_mosaic_example_presentation_category_20260324.png"
+    category_png.write_text("placeholder", encoding="utf-8")
     status_csv_path, status_json_path = write_pilot_day_status_summary(
         output_dir=run_dir,
         valid_date=date(2026, 3, 24),
@@ -112,10 +127,13 @@ def test_write_archive_index_scans_archived_pilot_day_runs(tmp_path) -> None:
         publish_preset_name="standard",
         product_rows=[
             {
-                "product_type": "region",
-                "product_name": "southwest",
+                "product_type": "mosaic",
+                "product_name": "west_coast+southwest+rockies",
                 "valid_date": "2026-03-24",
                 "daily_fields_path": str(run_dir / "example.nc"),
+                "presentation_score_map_path": str(preview_png),
+                "presentation_category_map_path": str(category_png),
+                "status": "completed",
             }
         ],
         status_summary_csv_path=status_csv_path,
@@ -127,3 +145,7 @@ def test_write_archive_index_scans_archived_pilot_day_runs(tmp_path) -> None:
     assert csv_path.exists()
     assert json_path.exists()
     assert html_path.exists()
+    html_text = html_path.read_text(encoding="utf-8")
+    assert "Daily Outdoor Comfort Maps" in html_text
+    assert "<img src=" in html_text
+    assert "<table" not in html_text
