@@ -108,7 +108,7 @@ The repository includes a daily workflow:
 For a simple manual GitHub Actions menu, use:
 - `Comfort Index Run Menu`
 
-Run-menu builds publish the latest archive to the live GitHub Pages site after a successful run. Scheduled runs use the same workflow.
+Run-menu builds are the stable product-build path and upload the archived output as a GitHub Actions artifact. Public GitHub Pages publishing is handled separately from the product build workflow.
 
 And a separate verification workflow:
 - `Comfort Index Verification Benchmark`
