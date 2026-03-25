@@ -25,14 +25,6 @@ on:
         description: Optional start valid date in YYYY-MM-DD format. Leave blank for today.
         required: false
         default: ""
-      publish_site:
-        description: Update the live GitHub Pages site after this run
-        required: true
-        default: "yes"
-        type: choice
-        options:
-          - "yes"
-          - "no"
   schedule:
     - cron: "20 12 * * *"
 
@@ -164,7 +156,7 @@ PY
           retention-days: 14
 
       - name: Publish site to gh-pages branch
-        if: success() && (github.event_name == 'schedule' || github.event.inputs.publish_site != 'no')
+        if: success()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
