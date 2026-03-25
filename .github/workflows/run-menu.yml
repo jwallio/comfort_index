@@ -1,0 +1,106 @@
+name: Comfort Index Run Menu
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_mode:
+        description: Product workflow to run
+        required: true
+        default: pilot-day-archive
+        type: choice
+        options:
+          - pilot-day-archive
+          - pilot-day
+      forecast_days:
+        description: Consecutive valid dates to build
+        required: true
+        default: "7"
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
+          - "7"
+      start_date:
+        description: Optional start valid date in YYYY-MM-DD format. Leave blank for today.
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: comfort-index-run-menu
+  cancel-in-progress: false
+
+jobs:
+  build-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgeos-dev libproj-dev proj-data proj-bin libpython3-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install cartopy
+
+      - name: Verify required local rendering asset
+        run: |
+          test -f comfortwx/mapping/data/us_states.geojson
+
+      - name: Run Comfort Index build
+        env:
+          PYTHONUNBUFFERED: "1"
+          WORKFLOW_RUN_MODE: ${{ github.event.inputs.run_mode }}
+          WORKFLOW_FORECAST_DAYS: ${{ github.event.inputs.forecast_days }}
+          WORKFLOW_START_DATE: ${{ github.event.inputs.start_date }}
+        run: |
+          run_mode="${WORKFLOW_RUN_MODE:-pilot-day-archive}"
+          forecast_days="${WORKFLOW_FORECAST_DAYS:-7}"
+          start_date="${WORKFLOW_START_DATE:-}"
+          export COMFORTWX_RUN_TIMESTAMP_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          cmd=(
+            python -m comfortwx.main
+            --source openmeteo
+            --publish-preset standard
+            --presentation-theme shareable
+            --pilot-cache-mode reuse
+            --pilot-span-days "$forecast_days"
+          )
+
+          if [ "$run_mode" = "pilot-day" ]; then
+            cmd+=(--pilot-day)
+          else
+            cmd+=(--pilot-day-archive)
+          fi
+
+          if [ -n "$start_date" ]; then
+            cmd+=(--date "$start_date")
+          fi
+
+          "${cmd[@]}"
+
+      - name: Upload archive artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comfortwx-archive
+          path: output/archive/
+          if-no-files-found: warn
+          retention-days: 14

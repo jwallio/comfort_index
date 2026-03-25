@@ -105,6 +105,9 @@ Internal/debug outputs remain available for inspection and validation.
 The repository includes a daily workflow:
 - `Comfort Index Daily Schedule`
 
+For a simple manual GitHub Actions menu, use:
+- `Comfort Index Run Menu`
+
 And a separate verification workflow:
 - `Comfort Index Verification Benchmark`
 
