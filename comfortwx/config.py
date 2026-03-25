@@ -1012,9 +1012,11 @@ OPENMETEO_REGIONAL_MESH_PROFILES: Final[dict[str, dict[str, dict[str, float | bo
 
 OPENMETEO_VERIFICATION_DEFAULT_REGION: Final[str] = "southeast"
 OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT: Final[str] = "gfs_seamless"
+OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL: Final[str] = "hrrr"
 OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT: Final[str] = "best_match"
 OPENMETEO_VERIFICATION_FORECAST_RUN_HOUR_UTC: Final[int] = 12
 OPENMETEO_VERIFICATION_FORECAST_LEAD_DAYS: Final[int] = 1
+OPENMETEO_VERIFICATION_BENCHMARK_LEAD_DAYS: Final[tuple[int, ...]] = (1, 2, 3, 7)
 OPENMETEO_VERIFICATION_FORECAST_DAYS: Final[int] = 2
 OPENMETEO_VERIFICATION_ANALYSIS_POP_PROXY_QPF_FULL_IN: Final[float] = 0.05
 OPENMETEO_VERIFICATION_FORECAST_HOURLY_VARS: Final[tuple[str, ...]] = (
@@ -1053,6 +1055,35 @@ VERIFICATION_BENCHMARK_THRESHOLDS: Final[dict[str, float]] = {
     "near_category_agreement_min": 0.9,
     "abs_score_bias_mean_max": 5.0,
 }
+VERIFICATION_BENCHMARK_LEAD_THRESHOLDS: Final[dict[int, dict[str, float]]] = {
+    1: {
+        "score_mae_max": 8.0,
+        "near_category_agreement_min": 0.9,
+        "abs_score_bias_mean_max": 5.0,
+    },
+    2: {
+        "score_mae_max": 8.75,
+        "near_category_agreement_min": 0.88,
+        "abs_score_bias_mean_max": 5.5,
+    },
+    3: {
+        "score_mae_max": 9.5,
+        "near_category_agreement_min": 0.86,
+        "abs_score_bias_mean_max": 6.0,
+    },
+    7: {
+        "score_mae_max": 11.5,
+        "near_category_agreement_min": 0.83,
+        "abs_score_bias_mean_max": 7.0,
+    },
+}
+VERIFICATION_CALIBRATION_MIN_CASES: Final[int] = 1
+VERIFICATION_CALIBRATION_MIN_POINTS: Final[int] = 40
+VERIFICATION_CALIBRATION_LINEAR_MIN_CASES: Final[int] = 3
+VERIFICATION_CALIBRATION_LINEAR_MIN_POINTS: Final[int] = 200
+VERIFICATION_CALIBRATION_SLOPE_RANGE: Final[tuple[float, float]] = (0.75, 1.25)
+VERIFICATION_CALIBRATION_INTERCEPT_RANGE: Final[tuple[float, float]] = (-15.0, 15.0)
+VERIFICATION_CALIBRATION_BIAS_SHRINKAGE_OFFSET: Final[float] = 2.0
 
 
 def get_openmeteo_mesh_settings(region_name: str, mesh_profile: str = OPENMETEO_DEFAULT_MESH_PROFILE) -> dict[str, float | bool]:

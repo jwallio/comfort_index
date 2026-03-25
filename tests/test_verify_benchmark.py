@@ -3,12 +3,26 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+import xarray as xr
 
 from comfortwx.validation.verify_benchmark import (
+    _apply_score_calibration,
     _apply_threshold_flags,
+    _build_calibration_summary,
+    _priority_table,
+    _parse_lead_days,
     _write_benchmark_charts,
+    _write_component_priority_chart,
+    _write_component_priority_summary,
     _write_benchmark_html_report,
+    _write_lead_summary,
+    _write_lead_summary_chart,
+    _write_priority_case_chart,
+    _write_priority_case_summary,
+    _write_region_lead_heatmap,
+    _write_region_lead_summary,
     _write_region_summary,
     _write_region_summary_chart,
     _write_verification_site,
@@ -17,18 +31,37 @@ from comfortwx.validation.verify_benchmark import (
     run_verification_benchmark,
 )
 from comfortwx.validation.verify_benchmark_cases import DEFAULT_VERIFICATION_BENCHMARK_CASES, VerificationBenchmarkCase
+from comfortwx.validation.verify_benchmark_cases import (
+    FULL_SEASONAL_VERIFICATION_BENCHMARK_CASES,
+    VERIFICATION_BENCHMARK_TIER_DEFAULT,
+    VERIFICATION_BENCHMARK_TIER_FULL_SEASONAL,
+)
 
 
 def test_resolved_cases_cover_required_regions_and_multiple_dates() -> None:
     regions = {case.region_name for case in DEFAULT_VERIFICATION_BENCHMARK_CASES}
     dates = {case.valid_date for case in DEFAULT_VERIFICATION_BENCHMARK_CASES}
+    lead_days = {case.forecast_lead_days for case in DEFAULT_VERIFICATION_BENCHMARK_CASES}
+    full_seasonal_regions = {case.region_name for case in FULL_SEASONAL_VERIFICATION_BENCHMARK_CASES}
 
     assert {"southeast", "southwest", "plains", "northeast"}.issubset(regions)
     assert len(dates) >= 2
+    assert {1, 2, 3, 7}.issubset(lead_days)
+    assert {"west_coast", "rockies", "great_lakes"}.issubset(full_seasonal_regions)
 
-    override_cases = _resolved_cases(date(2026, 3, 20))
+    override_cases = _resolved_cases(date(2026, 3, 20), VERIFICATION_BENCHMARK_TIER_DEFAULT)
     assert {case.valid_date for case in override_cases} == {date(2026, 3, 20)}
     assert {case.region_name for case in override_cases} == {"southeast", "southwest", "plains", "northeast"}
+    assert {case.forecast_lead_days for case in override_cases} == {1, 2, 3, 7}
+
+    full_seasonal_override_cases = _resolved_cases(date(2026, 3, 20), VERIFICATION_BENCHMARK_TIER_FULL_SEASONAL)
+    assert {case.valid_date for case in full_seasonal_override_cases} == {date(2026, 3, 20)}
+    assert {"west_coast", "rockies", "great_lakes"}.issubset({case.region_name for case in full_seasonal_override_cases})
+
+
+def test_parse_lead_days_preserves_order_and_deduplicates() -> None:
+    assert _parse_lead_days("1,2,3,7") == (1, 2, 3, 7)
+    assert _parse_lead_days("1, 3, 3, 7") == (1, 3, 7)
 
 
 def test_run_verification_benchmark_collects_summary_rows(monkeypatch, tmp_path: Path) -> None:
@@ -43,6 +76,8 @@ def test_run_verification_benchmark_collects_summary_rows(monkeypatch, tmp_path:
             "category_disagreement_map": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_category_disagreement.png",
             "missed_high_comfort_map": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_missed.png",
             "false_high_comfort_map": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_false.png",
+            "forecast_daily_fields": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_forecast.nc",
+            "analysis_daily_fields": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_analysis.nc",
             "summary_csv": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_summary.csv",
             "point_metrics_csv": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_points.csv",
             "component_metrics_csv": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_components.csv",
@@ -51,6 +86,7 @@ def test_run_verification_benchmark_collects_summary_rows(monkeypatch, tmp_path:
             "summary_record": {
                 "valid_date": valid_date.isoformat(),
                 "region_name": region_name,
+                "forecast_lead_days": kwargs["forecast_lead_days"],
                 "score_bias_mean": 1.25,
                 "score_mae": 5.5,
                 "score_rmse": 7.1,
@@ -72,11 +108,13 @@ def test_run_verification_benchmark_collects_summary_rows(monkeypatch, tmp_path:
         mesh_profile="standard",
         forecast_model="gfs_seamless",
         forecast_run_hour_utc=12,
-        forecast_lead_days=1,
+        benchmark_tier=VERIFICATION_BENCHMARK_TIER_DEFAULT,
     )
 
     assert len(frame) == 1
+    assert frame.iloc[0]["benchmark_tier"] == VERIFICATION_BENCHMARK_TIER_DEFAULT
     assert frame.iloc[0]["region"] == "southeast"
+    assert frame.iloc[0]["forecast_lead_days"] == 1
     assert frame.iloc[0]["score_mae"] == 5.5
     assert "forecast_score_map_path" in frame.columns
     assert "absolute_error_map_path" in frame.columns
@@ -125,6 +163,7 @@ def test_write_benchmark_charts_and_html_report(tmp_path: Path) -> None:
             {
                 "region": "southeast",
                 "date": "2026-01-15",
+                "forecast_lead_days": 1,
                 "status": "ok",
                 "score_bias_mean": 1.0,
                 "score_mae": 5.0,
@@ -153,6 +192,7 @@ def test_write_benchmark_charts_and_html_report(tmp_path: Path) -> None:
             {
                 "region": "southwest",
                 "date": "2026-03-20",
+                "forecast_lead_days": 3,
                 "status": "ok",
                 "score_bias_mean": -2.0,
                 "score_mae": 7.5,
@@ -211,20 +251,60 @@ def test_write_benchmark_charts_and_html_report(tmp_path: Path) -> None:
     region_summary_chart = _write_region_summary_chart(region_summary, output_dir=tmp_path, stem="test")
     assert region_summary_chart is not None and region_summary_chart.exists()
     charts["region_summary_chart"] = region_summary_chart
+    lead_summary, lead_summary_csv_path = _write_lead_summary(summary, output_dir=tmp_path, stem="test")
+    assert not lead_summary.empty
+    assert lead_summary_csv_path is not None and lead_summary_csv_path.exists()
+    lead_summary_chart = _write_lead_summary_chart(lead_summary, output_dir=tmp_path, stem="test")
+    assert lead_summary_chart is not None and lead_summary_chart.exists()
+    charts["lead_summary_chart"] = lead_summary_chart
+    region_lead_summary, region_lead_summary_csv_path = _write_region_lead_summary(summary, output_dir=tmp_path, stem="test")
+    assert not region_lead_summary.empty
+    assert region_lead_summary_csv_path is not None and region_lead_summary_csv_path.exists()
+    region_lead_heatmap = _write_region_lead_heatmap(region_lead_summary, output_dir=tmp_path, stem="test")
+    assert region_lead_heatmap is not None and region_lead_heatmap.exists()
+    charts["region_lead_heatmap"] = region_lead_heatmap
+    component_priority_summary, component_priority_csv_path = _write_component_priority_summary(summary, output_dir=tmp_path, stem="test")
+    assert not component_priority_summary.empty
+    assert component_priority_csv_path is not None and component_priority_csv_path.exists()
+    component_priority_chart = _write_component_priority_chart(component_priority_summary, output_dir=tmp_path, stem="test")
+    assert component_priority_chart is not None and component_priority_chart.exists()
+    charts["component_priority_chart"] = component_priority_chart
+    priority_cases, priority_cases_csv_path = _write_priority_case_summary(summary, output_dir=tmp_path, stem="test")
+    assert not priority_cases.empty
+    assert priority_cases_csv_path is not None and priority_cases_csv_path.exists()
+    priority_case_chart = _write_priority_case_chart(priority_cases, output_dir=tmp_path, stem="test")
+    assert priority_case_chart is not None and priority_case_chart.exists()
+    charts["priority_case_chart"] = priority_case_chart
+    assert "driven" in _priority_table(priority_cases)
 
     report_path = _write_benchmark_html_report(
         summary,
         charts=charts,
+        benchmark_tier=VERIFICATION_BENCHMARK_TIER_DEFAULT,
         region_summary=region_summary,
         region_summary_csv_path=region_summary_csv_path,
+        lead_summary=lead_summary,
+        lead_summary_csv_path=lead_summary_csv_path,
+        region_lead_summary=region_lead_summary,
+        region_lead_summary_csv_path=region_lead_summary_csv_path,
+        component_priority_summary=component_priority_summary,
+        component_priority_csv_path=component_priority_csv_path,
+        priority_cases=priority_cases,
+        priority_cases_csv_path=priority_cases_csv_path,
+        calibration_summary=pd.DataFrame(),
+        calibration_summary_csv_path=None,
         output_dir=tmp_path,
         stem="test",
     )
     assert report_path.exists()
     html_text = report_path.read_text(encoding="utf-8")
     assert "Comfort Index Verification Benchmark" in html_text
+    assert "Tier: Default" in html_text
     assert "diff.png" in html_text
     assert "Regional Rollup" in html_text
+    assert "Forecast Lead Rollup" in html_text
+    assert "Improvement Priorities" in html_text
+    assert "Component Priorities" in html_text
 
     summary_csv_path = tmp_path / "comfortwx_verify_benchmark_test.csv"
     summary.to_csv(summary_csv_path, index=False)
@@ -235,8 +315,160 @@ def test_write_benchmark_charts_and_html_report(tmp_path: Path) -> None:
         charts=charts,
         report_path=report_path,
         region_summary_csv_path=region_summary_csv_path,
+        lead_summary_csv_path=lead_summary_csv_path,
+        region_lead_summary_csv_path=region_lead_summary_csv_path,
+        component_priority_csv_path=component_priority_csv_path,
+        priority_cases_csv_path=priority_cases_csv_path,
+        calibration_summary_csv_path=None,
         output_dir=tmp_path,
         stem="test",
     )
     assert site_index.exists()
     assert (tmp_path / "verification_site" / "latest" / "index.html").exists()
+
+
+def test_write_verification_site_skips_blank_or_directory_like_paths(tmp_path: Path) -> None:
+    report_path = tmp_path / "report.html"
+    report_path.write_text("<html></html>", encoding="utf-8")
+    summary_csv_path = tmp_path / "summary.csv"
+    summary_csv_path.write_text("region,date\n", encoding="utf-8")
+    chart_path = tmp_path / "chart.png"
+    chart_path.write_bytes(b"fake")
+    summary = pd.DataFrame(
+        [
+            {
+                "region": "southeast",
+                "date": "2026-03-20",
+                "status": "error",
+                "forecast_score_map_path": "",
+                "analysis_score_map_path": ".",
+                "score_difference_map_path": str(tmp_path),
+            }
+        ]
+    )
+
+    site_index = _write_verification_site(
+        summary=summary,
+        summary_path=summary_csv_path,
+        charts={"chart": chart_path},
+        report_path=report_path,
+        region_summary_csv_path=None,
+        lead_summary_csv_path=None,
+        region_lead_summary_csv_path=None,
+        component_priority_csv_path=None,
+        priority_cases_csv_path=None,
+        calibration_summary_csv_path=None,
+        output_dir=tmp_path,
+        stem="blank_path_guard",
+    )
+
+    assert site_index.exists()
+    site_dir = tmp_path / "verification_site" / "blank_path_guard"
+    assert (site_dir / "report.html").exists()
+    assert (site_dir / "chart.png").exists()
+
+
+def test_build_calibration_summary_improves_synthetic_bias_case(tmp_path: Path) -> None:
+    lat = np.linspace(30.0, 34.5, 10)
+    lon = np.linspace(-94.5, -90.0, 10)
+    base_scores = np.linspace(60.0, 90.0, 100, dtype=np.float32).reshape(10, 10)
+    forecast_a = xr.Dataset(
+        data_vars={
+            "daily_score": (("lat", "lon"), base_scores),
+            "category_index": (("lat", "lon"), np.full((10, 10), 3, dtype=int)),
+            "pristine_allowed": (("lat", "lon"), np.ones((10, 10), dtype=bool)),
+        },
+        coords={"lat": lat, "lon": lon},
+    )
+    analysis_a = xr.Dataset(
+        data_vars={
+            "daily_score": (("lat", "lon"), base_scores - 5.0),
+            "category_index": (("lat", "lon"), np.full((10, 10), 3, dtype=int)),
+            "pristine_allowed": (("lat", "lon"), np.ones((10, 10), dtype=bool)),
+        },
+        coords={"lat": lat, "lon": lon},
+    )
+    forecast_b = xr.Dataset(
+        data_vars={
+            "daily_score": (("lat", "lon"), base_scores + 2.0),
+            "category_index": (("lat", "lon"), np.full((10, 10), 3, dtype=int)),
+            "pristine_allowed": (("lat", "lon"), np.ones((10, 10), dtype=bool)),
+        },
+        coords={"lat": lat, "lon": lon},
+    )
+    analysis_b = xr.Dataset(
+        data_vars={
+            "daily_score": (("lat", "lon"), base_scores - 3.0),
+            "category_index": (("lat", "lon"), np.full((10, 10), 3, dtype=int)),
+            "pristine_allowed": (("lat", "lon"), np.ones((10, 10), dtype=bool)),
+        },
+        coords={"lat": lat, "lon": lon},
+    )
+    forecast_path_a = tmp_path / "forecast_a.nc"
+    analysis_path_a = tmp_path / "analysis_a.nc"
+    forecast_path_b = tmp_path / "forecast_b.nc"
+    analysis_path_b = tmp_path / "analysis_b.nc"
+    forecast_a.to_netcdf(forecast_path_a)
+    analysis_a.to_netcdf(analysis_path_a)
+    forecast_b.to_netcdf(forecast_path_b)
+    analysis_b.to_netcdf(analysis_path_b)
+
+    summary = pd.DataFrame(
+        [
+            {
+                "region": "southeast",
+                "date": "2026-01-15",
+                "forecast_lead_days": 1,
+                "status": "ok",
+                "score_bias_mean": 5.0,
+                "score_mae": 5.0,
+                "score_rmse": 5.0,
+                "exact_category_agreement_fraction": 0.5,
+                "near_category_agreement_fraction": 1.0,
+                "benchmark_threshold_status": "pass",
+                "passes_benchmark_thresholds": True,
+                "improvement_priority_score": 0.0,
+                "forecast_daily_fields_path": str(forecast_path_a),
+                "analysis_daily_fields_path": str(analysis_path_a),
+            },
+            {
+                "region": "southeast",
+                "date": "2026-03-20",
+                "forecast_lead_days": 1,
+                "status": "ok",
+                "score_bias_mean": 5.0,
+                "score_mae": 5.0,
+                "score_rmse": 5.0,
+                "exact_category_agreement_fraction": 0.5,
+                "near_category_agreement_fraction": 1.0,
+                "benchmark_threshold_status": "pass",
+                "passes_benchmark_thresholds": True,
+                "improvement_priority_score": 0.0,
+                "forecast_daily_fields_path": str(forecast_path_b),
+                "analysis_daily_fields_path": str(analysis_path_b),
+            },
+        ]
+    )
+
+    calibration_summary, calibration_csv = _build_calibration_summary(summary, output_dir=tmp_path, stem="synthetic")
+
+    assert not calibration_summary.empty
+    assert calibration_csv is not None and calibration_csv.exists()
+    assert (calibration_summary["score_mae_improvement"] > 0).all()
+
+
+def test_apply_score_calibration_recomputes_categories() -> None:
+    forecast_daily = xr.Dataset(
+        data_vars={
+            "daily_score": (("lat", "lon"), np.array([[44.0, 74.0], [89.0, 95.0]], dtype=np.float32)),
+            "category_index": (("lat", "lon"), np.array([[0, 2], [3, 4]], dtype=int)),
+            "pristine_allowed": (("lat", "lon"), np.ones((2, 2), dtype=bool)),
+        },
+        coords={"lat": [30.0, 31.0], "lon": [-90.0, -89.0]},
+    )
+
+    calibrated = _apply_score_calibration(forecast_daily, slope=1.0, intercept=-5.0)
+
+    assert float(calibrated["daily_score"].isel(lat=0, lon=0).values) == 39.0
+    assert int(calibrated["category_index"].isel(lat=0, lon=1).values) == 2
+    assert int(calibrated["category_index"].isel(lat=1, lon=1).values) == 4

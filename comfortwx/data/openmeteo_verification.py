@@ -23,6 +23,7 @@ from comfortwx.config import (
     OPENMETEO_VERIFICATION_FORECAST_HOURLY_VARS,
     OPENMETEO_VERIFICATION_FORECAST_LEAD_DAYS,
     OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
+    OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL,
     OPENMETEO_VERIFICATION_FORECAST_RUN_HOUR_UTC,
     get_openmeteo_mesh_settings,
 )
@@ -139,6 +140,27 @@ def _forecast_run_timestamp(valid_date: date, *, run_hour_utc: int, lead_days: i
     return run_datetime.strftime("%Y-%m-%dT%H:%M")
 
 
+def resolve_openmeteo_verification_forecast_model(
+    *,
+    requested_model: str,
+    forecast_lead_days: int,
+) -> str:
+    normalized_model = requested_model.strip().lower()
+    if normalized_model == OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT and forecast_lead_days <= 1:
+        return OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL
+    return normalized_model
+
+
+def _verification_forecast_days(
+    *,
+    resolved_forecast_model: str,
+    forecast_lead_days: int,
+) -> int:
+    if resolved_forecast_model == OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL and forecast_lead_days <= 1:
+        return max(OPENMETEO_VERIFICATION_FORECAST_DAYS, 2)
+    return max(OPENMETEO_VERIFICATION_FORECAST_DAYS, forecast_lead_days + 2)
+
+
 @dataclass
 class OpenMeteoVerificationRegionalLoader:
     """Archived forecast vs historical analysis regional mesh loader."""
@@ -162,6 +184,14 @@ class OpenMeteoVerificationRegionalLoader:
             run_hour_utc=self.forecast_run_hour_utc,
             lead_days=self.forecast_lead_days,
         )
+        resolved_forecast_model = resolve_openmeteo_verification_forecast_model(
+            requested_model=self.forecast_model,
+            forecast_lead_days=self.forecast_lead_days,
+        )
+        forecast_days = _verification_forecast_days(
+            resolved_forecast_model=resolved_forecast_model,
+            forecast_lead_days=self.forecast_lead_days,
+        )
 
         forecast_point_datasets: dict[tuple[float, float], xr.Dataset] = {}
         analysis_point_datasets: dict[tuple[float, float], xr.Dataset] = {}
@@ -172,12 +202,12 @@ class OpenMeteoVerificationRegionalLoader:
                 "latitude": ",".join(str(lat) for lat, _ in batch),
                 "longitude": ",".join(str(lon) for _, lon in batch),
                 "run": run_timestamp,
-                "forecast_days": OPENMETEO_VERIFICATION_FORECAST_DAYS,
+                "forecast_days": forecast_days,
                 "timezone": timezone_name,
                 "temperature_unit": "fahrenheit",
                 "wind_speed_unit": "mph",
                 "precipitation_unit": "inch",
-                "models": self.forecast_model,
+                "models": resolved_forecast_model,
                 "hourly": list(OPENMETEO_VERIFICATION_FORECAST_HOURLY_VARS),
             }
             analysis_query = {
@@ -205,7 +235,7 @@ class OpenMeteoVerificationRegionalLoader:
                     forecast_payload,
                     requested_lat=requested_lat,
                     requested_lon=requested_lon,
-                    source_label=f"openmeteo_single_run:{self.forecast_model}",
+                    source_label=f"openmeteo_single_run:{resolved_forecast_model}",
                     derive_pop_proxy=False,
                 )
                 forecast_point_datasets[(requested_lat, requested_lon)] = _subset_to_valid_local_day(forecast_dataset, valid_date)
@@ -231,7 +261,7 @@ class OpenMeteoVerificationRegionalLoader:
         )
         forecast_grid.attrs.update(
             {
-                "source": f"openmeteo_single_run:{self.forecast_model}",
+                "source": f"openmeteo_single_run:{resolved_forecast_model}",
                 "verification_region": self.region_name,
                 "verification_run_timestamp_utc": run_timestamp,
                 "mesh_profile": self.mesh_profile,
@@ -248,11 +278,12 @@ class OpenMeteoVerificationRegionalLoader:
         metadata = {
             "region_name": self.region_name,
             "mesh_profile": self.mesh_profile,
-            "forecast_model": self.forecast_model,
+            "forecast_model_requested": self.forecast_model,
+            "forecast_model": resolved_forecast_model,
             "analysis_model": self.analysis_model,
             "forecast_run_timestamp_utc": run_timestamp,
+            "forecast_lead_days": self.forecast_lead_days,
             "mesh_point_count": len(coordinate_pairs),
             "timezone": timezone_name,
         }
         return forecast_grid, analysis_grid, metadata
-

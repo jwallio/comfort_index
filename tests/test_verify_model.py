@@ -5,7 +5,10 @@ from datetime import date
 import numpy as np
 import xarray as xr
 
-from comfortwx.data.openmeteo_verification import _normalize_openmeteo_verification_payload
+from comfortwx.data.openmeteo_verification import (
+    _normalize_openmeteo_verification_payload,
+    resolve_openmeteo_verification_forecast_model,
+)
 from comfortwx.validation.verify_model import _verification_summary
 
 
@@ -69,6 +72,7 @@ def test_verification_summary_reports_score_and_category_agreement() -> None:
             "forecast_model": "gfs_seamless",
             "analysis_model": "best_match",
             "forecast_run_timestamp_utc": "2026-03-19T12:00",
+            "forecast_lead_days": 2,
             "mesh_profile": "standard",
             "mesh_point_count": 4,
         },
@@ -80,6 +84,7 @@ def test_verification_summary_reports_score_and_category_agreement() -> None:
     assert summary["exact_category_agreement_fraction"] == 0.75
     assert summary["near_category_agreement_fraction"] == 1.0
     assert summary["category_disagreement_fraction"] == 0.25
+    assert summary["forecast_lead_days"] == 2
     assert summary["high_comfort_analysis_cell_count"] == 2
     assert summary["high_comfort_forecast_cell_count"] == 2
     assert summary["missed_high_comfort_cell_count"] == 0
@@ -106,3 +111,27 @@ def test_component_summary_fields_are_exposed() -> None:
     assert metrics["temp_mae"] == 2.5
     assert metrics["reliability_score_bias_mean"] == -0.7
     assert metrics["reliability_score_mae"] == 3.1
+
+
+def test_resolve_openmeteo_verification_forecast_model_prefers_hrrr_for_d1_default() -> None:
+    assert (
+        resolve_openmeteo_verification_forecast_model(
+            requested_model="gfs_seamless",
+            forecast_lead_days=1,
+        )
+        == "hrrr"
+    )
+    assert (
+        resolve_openmeteo_verification_forecast_model(
+            requested_model="gfs_seamless",
+            forecast_lead_days=2,
+        )
+        == "gfs_seamless"
+    )
+    assert (
+        resolve_openmeteo_verification_forecast_model(
+            requested_model="hrrr",
+            forecast_lead_days=1,
+        )
+        == "hrrr"
+    )

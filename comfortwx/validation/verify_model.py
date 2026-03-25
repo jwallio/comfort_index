@@ -31,7 +31,10 @@ from comfortwx.data.openmeteo_reliability import (
     reset_openmeteo_request_records,
     write_openmeteo_request_report,
 )
-from comfortwx.data.openmeteo_verification import OpenMeteoVerificationRegionalLoader
+from comfortwx.data.openmeteo_verification import (
+    OpenMeteoVerificationRegionalLoader,
+    resolve_openmeteo_verification_forecast_model,
+)
 from comfortwx.mapping.plotting import render_daily_maps
 from comfortwx.mapping.regions import get_region_definition, list_region_names
 from comfortwx.scoring.categories import category_name_from_index
@@ -89,6 +92,7 @@ def _verification_summary(
     summary = {
         "valid_date": valid_date.isoformat(),
         "region_name": metadata["region_name"],
+        "forecast_lead_days": metadata["forecast_lead_days"],
         "forecast_source": f"Open-Meteo Single Runs ({metadata['forecast_model']})",
         "analysis_source": f"Open-Meteo Archive ({metadata['analysis_model']})",
         "forecast_run_timestamp_utc": metadata["forecast_run_timestamp_utc"],
@@ -431,7 +435,11 @@ def run_verification(
     workflow_name: str = "verification_model",
 ) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    file_prefix = f"comfortwx_verify_{region_name}_{forecast_model}"
+    resolved_forecast_model = resolve_openmeteo_verification_forecast_model(
+        requested_model=forecast_model,
+        forecast_lead_days=forecast_lead_days,
+    )
+    file_prefix = f"comfortwx_verify_{region_name}_{resolved_forecast_model}_d{forecast_lead_days}"
     request_report_slug = f"{file_prefix}_{valid_date:%Y%m%d}"
     reset_openmeteo_request_records()
     try:

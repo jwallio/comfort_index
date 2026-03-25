@@ -3,6 +3,14 @@ name: Comfort Index Verification Benchmark
 on:
   workflow_dispatch:
     inputs:
+      benchmark_tier:
+        description: Benchmark tier to run
+        required: true
+        default: default
+        type: choice
+        options:
+          - default
+          - full-seasonal
       benchmark_date:
         description: Optional YYYY-MM-DD override for all benchmark regions. Leave blank for the default multi-date case set.
         required: false
@@ -15,6 +23,10 @@ on:
         options:
           - standard
           - fine
+      lead_days:
+        description: Comma-separated forecast leads to verify
+        required: false
+        default: "1,2,3,7"
   schedule:
     - cron: "35 13 * * 1"
 
@@ -58,16 +70,22 @@ jobs:
       - name: Run verification benchmark
         env:
           PYTHONUNBUFFERED: "1"
+          WORKFLOW_BENCHMARK_TIER: ${{ github.event.inputs.benchmark_tier }}
           WORKFLOW_BENCHMARK_DATE: ${{ github.event.inputs.benchmark_date }}
           WORKFLOW_MESH_PROFILE: ${{ github.event.inputs.mesh_profile }}
+          WORKFLOW_LEAD_DAYS: ${{ github.event.inputs.lead_days }}
         run: |
+          benchmark_tier="${WORKFLOW_BENCHMARK_TIER:-default}"
           benchmark_date="${WORKFLOW_BENCHMARK_DATE:-}"
           mesh_profile="${WORKFLOW_MESH_PROFILE:-standard}"
+          lead_days="${WORKFLOW_LEAD_DAYS:-1,2,3,7}"
           export COMFORTWX_RUN_TIMESTAMP_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
           cmd=(
             python -m comfortwx.validation.verify_benchmark
+            --benchmark-tier "$benchmark_tier"
             --mesh-profile "$mesh_profile"
+            --lead-days "$lead_days"
           )
 
           if [ -n "$benchmark_date" ]; then
