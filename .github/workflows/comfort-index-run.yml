@@ -1,4 +1,4 @@
-name: Comfort Index Daily Pilot Day
+name: Comfort Index Run Menu
 
 on:
   workflow_dispatch:
@@ -25,24 +25,28 @@ on:
         description: Optional start valid date in YYYY-MM-DD format. Leave blank for today.
         required: false
         default: ""
+      publish_site:
+        description: Update the live GitHub Pages site after the run
+        required: true
+        default: "yes"
+        type: choice
+        options:
+          - "yes"
+          - "no"
   schedule:
     - cron: "20 12 * * *"
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: comfort-index-daily-pilot-day
+  group: comfort-index-run-menu
   cancel-in-progress: false
 
 jobs:
-  build-pilot-day:
+  build-and-publish:
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    outputs:
-      pages_available: ${{ steps.pages_status.outputs.pages_available }}
 
     steps:
       - name: Check out repository
@@ -65,28 +69,11 @@ jobs:
           pip install -r requirements.txt
           pip install cartopy
 
-      - name: Detect GitHub Pages availability
-        id: pages_status
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if gh api "repos/${{ github.repository }}/pages" >/dev/null 2>&1; then
-            echo "pages_available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "pages_available=false" >> "$GITHUB_OUTPUT"
-            echo "GitHub Pages is not enabled for this repository. Archive artifacts will still be uploaded."
-          fi
-
-      - name: Configure GitHub Pages
-        if: steps.pages_status.outputs.pages_available == 'true'
-        uses: actions/configure-pages@v5
-
       - name: Verify required local rendering asset
         run: |
           test -f comfortwx/mapping/data/us_states.geojson
 
-      - name: Run daily archived pilot-day build
+      - name: Run Comfort Index build
         env:
           PYTHONUNBUFFERED: "1"
           WORKFLOW_RUN_MODE: ${{ github.event.inputs.run_mode }}
@@ -128,7 +115,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Prepare GitHub Pages preview artifact
+      - name: Prepare public site bundle
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -142,7 +129,7 @@ jobs:
               '  <head><meta charset="utf-8"><title>Comfort Index Archive</title></head>' \
               '  <body>' \
               '    <h1>Comfort Index Archive</h1>' \
-              '    <p>The latest scheduled build did not produce an archive directory. Check the GitHub Actions run logs and artifacts for details.</p>' \
+              '    <p>The latest run did not produce an archive directory. Check the workflow logs and artifacts for details.</p>' \
               '  </body>' \
               '</html>' > site/index.html
           fi
@@ -192,21 +179,22 @@ PY
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Upload GitHub Pages artifact
-        if: always() && steps.pages_status.outputs.pages_available == 'true'
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: site/
+      - name: Publish site to gh-pages branch
+        if: success() && (github.event_name == 'schedule' || github.event.inputs.publish_site != 'no')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf site_publish
+          mkdir -p site_publish
+          cp -r site/. site_publish/
+          touch site_publish/.nojekyll
 
-  deploy-pages:
-    if: github.ref == 'refs/heads/main' && needs.build-pilot-day.result == 'success' && needs.build-pilot-day.outputs.pages_available == 'true'
-    needs: build-pilot-day
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          cd site_publish
+          git init
+          git checkout -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Publish Comfort Index site" || true
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          git push --force origin gh-pages
