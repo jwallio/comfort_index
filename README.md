@@ -108,6 +108,8 @@ The repository includes a daily workflow:
 For a simple manual GitHub Actions menu, use:
 - `Comfort Index Run Menu`
 
+Manual run-menu builds support an optional `publish_site` choice so you can decide whether a custom run should update the live GitHub Pages site. Scheduled runs publish the latest archive automatically.
+
 And a separate verification workflow:
 - `Comfort Index Verification Benchmark`
 
