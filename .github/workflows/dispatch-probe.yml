@@ -1,0 +1,11 @@
+name: Dispatch Probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo
+        run: echo "dispatch ok"
