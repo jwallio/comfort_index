@@ -2,6 +2,15 @@ name: Comfort Index Site Publish
 
 on:
   workflow_dispatch:
+    inputs:
+      archive_artifact_name:
+        description: Archive artifact name to publish
+        required: true
+        default: comfortwx-archive
+      verification_artifact_name:
+        description: Verification artifact name to include when available
+        required: true
+        default: comfortwx-verification-benchmark
   schedule:
     - cron: "35 0 * * *"
     - cron: "35 12 * * *"
@@ -30,19 +39,24 @@ jobs:
       - name: Prepare site from latest artifacts
         env:
           GH_TOKEN: ${{ github.token }}
+          WORKFLOW_ARCHIVE_ARTIFACT_NAME: ${{ github.event.inputs.archive_artifact_name }}
+          WORKFLOW_VERIFICATION_ARTIFACT_NAME: ${{ github.event.inputs.verification_artifact_name }}
         run: |
+          archive_artifact_name="${WORKFLOW_ARCHIVE_ARTIFACT_NAME:-comfortwx-archive}"
+          verification_artifact_name="${WORKFLOW_VERIFICATION_ARTIFACT_NAME:-comfortwx-verification-benchmark}"
+
           mkdir -p site
           mkdir -p archive_artifact
           mkdir -p verification_artifact
 
-          archive_id="$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq '.artifacts | map(select(.name=="comfortwx-archive" and .expired==false)) | sort_by(.created_at) | reverse | .[0].id // ""')"
+          archive_id="$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq ".artifacts | map(select(.name==\"${archive_artifact_name}\" and .expired==false)) | sort_by(.created_at) | reverse | .[0].id // \"\"")"
           if [ -z "$archive_id" ]; then
             printf '%s\n' \
               '<html>' \
               '  <head><meta charset="utf-8"><title>Comfort Index Archive</title></head>' \
               '  <body>' \
               '    <h1>Comfort Index Archive</h1>' \
-              '    <p>No non-expired comfortwx-archive artifact is currently available.</p>' \
+              '    <p>No non-expired archive artifact is currently available.</p>' \
               '  </body>' \
               '</html>' > site/index.html
           else
@@ -64,7 +78,7 @@ PY
             fi
           fi
 
-          verification_id="$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq '.artifacts | map(select(.name=="comfortwx-verification-benchmark" and .expired==false)) | sort_by(.created_at) | reverse | .[0].id // ""' 2>/dev/null || true)"
+          verification_id="$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq ".artifacts | map(select(.name==\"${verification_artifact_name}\" and .expired==false)) | sort_by(.created_at) | reverse | .[0].id // \"\"" 2>/dev/null || true)"
           if [ -n "$verification_id" ]; then
             gh api "repos/${{ github.repository }}/actions/artifacts/${verification_id}/zip" > verification_artifact.zip
             python - <<'PY'
