@@ -1,0 +1,117 @@
+name: Comfort Index Site Publish
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "35 0 * * *"
+    - cron: "35 12 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: comfort-index-site-publish
+  cancel-in-progress: false
+
+jobs:
+  publish-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Prepare site from latest artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p site
+          mkdir -p archive_artifact
+          mkdir -p verification_artifact
+
+          archive_id="$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq '.artifacts | map(select(.name=="comfortwx-archive" and .expired==false)) | sort_by(.created_at) | reverse | .[0].id // ""')"
+          if [ -z "$archive_id" ]; then
+            printf '%s\n' \
+              '<html>' \
+              '  <head><meta charset="utf-8"><title>Comfort Index Archive</title></head>' \
+              '  <body>' \
+              '    <h1>Comfort Index Archive</h1>' \
+              '    <p>No non-expired comfortwx-archive artifact is currently available.</p>' \
+              '  </body>' \
+              '</html>' > site/index.html
+          else
+            gh api "repos/${{ github.repository }}/actions/artifacts/${archive_id}/zip" > archive_artifact.zip
+            python - <<'PY'
+from pathlib import Path
+from zipfile import ZipFile
+
+zip_path = Path("archive_artifact.zip")
+target = Path("archive_artifact")
+if zip_path.exists():
+    with ZipFile(zip_path) as zf:
+        zf.extractall(target)
+PY
+            if [ -d archive_artifact/output/archive ]; then
+              cp -r archive_artifact/output/archive/. site/
+            elif [ -d archive_artifact/archive ]; then
+              cp -r archive_artifact/archive/. site/
+            fi
+          fi
+
+          verification_id="$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq '.artifacts | map(select(.name=="comfortwx-verification-benchmark" and .expired==false)) | sort_by(.created_at) | reverse | .[0].id // ""' 2>/dev/null || true)"
+          if [ -n "$verification_id" ]; then
+            gh api "repos/${{ github.repository }}/actions/artifacts/${verification_id}/zip" > verification_artifact.zip
+            python - <<'PY'
+from pathlib import Path
+from zipfile import ZipFile
+
+zip_path = Path("verification_artifact.zip")
+target = Path("verification_artifact")
+if zip_path.exists():
+    with ZipFile(zip_path) as zf:
+        zf.extractall(target)
+PY
+            if [ -f verification_artifact/output/verification_site/latest/index.html ]; then
+              mkdir -p site/verification
+              cp -r verification_artifact/output/verification_site/latest/. site/verification/
+            elif [ -f verification_artifact/verification_site/latest/index.html ]; then
+              mkdir -p site/verification
+              cp -r verification_artifact/verification_site/latest/. site/verification/
+            fi
+          fi
+
+          touch site/.nojekyll
+
+      - name: Upload Pages preview artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comfortwx-pages-preview
+          path: site/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Publish site to gh-pages branch
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf site_publish
+          mkdir -p site_publish
+          cp -r site/. site_publish/
+
+          cd site_publish
+          git init
+          git checkout -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Publish Comfort Index site" || true
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          git push --force origin gh-pages

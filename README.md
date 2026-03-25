@@ -102,13 +102,18 @@ Internal/debug outputs remain available for inspection and validation.
 
 ## GitHub Actions
 
-The repository includes a daily workflow:
-- `Comfort Index Daily Schedule`
+The repository includes a scheduled product workflow:
+- `Comfort Index Run Menu`
 
 For a simple manual GitHub Actions menu, use:
 - `Comfort Index Run Menu`
 
-Run-menu builds are the stable product-build path and upload the archived output as a GitHub Actions artifact. Public GitHub Pages publishing is handled separately from the product build workflow.
+Run-menu builds are the stable product-build path and upload the archived output as a GitHub Actions artifact. The same workflow is scheduled to run at `00:20 UTC` and `12:20 UTC`.
+
+GitHub Pages publishing is handled separately by:
+- `Comfort Index Site Publish`
+
+That publisher is scheduled to run at `00:35 UTC` and `12:35 UTC`, after the product archive workflow, and it publishes the latest `comfortwx-archive` artifact plus the latest verification artifact when available.
 
 And a separate verification workflow:
 - `Comfort Index Verification Benchmark`
@@ -128,7 +133,7 @@ When run manually from GitHub Actions, the workflow menu lets you choose:
 - `1`, `2`, `3`, or `7` consecutive forecast days
 - an optional start date in `YYYY-MM-DD`
 
-If GitHub Pages is enabled for the repository, the workflow is also prepared to publish the archived run output as a site. If Pages is not available, the archive build still completes and uploads artifacts.
+If GitHub Pages is enabled for the repository, the site-publish workflow updates the public site from the latest archived run artifact. If Pages is not available, the archive build still completes and uploads artifacts.
 
 The public Pages view is map-first by design:
 - the landing page highlights the stitched CONUS images and archived run galleries
@@ -213,7 +218,8 @@ The verification workflow also writes a self-contained verification mini-site un
 ## First Rollout Checklist
 
 1. Push the repository to GitHub.
-2. Run the `Comfort Index Manual Run` workflow manually once.
+2. Run the `Comfort Index Run Menu` workflow manually once.
 3. Inspect the `comfortwx-archive` artifact.
-4. Confirm the stitched CONUS presentation outputs look correct.
-5. Only then rely on the daily scheduled run.
+4. Run `Comfort Index Site Publish` manually once and confirm the Pages site updates.
+5. Confirm the stitched CONUS presentation outputs look correct.
+6. Only then rely on the twice-daily scheduled runs.
