@@ -5,7 +5,7 @@ from datetime import date
 import numpy as np
 import xarray as xr
 
-from comfortwx.mapping.plotting import render_daily_maps
+from comfortwx.mapping.plotting import _display_public_run_header, render_daily_maps
 
 
 def test_render_daily_maps_writes_debug_and_presentation_outputs(tmp_path) -> None:
@@ -36,3 +36,9 @@ def test_render_daily_maps_writes_debug_and_presentation_outputs(tmp_path) -> No
     assert outputs["category_map"].exists()
     assert outputs["presentation_raw_map"].exists()
     assert outputs["presentation_category_map"].exists()
+
+
+def test_public_run_header_uses_workflow_timestamp_in_eastern(monkeypatch) -> None:
+    monkeypatch.setenv("COMFORTWX_RUN_TIMESTAMP_UTC", "2026-03-24T21:59:00Z")
+    header = _display_public_run_header()
+    assert header == "Run: 3/24/26 5:59pm ET"

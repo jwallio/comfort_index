@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -92,7 +93,18 @@ def _display_valid_date(valid_date: date) -> str:
 
 
 def _display_timezone_now() -> datetime:
-    return datetime.now(ZoneInfo("America/New_York"))
+    workflow_timestamp = os.environ.get("COMFORTWX_RUN_TIMESTAMP_UTC", "").strip()
+    if workflow_timestamp:
+        normalized = workflow_timestamp.replace("Z", "+00:00")
+        try:
+            run_time = datetime.fromisoformat(normalized)
+        except ValueError:
+            run_time = datetime.now(ZoneInfo("UTC"))
+    else:
+        run_time = datetime.now(ZoneInfo("UTC"))
+    if run_time.tzinfo is None:
+        run_time = run_time.replace(tzinfo=ZoneInfo("UTC"))
+    return run_time.astimezone(ZoneInfo("America/New_York"))
 
 
 def _display_run_time() -> str:
@@ -105,7 +117,7 @@ def _display_public_run_header() -> str:
     hour = run_time.hour % 12 or 12
     minute_text = f":{run_time.minute:02d}" if run_time.minute else ""
     meridiem = "am" if run_time.hour < 12 else "pm"
-    return f"Run: {run_time.month}/{run_time.day}/{run_time:%y} {hour}{minute_text}{meridiem} {run_time.strftime('%Z')}"
+    return f"Run: {run_time.month}/{run_time.day}/{run_time:%y} {hour}{minute_text}{meridiem} ET"
 
 
 def _display_public_valid_header(valid_date: date) -> str:

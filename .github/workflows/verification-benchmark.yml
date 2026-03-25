@@ -63,6 +63,7 @@ jobs:
         run: |
           benchmark_date="${WORKFLOW_BENCHMARK_DATE:-}"
           mesh_profile="${WORKFLOW_MESH_PROFILE:-standard}"
+          export COMFORTWX_RUN_TIMESTAMP_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
           cmd=(
             python -m comfortwx.validation.verify_benchmark

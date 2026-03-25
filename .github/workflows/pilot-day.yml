@@ -96,6 +96,7 @@ jobs:
           run_mode="${WORKFLOW_RUN_MODE:-pilot-day-archive}"
           forecast_days="${WORKFLOW_FORECAST_DAYS:-7}"
           start_date="${WORKFLOW_START_DATE:-}"
+          export COMFORTWX_RUN_TIMESTAMP_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
           cmd=(
             python -m comfortwx.main
