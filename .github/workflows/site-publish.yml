@@ -13,7 +13,9 @@ on:
         default: comfortwx-verification-benchmark
   schedule:
     - cron: "35 0 * * *"
+    - cron: "35 6 * * *"
     - cron: "35 12 * * *"
+    - cron: "35 18 * * *"
 
 permissions:
   contents: write

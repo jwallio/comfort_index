@@ -108,12 +108,12 @@ The repository includes a scheduled product workflow:
 For a simple manual GitHub Actions menu, use:
 - `Comfort Index Run Menu`
 
-Run-menu builds are the stable product-build path and upload the archived output as a GitHub Actions artifact. The same workflow is scheduled to run at `00:20 UTC` and `12:20 UTC`.
+Run-menu builds are the stable product-build path and upload the archived output as a GitHub Actions artifact. The same workflow is scheduled to run at `00:20 UTC`, `06:20 UTC`, `12:20 UTC`, and `18:20 UTC`.
 
 GitHub Pages publishing is handled separately by:
 - `Comfort Index Site Publish`
 
-That publisher is scheduled to run at `00:35 UTC` and `12:35 UTC`, after the product archive workflow, and it publishes the latest `comfortwx-archive` artifact plus the latest verification artifact when available.
+That publisher is scheduled to run at `00:35 UTC`, `06:35 UTC`, `12:35 UTC`, and `18:35 UTC`, after the product archive workflow, and it publishes the latest `comfortwx-archive` artifact plus the latest verification artifact when available.
 
 And a separate verification workflow:
 - `Comfort Index Verification Benchmark`
@@ -222,4 +222,4 @@ The verification workflow also writes a self-contained verification mini-site un
 3. Inspect the `comfortwx-archive` artifact.
 4. Run `Comfort Index Site Publish` manually once and confirm the Pages site updates.
 5. Confirm the stitched CONUS presentation outputs look correct.
-6. Only then rely on the twice-daily scheduled runs.
+6. Only then rely on the four-times-daily scheduled runs.
