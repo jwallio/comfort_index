@@ -1,6 +1,7 @@
-name: Comfort Index Daily Schedule
+name: Comfort Index Daily Publish
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "20 12 * * *"
 
@@ -8,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: comfort-index-daily-schedule
+  group: comfort-index-daily-publish
   cancel-in-progress: false
 
 jobs:
