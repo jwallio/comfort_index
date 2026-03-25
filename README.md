@@ -103,7 +103,7 @@ Internal/debug outputs remain available for inspection and validation.
 ## GitHub Actions
 
 The repository includes a daily workflow:
-- `Comfort Index Daily Pilot Day`
+- `Comfort Index Daily Schedule`
 
 And a separate verification workflow:
 - `Comfort Index Verification Benchmark`
@@ -208,7 +208,7 @@ The verification workflow also writes a self-contained verification mini-site un
 ## First Rollout Checklist
 
 1. Push the repository to GitHub.
-2. Run the `Comfort Index Daily Pilot Day` workflow manually once.
+2. Run the `Comfort Index Manual Run` workflow manually once.
 3. Inspect the `comfortwx-archive` artifact.
 4. Confirm the stitched CONUS presentation outputs look correct.
 5. Only then rely on the daily scheduled run.
