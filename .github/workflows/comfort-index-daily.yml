@@ -1,38 +1,6 @@
-name: Comfort Index Run Menu
+name: Comfort Index Daily Schedule
 
 on:
-  workflow_dispatch:
-    inputs:
-      run_mode:
-        description: Product workflow to run
-        required: true
-        default: pilot-day-archive
-        type: choice
-        options:
-          - pilot-day-archive
-          - pilot-day
-      forecast_days:
-        description: Consecutive valid dates to build
-        required: true
-        default: "7"
-        type: choice
-        options:
-          - "1"
-          - "2"
-          - "3"
-          - "7"
-      start_date:
-        description: Optional start valid date in YYYY-MM-DD format. Leave blank for today.
-        required: false
-        default: ""
-      publish_site:
-        description: Update the live GitHub Pages site after the run
-        required: true
-        default: "yes"
-        type: choice
-        options:
-          - "yes"
-          - "no"
   schedule:
     - cron: "20 12 * * *"
 
@@ -40,7 +8,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: comfort-index-run-menu
+  group: comfort-index-daily-schedule
   cancel-in-progress: false
 
 jobs:
@@ -73,38 +41,18 @@ jobs:
         run: |
           test -f comfortwx/mapping/data/us_states.geojson
 
-      - name: Run Comfort Index build
+      - name: Run scheduled archived build
         env:
           PYTHONUNBUFFERED: "1"
-          WORKFLOW_RUN_MODE: ${{ github.event.inputs.run_mode }}
-          WORKFLOW_FORECAST_DAYS: ${{ github.event.inputs.forecast_days }}
-          WORKFLOW_START_DATE: ${{ github.event.inputs.start_date }}
         run: |
-          run_mode="${WORKFLOW_RUN_MODE:-pilot-day-archive}"
-          forecast_days="${WORKFLOW_FORECAST_DAYS:-7}"
-          start_date="${WORKFLOW_START_DATE:-}"
           export COMFORTWX_RUN_TIMESTAMP_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-          cmd=(
-            python -m comfortwx.main
-            --source openmeteo
-            --publish-preset standard
-            --presentation-theme shareable
-            --pilot-cache-mode reuse
-            --pilot-span-days "$forecast_days"
-          )
-
-          if [ "$run_mode" = "pilot-day" ]; then
-            cmd+=(--pilot-day)
-          else
-            cmd+=(--pilot-day-archive)
-          fi
-
-          if [ -n "$start_date" ]; then
-            cmd+=(--date "$start_date")
-          fi
-
-          "${cmd[@]}"
+          python -m comfortwx.main \
+            --pilot-day-archive \
+            --source openmeteo \
+            --publish-preset standard \
+            --presentation-theme shareable \
+            --pilot-cache-mode reuse \
+            --pilot-span-days 7
 
       - name: Upload archive artifact
         if: always()
@@ -151,22 +99,6 @@ PY
             if [ -f verification_artifact/output/verification_site/latest/index.html ]; then
               mkdir -p site/verification
               cp -r verification_artifact/output/verification_site/latest/. site/verification/
-              python - <<'PY'
-from pathlib import Path
-
-index_path = Path("site/index.html")
-if index_path.exists():
-    html_text = index_path.read_text(encoding="utf-8")
-    marker = "<p class='subtitle'>Browse the latest stitched CONUS maps first, then open any archived run for the full image gallery.</p>"
-    addition = (
-        marker
-        + "<div class='meta'><span><a href='verification/index.html' style='text-decoration:none;color:inherit;'>Verification dashboard</a></span></div>"
-        + "<p class='archive-note'>Latest benchmark stats, verification charts, and case error maps are available in the verification dashboard.</p>"
-    )
-    if marker in html_text and "verification/index.html" not in html_text:
-        html_text = html_text.replace(marker, addition, 1)
-        index_path.write_text(html_text, encoding="utf-8")
-PY
             fi
           fi
 
@@ -180,7 +112,7 @@ PY
           retention-days: 14
 
       - name: Publish site to gh-pages branch
-        if: success() && (github.event_name == 'schedule' || github.event.inputs.publish_site != 'no')
+        if: success()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
