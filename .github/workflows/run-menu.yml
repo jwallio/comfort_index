@@ -25,6 +25,8 @@ on:
         description: Optional start valid date in YYYY-MM-DD format. Leave blank for today.
         required: false
         default: ""
+  schedule:
+    - cron: "20 12 * * *"
 
 permissions:
   contents: read
