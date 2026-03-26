@@ -258,6 +258,67 @@ def _render_product_card(product_row: dict[str, object], *, from_dir: Path) -> s
     return "".join(card_parts)
 
 
+def _resolve_existing_path(path_value: str) -> Path | None:
+    if not path_value:
+        return None
+    candidate = Path(path_value)
+    if candidate.exists():
+        return candidate
+    return None
+
+
+def _city_rankings_for_product(product_row: dict[str, object]) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    ranking_path = _resolve_existing_path(str(product_row.get("city_rankings_csv_path", "")))
+    if ranking_path is None:
+        return [], []
+    frame = pd.read_csv(ranking_path)
+    if frame.empty:
+        return [], []
+    best_rows = frame.loc[frame["ranking_group"] == "best"].sort_values("ranking_position").to_dict(orient="records")
+    worst_rows = frame.loc[frame["ranking_group"] == "worst"].sort_values("ranking_position").to_dict(orient="records")
+    return best_rows, worst_rows
+
+
+def _render_city_ranking_list(title: str, rows: list[dict[str, object]]) -> str:
+    if not rows:
+        return ""
+    items = []
+    for row in rows:
+        items.append(
+            "<li>"
+            f"<span class='city-rank'>{int(row['ranking_position'])}.</span>"
+            f"<span class='city-name'>{html.escape(str(row['city']))}</span>"
+            f"<span class='city-meta'>Score {float(row['score']):.1f}</span>"
+            "</li>"
+        )
+    return (
+        "<section class='city-rankings-card'>"
+        f"<h3>{html.escape(title)}</h3>"
+        "<ol class='city-rankings-list'>"
+        f"{''.join(items)}"
+        "</ol>"
+        "</section>"
+    )
+
+
+def _render_city_rankings(product_row: dict[str, object]) -> str:
+    best_rows, worst_rows = _city_rankings_for_product(product_row)
+    if not best_rows and not worst_rows:
+        return ""
+    return (
+        "<section class='city-rankings-section'>"
+        "<div class='section-heading'>"
+        "<h2>City Rankings</h2>"
+        "<p>Daily Comfort Index rankings for a curated set of major cities across the contiguous U.S.</p>"
+        "</div>"
+        "<div class='city-rankings-grid'>"
+        f"{_render_city_ranking_list('Top 10 best cities', best_rows)}"
+        f"{_render_city_ranking_list('Top 10 toughest cities', worst_rows)}"
+        "</div>"
+        "</section>"
+    )
+
+
 def _render_section(
     *,
     title: str,
@@ -444,6 +505,54 @@ def _build_gallery_styles() -> str:
         margin-top: 24px;
         padding: 22px;
       }
+      .city-rankings-section {
+        margin-top: 24px;
+        background: var(--panel-bg);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 22px;
+      }
+      .city-rankings-grid {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        margin-top: 18px;
+      }
+      .city-rankings-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px 18px;
+        background: #fff;
+      }
+      .city-rankings-card h3 {
+        font-size: 1.1rem;
+      }
+      .city-rankings-list {
+        margin: 14px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 10px;
+      }
+      .city-rankings-list li {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: baseline;
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+      .city-rank {
+        color: var(--muted);
+        font-weight: 700;
+      }
+      .city-name {
+        font-weight: 600;
+      }
+      .city-meta {
+        color: var(--muted);
+        white-space: nowrap;
+      }
       .section-heading {
         margin-bottom: 18px;
       }
@@ -548,6 +657,7 @@ def _build_pilot_day_gallery_html(
             f"{_render_image_panel(image_href=category_href, label=f'{featured_label} category map') if category_href else ''}"
             "</div>"
         )
+    city_rankings_markup = _render_city_rankings(featured) if featured else ""
 
     selected_path = f"comfortwx_pilot_day_{source_name}_{valid_date:%Y%m%d}_index.html"
     day_selector = _render_day_selector(entries=archive_day_entries or [], selected_path=selected_path)
@@ -569,6 +679,7 @@ def _build_pilot_day_gallery_html(
         day_selector,
         "</div>",
         hero_images,
+        city_rankings_markup,
         "</section>",
         "</main></body></html>",
     ]
@@ -680,6 +791,11 @@ def _build_archive_gallery_html(
                 f"{_render_image_panel(image_href=latest_category, label='Latest stitched category map') if latest_category else ''}"
                 "</div>"
             )
+    city_rankings_markup = ""
+    if latest_payload:
+        latest_featured = _featured_product_row(latest_payload.get("products", []))
+        if latest_featured:
+            city_rankings_markup = _render_city_rankings(latest_featured)
 
     verification_markup = ""
     verification_index = archive_root / "verification" / "index.html"
@@ -706,6 +822,7 @@ def _build_archive_gallery_html(
         day_selector,
         "</div>",
         latest_markup,
+        city_rankings_markup,
         "<p class='archive-note'>Supporting CSV, JSON, and NetCDF files remain in the archive, but this public view focuses on the stitched CONUS products.</p>",
         "</section>",
         "</main></body></html>",

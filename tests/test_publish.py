@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date
 
+import pandas as pd
+
 from comfortwx.mapping.plotting import resolve_presentation_theme
 from comfortwx.publishing import (
     build_archive_run_directory,
@@ -54,6 +56,33 @@ def test_write_pilot_day_index_creates_csv_json_and_html(tmp_path) -> None:
     preview_png.write_text("placeholder", encoding="utf-8")
     category_png = tmp_path / "comfortwx_region_southwest_openmeteo_presentation_category_20260324.png"
     category_png.write_text("placeholder", encoding="utf-8")
+    city_rankings_csv = tmp_path / "comfortwx_city_rankings_20260324.csv"
+    pd.DataFrame(
+        [
+            {
+                "city": "San Diego, CA",
+                "score": 82.5,
+                "category": "Ideal",
+                "sample_lat": 32.7,
+                "sample_lon": -117.1,
+                "distance_degrees": 0.0,
+                "priority": 8,
+                "ranking_group": "best",
+                "ranking_position": 1,
+            },
+            {
+                "city": "Miami, FL",
+                "score": 31.2,
+                "category": "Fair",
+                "sample_lat": 25.8,
+                "sample_lon": -80.2,
+                "distance_degrees": 0.0,
+                "priority": 36,
+                "ranking_group": "worst",
+                "ranking_position": 1,
+            },
+        ]
+    ).to_csv(city_rankings_csv, index=False)
     status_csv_path, status_json_path = write_pilot_day_status_summary(
         output_dir=tmp_path,
         valid_date=date(2026, 3, 24),
@@ -78,6 +107,7 @@ def test_write_pilot_day_index_creates_csv_json_and_html(tmp_path) -> None:
                 "daily_fields_path": "output/example.nc",
                 "presentation_score_map_path": str(preview_png),
                 "presentation_category_map_path": str(category_png),
+                "city_rankings_csv_path": str(city_rankings_csv),
                 "status": "completed",
             }
         ],
@@ -92,6 +122,9 @@ def test_write_pilot_day_index_creates_csv_json_and_html(tmp_path) -> None:
     assert "Daily Maps for March 24, 2026" in html_text
     assert "<img src=" in html_text
     assert "<table" not in html_text
+    assert "Top 10 best cities" in html_text
+    assert "San Diego, CA" in html_text
+    assert "Top 10 toughest cities" in html_text
 
 
 def test_build_archive_run_directory_supports_configured_layouts(tmp_path) -> None:

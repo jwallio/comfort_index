@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -17,6 +18,7 @@ from comfortwx.config import (
     PILOT_DAY_CACHE_MODES,
     PILOT_DAY_MOSAICS,
     PILOT_DAY_REGIONS,
+    PUBLIC_CITY_RANKING_LOCATIONS,
     STITCHED_CONUS_PRESENTATION,
 )
 from comfortwx.data.loaders import get_loader
@@ -44,7 +46,7 @@ from comfortwx.publishing import (
     write_pilot_day_status_summary,
     write_publish_bundle,
 )
-from comfortwx.scoring.categories import category_name_from_index
+from comfortwx.scoring.categories import category_name_from_index, category_name_from_value
 from comfortwx.scoring.daily import aggregate_daily_scores
 from comfortwx.scoring.hourly import score_hourly_dataset
 from comfortwx.validation.demo_cases import build_demo_case_hourly_breakdown, run_demo_case_validation
@@ -358,6 +360,15 @@ def _write_mosaic_outputs_from_rasters(
     )
     summary_path = output_dir / f"{file_prefix}_summary_{valid_date:%Y%m%d}.csv"
     pd.DataFrame([mosaic_summary]).to_csv(summary_path, index=False)
+    city_rankings_csv_path: Path | None = None
+    city_rankings_json_path: Path | None = None
+    if stitched_conus:
+        city_rankings_csv_path, city_rankings_json_path = _write_city_rankings(
+            daily=mosaic_daily,
+            output_dir=output_dir,
+            file_prefix=file_prefix,
+            valid_date=valid_date,
+        )
     bundle_paths: dict[str, Path | None] = {
         "daily_fields_netcdf": field_path,
         "debug_score_map": map_paths["raw_map"],
@@ -366,6 +377,8 @@ def _write_mosaic_outputs_from_rasters(
         "presentation_category_map": map_paths.get("presentation_category_map"),
         "summary_csv": summary_path,
         "seam_diagnostics_csv": summary_path,
+        "city_rankings_csv": city_rankings_csv_path,
+        "city_rankings_json": city_rankings_json_path,
     }
     bundle_csv_path: Path | None = None
     bundle_json_path: Path | None = None
@@ -386,6 +399,8 @@ def _write_mosaic_outputs_from_rasters(
         "mosaic_category_map": map_paths["category_map"],
         "mosaic_presentation_raw_map": map_paths.get("presentation_raw_map"),
         "mosaic_presentation_category_map": map_paths.get("presentation_category_map"),
+        "mosaic_city_rankings_csv": city_rankings_csv_path,
+        "mosaic_city_rankings_json": city_rankings_json_path,
         "mosaic_summary_csv": summary_path,
         "mosaic_publish_bundle_csv": bundle_csv_path,
         "mosaic_publish_bundle_json": bundle_json_path,
@@ -484,6 +499,15 @@ def run_pipeline(
         )
         summary_path = output_dir / f"{file_prefix}_summary_{valid_date:%Y%m%d}.csv"
         pd.DataFrame([mosaic_summary]).to_csv(summary_path, index=False)
+        city_rankings_csv_path: Path | None = None
+        city_rankings_json_path: Path | None = None
+        if stitched_conus:
+            city_rankings_csv_path, city_rankings_json_path = _write_city_rankings(
+                daily=mosaic_daily,
+                output_dir=output_dir,
+                file_prefix=file_prefix,
+                valid_date=valid_date,
+            )
         bundle_paths: dict[str, Path | None] = {
             "daily_fields_netcdf": field_path,
             "debug_score_map": map_paths["raw_map"],
@@ -492,6 +516,8 @@ def run_pipeline(
             "presentation_category_map": map_paths.get("presentation_category_map"),
             "summary_csv": summary_path,
             "seam_diagnostics_csv": summary_path,
+            "city_rankings_csv": city_rankings_csv_path,
+            "city_rankings_json": city_rankings_json_path,
         }
         if publish_preset and bool(publish_preset["write_bundle_manifest"]):
             bundle_csv_path, bundle_json_path = write_publish_bundle(
@@ -518,6 +544,9 @@ def run_pipeline(
             print(f"Saved mosaic presentation raw map: {map_paths['presentation_raw_map']}")
             print(f"Saved mosaic presentation category map: {map_paths['presentation_category_map']}")
         print(f"Saved mosaic summary: {summary_path}")
+        if city_rankings_csv_path and city_rankings_json_path:
+            print(f"Saved city rankings CSV: {city_rankings_csv_path}")
+            print(f"Saved city rankings JSON: {city_rankings_json_path}")
         if publish_preset:
             print(f"Saved publish bundle: {bundle_paths['publish_bundle_csv']}")
         return {
@@ -526,6 +555,8 @@ def run_pipeline(
             "mosaic_category_map": map_paths["category_map"],
             "mosaic_presentation_raw_map": map_paths.get("presentation_raw_map"),
             "mosaic_presentation_category_map": map_paths.get("presentation_category_map"),
+            "mosaic_city_rankings_csv": city_rankings_csv_path,
+            "mosaic_city_rankings_json": city_rankings_json_path,
             "mosaic_summary_csv": summary_path,
             "mosaic_publish_bundle_csv": bundle_paths.get("publish_bundle_csv"),
             "mosaic_publish_bundle_json": bundle_paths.get("publish_bundle_json"),
@@ -783,6 +814,8 @@ def _pilot_day_row(
         "debug_category_map_path": str(result.get(f"{prefix}_category_map", "")),
         "presentation_score_map_path": str(result.get(f"{prefix}_presentation_raw_map", "")),
         "presentation_category_map_path": str(result.get(f"{prefix}_presentation_category_map", "")),
+        "city_rankings_csv_path": str(result.get(f"{prefix}_city_rankings_csv", "")),
+        "city_rankings_json_path": str(result.get(f"{prefix}_city_rankings_json", "")),
         "summary_csv_path": str(result.get(f"{prefix}_summary_csv", "")),
         "bundle_csv_path": str(result.get(f"{prefix}_publish_bundle_csv", "")),
         "bundle_json_path": str(result.get(f"{prefix}_publish_bundle_json", "")),
@@ -790,6 +823,77 @@ def _pilot_day_row(
             result.get("regional_samples_csv", "") if product_type == "region" else result.get("mosaic_summary_csv", "")
         ),
     }
+
+
+def _build_city_rankings_frame(daily: xr.Dataset) -> pd.DataFrame:
+    score_values = np.asarray(daily["daily_score"].values, dtype=float)
+    lat_values = np.asarray(daily["lat"].values, dtype=float)
+    lon_values = np.asarray(daily["lon"].values, dtype=float)
+
+    valid_points = np.argwhere(np.isfinite(score_values))
+    if valid_points.size == 0:
+        return pd.DataFrame(
+            columns=[
+                "city",
+                "score",
+                "category",
+                "sample_lat",
+                "sample_lon",
+                "distance_degrees",
+                "priority",
+                "ranking_group",
+                "ranking_position",
+            ]
+        )
+
+    valid_latitudes = lat_values[valid_points[:, 0]]
+    valid_longitudes = lon_values[valid_points[:, 1]]
+    rows: list[dict[str, object]] = []
+    for city in PUBLIC_CITY_RANKING_LOCATIONS:
+        city_lat = float(city["lat"])
+        city_lon = float(city["lon"])
+        lon_scale = max(np.cos(np.deg2rad(city_lat)), 0.35)
+        distance = (valid_latitudes - city_lat) ** 2 + ((valid_longitudes - city_lon) * lon_scale) ** 2
+        best_index = int(np.argmin(distance))
+        lat_index = int(valid_points[best_index, 0])
+        lon_index = int(valid_points[best_index, 1])
+        score = float(score_values[lat_index, lon_index])
+        rows.append(
+            {
+                "city": str(city["name"]),
+                "score": round(score, 1),
+                "category": category_name_from_value(score),
+                "sample_lat": round(float(lat_values[lat_index]), 3),
+                "sample_lon": round(float(lon_values[lon_index]), 3),
+                "distance_degrees": round(float(np.sqrt(distance[best_index])), 3),
+                "priority": int(city["priority"]),
+            }
+        )
+
+    ranking_frame = pd.DataFrame(rows).sort_values(["score", "priority", "city"], ascending=[False, True, True]).reset_index(drop=True)
+    best_frame = ranking_frame.head(10).copy()
+    best_frame["ranking_group"] = "best"
+    best_frame["ranking_position"] = np.arange(1, len(best_frame) + 1)
+
+    worst_frame = ranking_frame.sort_values(["score", "priority", "city"], ascending=[True, True, True]).head(10).copy()
+    worst_frame["ranking_group"] = "worst"
+    worst_frame["ranking_position"] = np.arange(1, len(worst_frame) + 1)
+
+    return pd.concat([best_frame, worst_frame], ignore_index=True)
+
+
+def _write_city_rankings(*, daily: xr.Dataset, output_dir: Path, file_prefix: str, valid_date: date) -> tuple[Path, Path]:
+    ranking_frame = _build_city_rankings_frame(daily)
+    csv_path = output_dir / f"{file_prefix}_city_rankings_{valid_date:%Y%m%d}.csv"
+    json_path = output_dir / f"{file_prefix}_city_rankings_{valid_date:%Y%m%d}.json"
+    ranking_frame.to_csv(csv_path, index=False)
+    payload = {
+        "valid_date": valid_date.isoformat(),
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "cities": ranking_frame.to_dict(orient="records"),
+    }
+    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return csv_path, json_path
 
 
 def _iter_pilot_valid_dates(start_valid_date: date, span_days: int) -> list[date]:
