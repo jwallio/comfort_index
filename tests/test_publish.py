@@ -151,6 +151,59 @@ def test_write_archive_index_scans_archived_pilot_day_runs(tmp_path) -> None:
     assert "<table" not in html_text
 
 
+def test_write_archive_index_builds_day_selector_and_rewrites_run_pages(tmp_path) -> None:
+    for valid_day in (24, 25):
+        run_dir = tmp_path / "2026" / "03" / f"{valid_day:02d}"
+        run_dir.mkdir(parents=True)
+        preview_png = run_dir / f"comfortwx_mosaic_conus_presentation_score_202603{valid_day:02d}.png"
+        preview_png.write_text("placeholder", encoding="utf-8")
+        category_png = run_dir / f"comfortwx_mosaic_conus_presentation_category_202603{valid_day:02d}.png"
+        category_png.write_text("placeholder", encoding="utf-8")
+        status_csv_path, status_json_path = write_pilot_day_status_summary(
+            output_dir=run_dir,
+            valid_date=date(2026, 3, valid_day),
+            source_name="openmeteo",
+            status_record={
+                "valid_date": f"2026-03-{valid_day:02d}",
+                "source": "openmeteo",
+                "overall_run_status": "completed",
+            },
+        )
+        write_pilot_day_index(
+            output_dir=run_dir,
+            valid_date=date(2026, 3, valid_day),
+            source_name="openmeteo",
+            presentation_theme="shareable",
+            publish_preset_name="standard",
+            product_rows=[
+                {
+                    "product_type": "mosaic",
+                    "product_name": "west_coast+southwest+rockies+plains+southeast+northeast+great_lakes",
+                    "valid_date": f"2026-03-{valid_day:02d}",
+                    "daily_fields_path": str(run_dir / "example.nc"),
+                    "presentation_score_map_path": str(preview_png),
+                    "presentation_category_map_path": str(category_png),
+                    "status": "completed",
+                }
+            ],
+            status_summary_csv_path=status_csv_path,
+            status_summary_json_path=status_json_path,
+        )
+
+    _, _, archive_html_path = write_archive_index(archive_root=tmp_path)
+
+    archive_html = archive_html_path.read_text(encoding="utf-8")
+    assert "Forecast day" in archive_html
+    assert "Day 1 | Tue 03/24/26" in archive_html
+    assert "Day 2 | Wed 03/25/26" in archive_html
+
+    run_html_path = tmp_path / "2026" / "03" / "25" / "comfortwx_pilot_day_openmeteo_20260325_index.html"
+    run_html = run_html_path.read_text(encoding="utf-8")
+    assert "Forecast day" in run_html
+    assert "../24/comfortwx_pilot_day_openmeteo_20260324_index.html" in run_html
+    assert "stitched CONUS score and category maps" in run_html
+
+
 def test_write_archive_index_links_verification_dashboard_when_present(tmp_path) -> None:
     verification_dir = tmp_path / "verification"
     verification_dir.mkdir(parents=True)

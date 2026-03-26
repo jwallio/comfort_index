@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import json
+import os
 from datetime import date, datetime
 from pathlib import Path
 
@@ -167,8 +168,29 @@ def _relative_link(path_value: str, *, from_dir: Path) -> str:
         try:
             relative_target = target_path.resolve().relative_to(from_dir.resolve())
         except ValueError:
-            return path_value
+            normalized_value = path_value.replace("\\", "/")
+            archive_marker = "/output/archive/"
+            if archive_marker in normalized_value:
+                archive_root = _find_archive_root(from_dir)
+                if archive_root is not None:
+                    archive_relative = normalized_value.split(archive_marker, 1)[1].lstrip("/")
+                    normalized_target = archive_root.joinpath(*archive_relative.split("/"))
+                    return os.path.relpath(normalized_target, start=from_dir).replace("\\", "/")
+            try:
+                return os.path.relpath(str(target_path), start=str(from_dir)).replace("\\", "/")
+            except ValueError:
+                return path_value
     return relative_target.as_posix()
+
+
+def _find_archive_root(from_dir: Path) -> Path | None:
+    base_name = str(ARCHIVE_SETTINGS["run_index_base_name"])
+    for candidate in (from_dir, *from_dir.parents):
+        if (candidate / f"{base_name}.json").exists() or (candidate / f"{base_name}.csv").exists():
+            return candidate
+        if candidate.name == "archive":
+            return candidate
+    return None
 
 
 def _humanize_product_name(product_name: str) -> str:
@@ -255,6 +277,59 @@ def _render_section(
     )
 
 
+def _parse_valid_date(value: object) -> date | None:
+    try:
+        if not value:
+            return None
+        return date.fromisoformat(str(value))
+    except ValueError:
+        return None
+
+
+def _archive_day_entries(
+    run_payloads: list[tuple[Path, dict[str, object]]],
+    *,
+    from_dir: Path,
+) -> list[dict[str, object]]:
+    dated_entries: list[tuple[date, Path]] = []
+    for run_index_path, payload in run_payloads:
+        valid_date = _parse_valid_date(payload.get("valid_date"))
+        if valid_date is None:
+            continue
+        dated_entries.append((valid_date, run_index_path.with_suffix(".html")))
+
+    latest_entries = sorted(dated_entries, key=lambda item: item[0], reverse=True)[:7]
+    entries: list[dict[str, object]] = []
+    for valid_date, html_path in sorted(latest_entries, key=lambda item: item[0]):
+        entries.append(
+            {
+                "valid_date": valid_date,
+                "path": _relative_link(str(html_path), from_dir=from_dir),
+            }
+        )
+    return entries
+
+
+def _render_day_selector(*, entries: list[dict[str, object]], selected_path: str) -> str:
+    if not entries:
+        return ""
+    options: list[str] = []
+    for index, entry in enumerate(entries[:7], start=1):
+        valid_date = entry["valid_date"]
+        path = str(entry["path"])
+        selected_attr = " selected" if path == selected_path else ""
+        label = f"Day {index} | {valid_date:%a %m/%d/%y}"
+        options.append(f"<option value='{html.escape(path, quote=True)}'{selected_attr}>{html.escape(label)}</option>")
+    return (
+        "<div class='day-selector-wrap'>"
+        "<label for='day-selector'>Forecast day</label>"
+        "<select id='day-selector' onchange=\"if(this.value){window.location=this.value;}\">"
+        f"{''.join(options)}"
+        "</select>"
+        "</div>"
+    )
+
+
 def _build_gallery_styles() -> str:
     return """
     <style>
@@ -332,6 +407,34 @@ def _build_gallery_styles() -> str:
       .featured-grid, .image-grid {
         display: grid;
         gap: 18px;
+      }
+      .top-bar {
+        margin-top: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .day-selector-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: var(--muted);
+      }
+      .day-selector-wrap label {
+        font-size: 0.92rem;
+        font-weight: 600;
+      }
+      .day-selector-wrap select {
+        min-width: 180px;
+        padding: 9px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+        font: 500 0.95rem/1.2 "Segoe UI", Arial, sans-serif;
       }
       .featured-grid {
         margin-top: 22px;
@@ -430,19 +533,9 @@ def _build_pilot_day_gallery_html(
     product_rows: list[dict[str, object]],
     run_timestamp: datetime,
     output_dir: Path,
+    archive_day_entries: list[dict[str, object]] | None = None,
 ) -> str:
     featured = _featured_product_row(product_rows)
-    stitched_rows = sorted(
-        [row for row in _product_image_rows(product_rows) if row.get("product_type") == "mosaic"],
-        key=lambda row: _token_count(str(row.get("product_name", ""))),
-        reverse=True,
-    )
-    regional_rows = sorted(
-        [row for row in _product_image_rows(product_rows) if row.get("product_type") == "region"],
-        key=lambda row: str(row.get("product_name", "")),
-    )
-    if featured and featured in stitched_rows:
-        stitched_rows = [row for row in stitched_rows if row is not featured]
 
     hero_images = ""
     if featured:
@@ -456,6 +549,8 @@ def _build_pilot_day_gallery_html(
             "</div>"
         )
 
+    selected_path = f"comfortwx_pilot_day_{source_name}_{valid_date:%Y%m%d}_index.html"
+    day_selector = _render_day_selector(entries=archive_day_entries or [], selected_path=selected_path)
     body = [
         "<!doctype html><html><head><meta charset='utf-8'>",
         "<meta name='viewport' content='width=device-width, initial-scale=1'>",
@@ -465,27 +560,16 @@ def _build_pilot_day_gallery_html(
         "<section class='hero'>",
         "<p class='eyebrow'>Comfort Index</p>",
         f"<h1>Daily Maps for {valid_date:%B %d, %Y}</h1>",
-        f"<p class='subtitle'>{html.escape(_build_run_summary(product_rows))}</p>",
-        "<div class='meta'>",
-        f"<span>Source: {html.escape(source_name)}</span>",
-        f"<span>Theme: {html.escape(presentation_theme)}</span>",
-        f"<span>Preset: {html.escape(publish_preset_name)}</span>",
-        f"<span>Updated: {run_timestamp:%Y-%m-%d %H:%M:%S}</span>",
+        "<p class='subtitle'>Public-facing stitched CONUS score and category maps for this forecast day.</p>",
+        "<div class='top-bar'>",
+        "<div class='meta'>"
+        f"<span>Source: {html.escape(source_name)}</span>"
+        f"<span>Updated: {run_timestamp:%Y-%m-%d %H:%M:%S}</span>"
+        "</div>",
+        day_selector,
         "</div>",
         hero_images,
         "</section>",
-        _render_section(
-            title="Stitched Products",
-            description="The public-facing stitched score and category maps for this run.",
-            product_rows=stitched_rows,
-            from_dir=output_dir,
-        ),
-        _render_section(
-            title="Regional Products",
-            description="Regional score and category maps included in the daily build.",
-            product_rows=regional_rows,
-            from_dir=output_dir,
-        ),
         "</main></body></html>",
     ]
     return "".join(body)
@@ -535,35 +619,54 @@ def write_archive_index(
     }
     json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
-    html_path.write_text(_build_archive_gallery_html(archive_root=archive_root, run_payloads=run_payloads), encoding="utf-8")
+    day_entries_from_root = _archive_day_entries(run_payloads, from_dir=archive_root)
+    html_path.write_text(
+        _build_archive_gallery_html(
+            archive_root=archive_root,
+            run_payloads=run_payloads,
+            day_entries=day_entries_from_root,
+        ),
+        encoding="utf-8",
+    )
+
+    # Rewrite per-day public pages with the same day selector used by the archive landing page.
+    for run_index_path, payload in run_payloads:
+        valid_date = _parse_valid_date(payload.get("valid_date"))
+        if valid_date is None:
+            continue
+        run_dir = run_index_path.parent
+        run_html_path = run_index_path.with_suffix(".html")
+        day_entries_from_run = _archive_day_entries(run_payloads, from_dir=run_dir)
+        run_html_path.write_text(
+            _build_pilot_day_gallery_html(
+                valid_date=valid_date,
+                source_name=str(payload.get("source", "")),
+                presentation_theme=str(payload.get("presentation_theme", "")),
+                publish_preset_name=str(payload.get("publish_preset", "")),
+                product_rows=list(payload.get("products", [])),
+                run_timestamp=datetime.fromisoformat(str(payload.get("run_timestamp", datetime.now().isoformat()))),
+                output_dir=run_dir,
+                archive_day_entries=day_entries_from_run,
+            ),
+            encoding="utf-8",
+        )
     return csv_path, json_path, html_path
 
 
-def _build_archive_gallery_html(*, archive_root: Path, run_payloads: list[tuple[Path, dict[str, object]]]) -> str:
-    run_cards: list[str] = []
-    sorted_runs = sorted(run_payloads, key=lambda item: str(item[1].get("valid_date", "")), reverse=True)
-    latest_payload = sorted_runs[0][1] if sorted_runs else None
-
-    for run_index_path, payload in sorted_runs:
-        featured = _featured_product_row(payload.get("products", []))
-        thumb_html = ""
-        if featured:
-            thumb_link = _relative_link(str(featured.get("presentation_score_map_path", "")), from_dir=archive_root)
-            if thumb_link:
-                thumb_html = (
-                    "<div class='thumb'>"
-                    f"<img src='{html.escape(thumb_link, quote=True)}' alt='Comfort Index map preview' loading='lazy'>"
-                    "</div>"
-                )
-        run_cards.append(
-            "<article class='run-card'>"
-            f"<a href='{html.escape(_relative_link(str(run_index_path.with_suffix('.html')), from_dir=archive_root), quote=True)}'>"
-            f"<p class='eyebrow'>Run</p><h3>{html.escape(str(payload.get('valid_date', '')))}</h3>"
-            f"<p>{html.escape(_build_run_summary(payload.get('products', [])))}</p>"
-            f"{thumb_html}"
-            "</a>"
-            "</article>"
-        )
+def _build_archive_gallery_html(
+    *,
+    archive_root: Path,
+    run_payloads: list[tuple[Path, dict[str, object]]],
+    day_entries: list[dict[str, object]],
+) -> str:
+    payload_by_date = {
+        valid_date: payload
+        for _, payload in run_payloads
+        if (valid_date := _parse_valid_date(payload.get("valid_date"))) is not None
+    }
+    latest_payload = payload_by_date.get(day_entries[0]["valid_date"]) if day_entries else None
+    selected_path = str(day_entries[0]["path"]) if day_entries else ""
+    day_selector = _render_day_selector(entries=day_entries, selected_path=selected_path)
 
     latest_markup = ""
     if latest_payload:
@@ -597,14 +700,13 @@ def _build_archive_gallery_html(*, archive_root: Path, run_payloads: list[tuple[
         "<section class='hero'>",
         "<p class='eyebrow'>Comfort Index</p>",
         "<h1>Daily Outdoor Comfort Maps</h1>",
-        "<p class='subtitle'>Browse the latest stitched CONUS maps first, then open any archived run for the full image gallery.</p>",
+        "<p class='subtitle'>Select a forecast day to view the stitched CONUS score and category maps.</p>",
+        "<div class='top-bar'>",
         verification_markup,
+        day_selector,
+        "</div>",
         latest_markup,
-        "<p class='archive-note'>Supporting CSV, JSON, and NetCDF files remain in the archive, but this public view focuses on the maps.</p>",
-        "</section>",
-        "<section class='gallery-section'>",
-        "<div class='section-heading'><h2>Available Runs</h2><p>Select a run to open its full image gallery.</p></div>",
-        f"<div class='runs-grid'>{''.join(run_cards)}</div>",
+        "<p class='archive-note'>Supporting CSV, JSON, and NetCDF files remain in the archive, but this public view focuses on the stitched CONUS products.</p>",
         "</section>",
         "</main></body></html>",
     ]
