@@ -34,12 +34,12 @@ _FULL_SEASONAL_BENCHMARK_REGIONS: tuple[str, ...] = (
     "great_lakes",
 )
 _FULL_SEASONAL_BENCHMARK_DATES: tuple[date, ...] = (
-    date(2026, 1, 15),
-    date(2026, 3, 20),
-    date(2026, 5, 15),
-    date(2026, 7, 20),
-    date(2026, 9, 20),
-    date(2026, 11, 15),
+    date(2025, 1, 15),
+    date(2025, 3, 20),
+    date(2025, 5, 15),
+    date(2025, 7, 20),
+    date(2025, 9, 20),
+    date(2025, 11, 15),
 )
 
 

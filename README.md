@@ -182,7 +182,7 @@ Benchmark tiers:
   - intended for quicker routine benchmark runs
 - `full-seasonal`
   - `west_coast`, `southwest`, `rockies`, `plains`, `southeast`, `northeast`, `great_lakes`
-  - dates: `2026-01-15`, `2026-03-20`, `2026-05-15`, `2026-07-20`, `2026-09-20`, `2026-11-15`
+  - dates: `2025-01-15`, `2025-03-20`, `2025-05-15`, `2025-07-20`, `2025-09-20`, `2025-11-15`
   - intended for broader seasonal coverage and deeper accuracy review
 
 By default, the benchmark now verifies multiple forecast leads for each benchmark case:
