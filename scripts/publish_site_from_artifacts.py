@@ -41,6 +41,60 @@ def latest_artifact_id(repository: str, artifact_name: str) -> int | None:
     return artifacts[0]["id"]
 
 
+def latest_successful_workflow_run_id(repository: str, workflow_file: str, branch: str = "main") -> int | None:
+    data = gh_api_json(
+        f"repos/{repository}/actions/workflows/{workflow_file}/runs?branch={branch}&status=completed&per_page=20"
+    )
+    workflow_runs = [
+        workflow_run
+        for workflow_run in data.get("workflow_runs", [])
+        if workflow_run.get("conclusion") == "success"
+    ]
+    if not workflow_runs:
+        return None
+    workflow_runs.sort(key=lambda workflow_run: workflow_run.get("created_at", ""), reverse=True)
+    return workflow_runs[0]["id"]
+
+
+def artifact_id_for_run(repository: str, run_id: int, artifact_name: str) -> int | None:
+    data = gh_api_json(f"repos/{repository}/actions/runs/{run_id}/artifacts?per_page=100")
+    artifacts = [
+        artifact
+        for artifact in data.get("artifacts", [])
+        if artifact.get("name") == artifact_name and artifact.get("expired") is False
+    ]
+    if not artifacts:
+        return None
+    artifacts.sort(key=lambda artifact: artifact.get("created_at", ""), reverse=True)
+    return artifacts[0]["id"]
+
+
+def latest_artifact_id_for_workflow(
+    repository: str,
+    *,
+    workflow_file: str,
+    artifact_name: str,
+    branch: str = "main",
+) -> int | None:
+    data = gh_api_json(
+        f"repos/{repository}/actions/workflows/{workflow_file}/runs?branch={branch}&status=completed&per_page=20"
+    )
+    workflow_runs = [
+        workflow_run
+        for workflow_run in data.get("workflow_runs", [])
+        if workflow_run.get("conclusion") == "success"
+    ]
+    workflow_runs.sort(key=lambda workflow_run: workflow_run.get("created_at", ""), reverse=True)
+    for workflow_run in workflow_runs:
+        run_id = workflow_run.get("id")
+        if run_id is None:
+            continue
+        artifact_id = artifact_id_for_run(repository, int(run_id), artifact_name)
+        if artifact_id is not None:
+            return artifact_id
+    return None
+
+
 def download_and_extract_artifact(
     repository: str,
     artifact_id: int,
@@ -88,6 +142,10 @@ def main() -> None:
         "VERIFICATION_ARTIFACT_NAME",
         "comfortwx-verification-benchmark",
     )
+    archive_workflow_file = os.environ.get("ARCHIVE_WORKFLOW_FILE", "comfort-index-menu.yml")
+    verification_workflow_file = os.environ.get("VERIFICATION_WORKFLOW_FILE", "verification-benchmark.yml")
+    source_run_id_text = os.environ.get("SOURCE_RUN_ID", "").strip()
+    source_head_branch = os.environ.get("SOURCE_HEAD_BRANCH", "main").strip() or "main"
 
     site_dir = Path("site")
     archive_dir = Path("archive_artifact")
@@ -97,7 +155,21 @@ def main() -> None:
     shutil.rmtree(archive_dir, ignore_errors=True)
     shutil.rmtree(verification_dir, ignore_errors=True)
 
-    archive_id = latest_artifact_id(repository, archive_artifact_name)
+    archive_id = None
+    if source_run_id_text:
+        try:
+            archive_id = artifact_id_for_run(repository, int(source_run_id_text), archive_artifact_name)
+        except ValueError:
+            archive_id = None
+    if archive_id is None:
+        archive_id = latest_artifact_id_for_workflow(
+            repository,
+            workflow_file=archive_workflow_file,
+            artifact_name=archive_artifact_name,
+            branch=source_head_branch,
+        )
+    if archive_id is None:
+        archive_id = latest_artifact_id(repository, archive_artifact_name)
     if archive_id is None:
         write_fallback_site(site_dir, "No non-expired archive artifact is currently available.")
     else:
@@ -110,7 +182,14 @@ def main() -> None:
         if not copied:
             write_fallback_site(site_dir, "The latest archive artifact did not contain an archive directory.")
 
-    verification_id = latest_artifact_id(repository, verification_artifact_name)
+    verification_id = latest_artifact_id_for_workflow(
+        repository,
+        workflow_file=verification_workflow_file,
+        artifact_name=verification_artifact_name,
+        branch="main",
+    )
+    if verification_id is None:
+        verification_id = latest_artifact_id(repository, verification_artifact_name)
     if verification_id is not None:
         download_and_extract_artifact(repository, verification_id, verification_dir)
         verification_site = site_dir / "verification"

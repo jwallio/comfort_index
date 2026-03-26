@@ -4,8 +4,11 @@ from datetime import date
 
 import numpy as np
 import xarray as xr
+from urllib.error import HTTPError
 
+import comfortwx.data.openmeteo_verification as openmeteo_verification
 from comfortwx.data.openmeteo_verification import (
+    _fetch_forecast_payloads_for_batch,
     _normalize_openmeteo_verification_payload,
     resolve_openmeteo_verification_forecast_model,
 )
@@ -135,3 +138,28 @@ def test_resolve_openmeteo_verification_forecast_model_prefers_hrrr_for_d1_defau
         )
         == "ncep_hrrr_conus"
     )
+
+
+def test_forecast_batch_does_not_fan_out_on_rate_limit(monkeypatch) -> None:
+    calls = {"count": 0}
+
+    def _fake_fetch_json(*_args, **_kwargs):
+        calls["count"] += 1
+        raise HTTPError("https://example.com", 429, "Too Many Requests", hdrs=None, fp=None)
+
+    monkeypatch.setattr(openmeteo_verification, "_fetch_json", _fake_fetch_json)
+
+    try:
+        _fetch_forecast_payloads_for_batch(
+            batch=[(35.0, -78.0), (36.0, -79.0)],
+            run_timestamp="2026-03-19T12:00",
+            forecast_days=2,
+            timezone_name="America/New_York",
+            resolved_forecast_model="ncep_hrrr_conus",
+        )
+    except HTTPError as exc:
+        assert exc.code == 429
+    else:
+        raise AssertionError("Expected HTTP 429 to be raised.")
+
+    assert calls["count"] == 1

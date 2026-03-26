@@ -1,10 +1,10 @@
-name: Comfort Index Verification Benchmark
+name: Comfort Index Verification Tuning
 
 on:
   workflow_dispatch:
     inputs:
       benchmark_tier:
-        description: Benchmark tier to run
+        description: Benchmark tier to tune against
         required: true
         default: default
         type: choice
@@ -15,20 +15,16 @@ on:
         description: Optional YYYY-MM-DD override for all benchmark regions. Leave blank for the default multi-date case set.
         required: false
         default: ""
-      mesh_profile:
-        description: Regional mesh profile for verification runs
-        required: true
-        default: standard
-        type: choice
-        options:
-          - standard
-          - fine
       lead_days:
-        description: Comma-separated forecast leads to verify
+        description: Comma-separated forecast leads to tune
         required: false
         default: "1,2,3,7"
+      candidate_modes:
+        description: Comma-separated aggregation modes to compare
+        required: false
+        default: "baseline,soft_reliability,balanced_soft,long_lead_soft"
       case_cache_mode:
-        description: Reuse existing verification artifacts when available
+        description: Reuse existing scored-hourly verification cases when available
         required: true
         default: reuse
         type: choice
@@ -51,18 +47,16 @@ on:
         description: Optional comma-separated YYYY-MM-DD filter for chunked runs
         required: false
         default: ""
-  schedule:
-    - cron: "35 13 * * 1"
 
 permissions:
   contents: read
 
 concurrency:
-  group: comfort-index-verification-benchmark
+  group: comfort-index-verification-tuning
   cancel-in-progress: false
 
 jobs:
-  verify-benchmark:
+  verification-tuning:
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -87,17 +81,13 @@ jobs:
           pip install -r requirements.txt
           pip install cartopy
 
-      - name: Verify required local rendering asset
-        run: |
-          test -f comfortwx/mapping/data/us_states.geojson
-
-      - name: Run verification benchmark
+      - name: Run verification tuning
         env:
           PYTHONUNBUFFERED: "1"
           WORKFLOW_BENCHMARK_TIER: ${{ github.event.inputs.benchmark_tier }}
           WORKFLOW_BENCHMARK_DATE: ${{ github.event.inputs.benchmark_date }}
-          WORKFLOW_MESH_PROFILE: ${{ github.event.inputs.mesh_profile }}
           WORKFLOW_LEAD_DAYS: ${{ github.event.inputs.lead_days }}
+          WORKFLOW_CANDIDATE_MODES: ${{ github.event.inputs.candidate_modes }}
           WORKFLOW_CASE_CACHE_MODE: ${{ github.event.inputs.case_cache_mode }}
           WORKFLOW_MAX_FRESH_CASES: ${{ github.event.inputs.max_fresh_cases }}
           WORKFLOW_CASE_COOLDOWN_SECONDS: ${{ github.event.inputs.case_cooldown_seconds }}
@@ -106,8 +96,8 @@ jobs:
         run: |
           benchmark_tier="${WORKFLOW_BENCHMARK_TIER:-default}"
           benchmark_date="${WORKFLOW_BENCHMARK_DATE:-}"
-          mesh_profile="${WORKFLOW_MESH_PROFILE:-standard}"
           lead_days="${WORKFLOW_LEAD_DAYS:-1,2,3,7}"
+          candidate_modes="${WORKFLOW_CANDIDATE_MODES:-baseline,soft_reliability,balanced_soft,long_lead_soft}"
           case_cache_mode="${WORKFLOW_CASE_CACHE_MODE:-reuse}"
           max_fresh_cases="${WORKFLOW_MAX_FRESH_CASES:-}"
           case_cooldown_seconds="${WORKFLOW_CASE_COOLDOWN_SECONDS:-4.0}"
@@ -116,10 +106,10 @@ jobs:
           export COMFORTWX_RUN_TIMESTAMP_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
           cmd=(
-            python -m comfortwx.validation.verify_benchmark
+            python -m comfortwx.validation.tune_daily_aggregation
             --benchmark-tier "$benchmark_tier"
-            --mesh-profile "$mesh_profile"
             --lead-days "$lead_days"
+            --candidate-modes "$candidate_modes"
             --case-cache-mode "$case_cache_mode"
             --case-cooldown-seconds "$case_cooldown_seconds"
           )
@@ -139,22 +129,12 @@ jobs:
 
           "${cmd[@]}"
 
-      - name: Upload verification benchmark artifact
+      - name: Upload verification tuning artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: comfortwx-verification-benchmark
+          name: comfortwx-verification-tuning
           path: |
-            output/comfortwx_verify_*
-            output/verification_site/**
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Upload verification Pages preview artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: comfortwx-verification-pages-preview
-          path: output/verification_site/latest/
+            output/comfortwx_tune_daily_aggregation_*
           if-no-files-found: warn
           retention-days: 14

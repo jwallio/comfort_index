@@ -1044,6 +1044,10 @@ OPENMETEO_REQUEST_RETRY_BACKOFF_INITIAL_SECONDS: Final[float] = 1.5
 OPENMETEO_REQUEST_RETRY_BACKOFF_MULTIPLIER: Final[float] = 2.0
 OPENMETEO_REQUEST_RETRY_BACKOFF_MAX_SECONDS: Final[float] = 8.0
 OPENMETEO_REQUEST_THROTTLE_SECONDS: Final[float] = 0.35
+OPENMETEO_REQUEST_429_BACKOFF_SECONDS: Final[float] = 18.0
+OPENMETEO_REQUEST_BACKOFF_JITTER_SECONDS: Final[float] = 0.6
+OPENMETEO_VERIFICATION_REQUEST_THROTTLE_SECONDS: Final[float] = 1.25
+OPENMETEO_TUNING_REQUEST_THROTTLE_SECONDS: Final[float] = 1.5
 OPENMETEO_REQUEST_RETRYABLE_STATUS_CODES: Final[tuple[int, ...]] = (408, 429, 500, 502, 503, 504)
 OPENMETEO_REGIONAL_MESH_SETTINGS: Final[dict[str, dict[str, float | bool]]] = {
     "southeast": {
@@ -1223,6 +1227,11 @@ VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES: Final[dict[str, dict[int, str]]]
         7: "long_lead_soft",
     },
 }
+VERIFICATION_INCREMENTAL_MAX_FRESH_CASES_BY_TIER: Final[dict[str, int]] = {
+    "default": 0,
+    "full-seasonal": 12,
+}
+VERIFICATION_INCREMENTAL_CASE_COOLDOWN_SECONDS: Final[float] = 4.0
 
 
 def get_openmeteo_mesh_settings(region_name: str, mesh_profile: str = OPENMETEO_DEFAULT_MESH_PROFILE) -> dict[str, float | bool]:

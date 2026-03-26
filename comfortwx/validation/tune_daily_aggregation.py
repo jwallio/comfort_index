@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import time
 from datetime import date, datetime
 from pathlib import Path
 
@@ -23,14 +24,22 @@ from comfortwx.config import (
     OUTPUT_DIR,
     VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES,
     VERIFICATION_AGGREGATION_TUNING_CANDIDATE_MODES,
+    VERIFICATION_INCREMENTAL_CASE_COOLDOWN_SECONDS,
 )
+from comfortwx.data.openmeteo_reliability import openmeteo_request_context
 from comfortwx.data.openmeteo_verification import (
     OpenMeteoVerificationRegionalLoader,
     resolve_openmeteo_verification_forecast_model,
 )
 from comfortwx.scoring.daily import aggregate_daily_scores
 from comfortwx.scoring.hourly import score_hourly_dataset
-from comfortwx.validation.verify_benchmark import _resolved_cases
+from comfortwx.validation.verify_benchmark import (
+    _filter_cases,
+    _max_fresh_cases_for_tier,
+    _parse_date_filter,
+    _parse_region_filter,
+    _resolved_cases,
+)
 from comfortwx.validation.verify_benchmark_cases import VERIFICATION_BENCHMARK_TIER_DEFAULT
 
 
@@ -106,7 +115,11 @@ def _load_or_build_hourly_case(
         forecast_run_hour_utc=forecast_run_hour_utc,
         forecast_lead_days=forecast_lead_days,
     )
-    forecast_hourly, analysis_hourly, _ = loader.load_pair(valid_date)
+    with openmeteo_request_context(
+        workflow="verification_tuning",
+        label=f"region={region_name};date={valid_date.isoformat()};lead={forecast_lead_days}",
+    ):
+        forecast_hourly, analysis_hourly, _ = loader.load_pair(valid_date)
     forecast_scored_hourly = score_hourly_dataset(forecast_hourly)
     analysis_scored_hourly = score_hourly_dataset(analysis_hourly)
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -139,12 +152,45 @@ def evaluate_daily_aggregation_modes(
     candidate_modes: tuple[str, ...],
     case_cache_mode: str,
     benchmark_tier: str,
+    max_fresh_cases: int | None,
+    case_cooldown_seconds: float,
 ) -> pd.DataFrame:
     records: list[dict[str, object]] = []
     cache_dir = output_dir / "verification_hourly_cache"
+    fresh_case_count = 0
+    effective_max_fresh_cases = _max_fresh_cases_for_tier(benchmark_tier) if max_fresh_cases is None else max(0, int(max_fresh_cases))
 
     for case in cases:
+        attempted_fresh_case = False
         try:
+            forecast_cache_path, analysis_cache_path = _hourly_cache_paths(
+                cache_dir=cache_dir,
+                region_name=case.region_name,
+                valid_date=case.valid_date,
+                forecast_model=forecast_model,
+                forecast_lead_days=case.forecast_lead_days,
+            )
+            cached_case_available = (
+                case_cache_mode == "reuse"
+                and forecast_cache_path.exists()
+                and analysis_cache_path.exists()
+            )
+            if not cached_case_available and effective_max_fresh_cases and fresh_case_count >= effective_max_fresh_cases:
+                for aggregation_mode in candidate_modes:
+                    records.append(
+                        {
+                            "benchmark_tier": benchmark_tier,
+                            "region": case.region_name,
+                            "date": case.valid_date.isoformat(),
+                            "forecast_lead_days": case.forecast_lead_days,
+                            "case_label": _case_label(case.region_name, case.valid_date, case.forecast_lead_days),
+                            "aggregation_mode": aggregation_mode,
+                            "build_source": "deferred",
+                            "status": "deferred",
+                            "error": f"Deferred after reaching fresh-case cap ({effective_max_fresh_cases}) for this run.",
+                        }
+                    )
+                continue
             forecast_scored_hourly, analysis_scored_hourly, build_source = _load_or_build_hourly_case(
                 valid_date=case.valid_date,
                 region_name=case.region_name,
@@ -155,6 +201,11 @@ def evaluate_daily_aggregation_modes(
                 cache_dir=cache_dir,
                 case_cache_mode=case_cache_mode,
             )
+            attempted_fresh_case = build_source == "fresh"
+            if attempted_fresh_case:
+                fresh_case_count += 1
+                if case_cooldown_seconds > 0:
+                    time.sleep(case_cooldown_seconds)
             for aggregation_mode in candidate_modes:
                 forecast_daily = aggregate_daily_scores(forecast_scored_hourly, aggregation_mode=aggregation_mode)
                 analysis_daily = aggregate_daily_scores(analysis_scored_hourly, aggregation_mode=aggregation_mode)
@@ -173,6 +224,8 @@ def evaluate_daily_aggregation_modes(
                     }
                 )
         except Exception as exc:
+            if attempted_fresh_case and case_cooldown_seconds > 0:
+                time.sleep(case_cooldown_seconds)
             for aggregation_mode in candidate_modes:
                 records.append(
                     {
@@ -600,6 +653,28 @@ def _parse_args() -> argparse.Namespace:
         choices=["reuse", "refresh"],
         help="Reuse cached scored-hourly verification cases when available. Default: reuse.",
     )
+    parser.add_argument(
+        "--regions",
+        default=None,
+        help="Optional comma-separated region filter for incremental tuning runs.",
+    )
+    parser.add_argument(
+        "--dates",
+        default=None,
+        help="Optional comma-separated YYYY-MM-DD filter for incremental tuning runs.",
+    )
+    parser.add_argument(
+        "--max-fresh-cases",
+        type=int,
+        default=None,
+        help="Optional cap on uncached verification cases fetched in this run. Defaults to tier policy.",
+    )
+    parser.add_argument(
+        "--case-cooldown-seconds",
+        type=float,
+        default=VERIFICATION_INCREMENTAL_CASE_COOLDOWN_SECONDS,
+        help="Sleep between uncached verification cases to reduce burst rate. Default: 4.0.",
+    )
     parser.add_argument("--output-dir", default=str(OUTPUT_DIR))
     return parser.parse_args()
 
@@ -611,7 +686,11 @@ def main() -> None:
     date_override = datetime.strptime(args.date, "%Y-%m-%d").date() if args.date else None
     lead_days = _parse_lead_days(args.lead_days)
     candidate_modes = _parse_candidate_modes(args.candidate_modes)
-    cases = _resolved_cases(date_override, args.benchmark_tier, lead_days)
+    cases = _filter_cases(
+        _resolved_cases(date_override, args.benchmark_tier, lead_days),
+        region_filter=_parse_region_filter(args.regions),
+        date_filter=_parse_date_filter(args.dates),
+    )
 
     case_scores = evaluate_daily_aggregation_modes(
         cases=cases,
@@ -622,6 +701,8 @@ def main() -> None:
         candidate_modes=candidate_modes,
         case_cache_mode=args.case_cache_mode,
         benchmark_tier=args.benchmark_tier,
+        max_fresh_cases=args.max_fresh_cases,
+        case_cooldown_seconds=args.case_cooldown_seconds,
     )
 
     lead_stem = "d" + "-".join(str(day) for day in lead_days)

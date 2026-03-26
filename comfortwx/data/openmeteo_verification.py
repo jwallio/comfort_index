@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+import socket
+from urllib.error import HTTPError, URLError
 
 import numpy as np
 import pandas as pd
@@ -212,8 +214,10 @@ def _fetch_forecast_payloads_for_batch(
         if len(payloads) != len(batch):
             raise ValueError("Verification batch response size did not match requested mesh points.")
         return list(zip(payloads, [resolved_forecast_model] * len(payloads), strict=False)), False
-    except Exception:
+    except Exception as exc:
         if resolved_forecast_model != OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL:
+            raise
+        if not _should_attempt_point_fallback(exc):
             raise
 
     point_payloads: list[tuple[dict[str, object], str]] = []
@@ -234,7 +238,9 @@ def _fetch_forecast_payloads_for_batch(
                 )
             )[0]
             point_payloads.append((payload, resolved_forecast_model))
-        except Exception:
+        except Exception as exc:
+            if not _should_attempt_model_fallback(exc):
+                raise
             fallback_payload = _payload_list(
                 _fetch_json(
                     OPENMETEO_SINGLE_RUN_URL,
@@ -250,6 +256,22 @@ def _fetch_forecast_payloads_for_batch(
             point_payloads.append((fallback_payload, OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT))
             used_fallback = True
     return point_payloads, used_fallback
+
+
+def _should_attempt_point_fallback(exc: Exception) -> bool:
+    if isinstance(exc, HTTPError):
+        return exc.code in {400, 404, 422}
+    if isinstance(exc, (socket.timeout, TimeoutError, URLError)):
+        return False
+    return isinstance(exc, ValueError)
+
+
+def _should_attempt_model_fallback(exc: Exception) -> bool:
+    if isinstance(exc, HTTPError):
+        return exc.code in {400, 404, 422}
+    if isinstance(exc, (socket.timeout, TimeoutError, URLError)):
+        return False
+    return isinstance(exc, ValueError)
 
 
 @dataclass

@@ -76,6 +76,12 @@ Benchmark verification suite with an explicit tier:
 python -m comfortwx.validation.verify_benchmark --benchmark-tier full-seasonal --lead-days 1,2,3,7
 ```
 
+Rate-limit-safe incremental full-seasonal benchmark pass:
+
+```powershell
+python -m comfortwx.validation.verify_benchmark --benchmark-tier full-seasonal --lead-days 1,2,3,7 --case-cache-mode reuse --max-fresh-cases 12
+```
+
 Reuse existing per-case verification artifacts when iterating on benchmark reports and calibration:
 
 ```powershell
@@ -86,6 +92,12 @@ Verification-only daily aggregation tuning harness:
 
 ```powershell
 python -m comfortwx.validation.tune_daily_aggregation --benchmark-tier default --lead-days 1,2,3,7 --case-cache-mode reuse
+```
+
+Rate-limit-safe incremental full-seasonal tuning pass:
+
+```powershell
+python -m comfortwx.validation.tune_daily_aggregation --benchmark-tier full-seasonal --lead-days 1,2,3,7 --case-cache-mode reuse --max-fresh-cases 12
 ```
 
 ## Outputs
@@ -119,20 +131,20 @@ Run-menu builds are the stable product-build path and upload the archived output
 GitHub Pages publishing is handled separately by:
 - `Comfort Index Site Publish`
 
-That publisher is scheduled to run at `00:35 UTC`, `06:35 UTC`, `12:35 UTC`, and `18:35 UTC`, after the product archive workflow, and it publishes the latest `comfortwx-archive` artifact plus the latest verification artifact when available.
+That publisher now runs automatically after a successful `Comfort Index Run Menu` build and can also be run manually. It publishes the matching `comfortwx-archive` artifact from the triggering product run plus the latest successful verification artifact when available.
 
-And a separate verification workflow:
+Separate verification workflows:
 - `Comfort Index Verification Benchmark`
+- `Comfort Index Verification Tuning`
 
-It runs:
+Product workflow command:
 
 ```powershell
 python -m comfortwx.main --pilot-day-archive --source openmeteo --pilot-span-days 7 --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse
 ```
 
-The workflow uploads:
+Product workflow uploads:
 - `comfortwx-archive`
-- `comfortwx-pages-preview`
 
 When run manually from GitHub Actions, the workflow menu lets you choose:
 - `pilot-day` or `pilot-day-archive`
@@ -146,7 +158,7 @@ The public Pages view is map-first by design:
 - run pages focus on presentation PNGs
 - supporting CSV, JSON, and NetCDF files remain in the archive but are not the main public navigation
 
-Verification workflow:
+Verification benchmark command:
 
 ```powershell
 python -m comfortwx.validation.verify_benchmark
@@ -172,8 +184,32 @@ When run manually from GitHub Actions, the verification workflow lets you choose
 - optional benchmark date override in `YYYY-MM-DD`
 - mesh profile (`standard` or `fine`)
 - forecast leads as a comma-separated list such as `1,2,3,7`
+- case cache mode (`reuse` or `refresh`)
+- optional fresh-case cap, cooldown, region filter, and date filter for incremental chunked runs
 
 This workflow is the current backtesting path. It is separate from the daily public product workflow.
+
+Verification tuning command:
+
+```powershell
+python -m comfortwx.validation.tune_daily_aggregation
+```
+
+The `Comfort Index Verification Tuning` GitHub Actions workflow runs the held-out daily aggregation tuning harness and uploads a `comfortwx-verification-tuning` artifact containing:
+- per-case candidate score CSVs
+- candidate summary CSVs by lead and aggregation mode
+- recommended mode by lead
+- held-out selection CSVs
+- experimental policy comparison CSVs
+- tuning charts and HTML report
+
+When run manually from GitHub Actions, the tuning workflow lets you choose:
+- benchmark tier
+- optional benchmark date override
+- lead days
+- candidate aggregation modes
+- case cache mode (`reuse` or `refresh`)
+- optional fresh-case cap, cooldown, region filter, and date filter for incremental chunked runs
 
 Benchmark tiers:
 - `default`
@@ -211,6 +247,13 @@ Each verification case now also writes a component-attribution CSV that summariz
 Lead-specific benchmark thresholds are now applied so longer leads are judged against more realistic expectations while still being ranked consistently in the improvement-priority outputs.
 
 The benchmark runner can also reuse already-written per-case verification artifacts. That makes it much easier to iterate on benchmark tiers, calibration summaries, and HTML reporting without refetching the same Open-Meteo cases on every pass.
+
+To keep Open-Meteo rate limits under control, verification and tuning now also:
+- use slower verification-specific request throttles than the public product path
+- apply longer `429` backoff, including `Retry-After` support when the API provides it
+- avoid exploding a rate-limited HRRR batch into point-by-point fallback requests
+- cap uncached `full-seasonal` runs to a smaller number of fresh cases per run by default, so repeated `--case-cache-mode reuse` runs can fill the cache incrementally instead of bursting the API in one pass
+- support `--regions`, `--dates`, `--max-fresh-cases`, and `--case-cooldown-seconds` for explicit chunking when needed
 
 The daily aggregation tuning runner builds on the same benchmark cases, but compares multiple candidate daily aggregation modes instead of one fixed mode. It writes:
 - per-case candidate score CSVs

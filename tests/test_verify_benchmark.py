@@ -126,6 +126,61 @@ def test_run_verification_benchmark_collects_summary_rows(monkeypatch, tmp_path:
     assert "5.5" in table
 
 
+def test_run_verification_benchmark_defers_uncached_cases_after_cap(monkeypatch, tmp_path: Path) -> None:
+    calls = {"count": 0}
+
+    def _fake_run_verification(**kwargs):
+        calls["count"] += 1
+        valid_date = kwargs["valid_date"]
+        region_name = kwargs["region_name"]
+        return {
+            "forecast_score_map": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_forecast.png",
+            "analysis_score_map": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_analysis.png",
+            "score_difference_map": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_diff.png",
+            "absolute_error_map": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_abs_error.png",
+            "category_disagreement_map": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_category_disagreement.png",
+            "missed_high_comfort_map": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_missed.png",
+            "false_high_comfort_map": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_false.png",
+            "forecast_daily_fields": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_forecast.nc",
+            "analysis_daily_fields": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_analysis.nc",
+            "summary_csv": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_summary.csv",
+            "point_metrics_csv": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_points.csv",
+            "component_metrics_csv": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_components.csv",
+            "request_summary_csv": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_request_summary.csv",
+            "request_detail_csv": tmp_path / f"{region_name}_{valid_date:%Y%m%d}_request_detail.csv",
+            "summary_record": {
+                "valid_date": valid_date.isoformat(),
+                "region_name": region_name,
+                "forecast_lead_days": kwargs["forecast_lead_days"],
+                "score_bias_mean": 1.25,
+                "score_mae": 5.5,
+                "score_rmse": 7.1,
+                "exact_category_agreement_fraction": 0.6,
+                "near_category_agreement_fraction": 0.9,
+            },
+        }
+
+    monkeypatch.setattr("comfortwx.validation.verify_benchmark.run_verification", _fake_run_verification)
+    monkeypatch.setattr("comfortwx.validation.verify_benchmark.time.sleep", lambda _seconds: None)
+    frame = run_verification_benchmark(
+        cases=[
+            VerificationBenchmarkCase(region_name="southeast", valid_date=date(2026, 3, 20)),
+            VerificationBenchmarkCase(region_name="southwest", valid_date=date(2026, 3, 20)),
+        ],
+        output_dir=tmp_path,
+        mesh_profile="standard",
+        forecast_model="gfs_seamless",
+        forecast_run_hour_utc=12,
+        benchmark_tier=VERIFICATION_BENCHMARK_TIER_FULL_SEASONAL,
+        max_fresh_cases=1,
+        case_cooldown_seconds=0.0,
+    )
+
+    assert calls["count"] == 1
+    assert list(frame["status"]) == ["ok", "deferred"]
+    assert frame.iloc[1]["build_source"] == "deferred"
+
+
 def test_apply_threshold_flags_marks_warn_cases() -> None:
     frame = pd.DataFrame(
         [

@@ -6,7 +6,9 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, asdict
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 from pathlib import Path
+import random
 import socket
 import time
 from typing import Iterator
@@ -17,11 +19,15 @@ import pandas as pd
 
 from comfortwx.config import (
     OPENMETEO_REQUEST_MAX_RETRIES,
+    OPENMETEO_REQUEST_429_BACKOFF_SECONDS,
+    OPENMETEO_REQUEST_BACKOFF_JITTER_SECONDS,
     OPENMETEO_REQUEST_RETRYABLE_STATUS_CODES,
     OPENMETEO_REQUEST_RETRY_BACKOFF_MAX_SECONDS,
     OPENMETEO_REQUEST_RETRY_BACKOFF_INITIAL_SECONDS,
     OPENMETEO_REQUEST_RETRY_BACKOFF_MULTIPLIER,
     OPENMETEO_REQUEST_THROTTLE_SECONDS,
+    OPENMETEO_TUNING_REQUEST_THROTTLE_SECONDS,
+    OPENMETEO_VERIFICATION_REQUEST_THROTTLE_SECONDS,
 )
 
 
@@ -126,8 +132,17 @@ def _is_retryable(exc: Exception) -> bool:
     return False
 
 
+def _current_throttle_seconds() -> float:
+    workflow = current_openmeteo_workflow()
+    if workflow == "verification_tuning":
+        return max(float(OPENMETEO_REQUEST_THROTTLE_SECONDS), float(OPENMETEO_TUNING_REQUEST_THROTTLE_SECONDS))
+    if workflow.startswith("verification"):
+        return max(float(OPENMETEO_REQUEST_THROTTLE_SECONDS), float(OPENMETEO_VERIFICATION_REQUEST_THROTTLE_SECONDS))
+    return float(OPENMETEO_REQUEST_THROTTLE_SECONDS)
+
+
 def _maybe_throttle() -> None:
-    delay = max(0.0, float(OPENMETEO_REQUEST_THROTTLE_SECONDS))
+    delay = max(0.0, _current_throttle_seconds())
     if delay <= 0.0:
         return
     last_request_ts = _LAST_REQUEST_TS.get()
@@ -136,6 +151,23 @@ def _maybe_throttle() -> None:
     elapsed = time.monotonic() - last_request_ts
     if elapsed < delay:
         time.sleep(delay - elapsed)
+
+
+def _retry_after_seconds(exc: Exception) -> float | None:
+    if not isinstance(exc, HTTPError) or exc.headers is None:
+        return None
+    retry_after = exc.headers.get("Retry-After")
+    if not retry_after:
+        return None
+    retry_after = retry_after.strip()
+    try:
+        return max(0.0, float(retry_after))
+    except ValueError:
+        try:
+            retry_at = parsedate_to_datetime(retry_after)
+        except (TypeError, ValueError, IndexError, OverflowError):
+            return None
+        return max(0.0, (retry_at - datetime.now(retry_at.tzinfo)).total_seconds())
 
 
 def _record_request(
@@ -168,6 +200,17 @@ def _record_request(
             query_summary=_query_summary(query),
         )
     )
+
+
+def _retry_sleep_seconds(exc: Exception, backoff_seconds: float) -> float:
+    sleep_seconds = min(backoff_seconds, float(OPENMETEO_REQUEST_RETRY_BACKOFF_MAX_SECONDS))
+    if isinstance(exc, HTTPError) and exc.code == 429:
+        retry_after_seconds = _retry_after_seconds(exc)
+        sleep_seconds = max(sleep_seconds, retry_after_seconds or float(OPENMETEO_REQUEST_429_BACKOFF_SECONDS))
+    jitter = float(OPENMETEO_REQUEST_BACKOFF_JITTER_SECONDS)
+    if jitter > 0.0:
+        sleep_seconds += random.uniform(0.0, jitter)
+    return sleep_seconds
 
 
 def fetch_with_retries(
@@ -213,7 +256,7 @@ def fetch_with_retries(
             )
             if not retryable:
                 raise
-            time.sleep(min(backoff_seconds, float(OPENMETEO_REQUEST_RETRY_BACKOFF_MAX_SECONDS)))
+            time.sleep(_retry_sleep_seconds(exc, backoff_seconds))
             backoff_seconds = min(
                 backoff_seconds * float(OPENMETEO_REQUEST_RETRY_BACKOFF_MULTIPLIER),
                 float(OPENMETEO_REQUEST_RETRY_BACKOFF_MAX_SECONDS),

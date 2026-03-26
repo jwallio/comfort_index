@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import html
 import shutil
+import time
 from datetime import date, datetime
 from pathlib import Path
 
@@ -32,6 +33,8 @@ from comfortwx.config import (
     VERIFICATION_CALIBRATION_SLOPE_RANGE,
     VERIFICATION_BENCHMARK_LEAD_THRESHOLDS,
     VERIFICATION_BENCHMARK_THRESHOLDS,
+    VERIFICATION_INCREMENTAL_CASE_COOLDOWN_SECONDS,
+    VERIFICATION_INCREMENTAL_MAX_FRESH_CASES_BY_TIER,
 )
 from comfortwx.data.openmeteo_verification import resolve_openmeteo_verification_forecast_model
 from comfortwx.scoring.categories import categorize_scores
@@ -82,6 +85,26 @@ def _resolved_cases(
         for region_name in regions_in_order
         for lead_day in lead_days
     ]
+
+
+def _max_fresh_cases_for_tier(benchmark_tier: str) -> int:
+    return int(VERIFICATION_INCREMENTAL_MAX_FRESH_CASES_BY_TIER.get(benchmark_tier, 0))
+
+
+def _filter_cases(
+    cases: list[VerificationBenchmarkCase],
+    *,
+    region_filter: tuple[str, ...] | None,
+    date_filter: tuple[date, ...] | None,
+) -> list[VerificationBenchmarkCase]:
+    filtered = list(cases)
+    if region_filter:
+        allowed_regions = {value.strip().lower() for value in region_filter if value.strip()}
+        filtered = [case for case in filtered if case.region_name.lower() in allowed_regions]
+    if date_filter:
+        allowed_dates = set(date_filter)
+        filtered = [case for case in filtered if case.valid_date in allowed_dates]
+    return filtered
 
 
 def _lead_label(lead_day: int) -> str:
@@ -1339,9 +1362,14 @@ def run_verification_benchmark(
     forecast_run_hour_utc: int,
     benchmark_tier: str,
     case_cache_mode: str = "reuse",
+    max_fresh_cases: int | None = None,
+    case_cooldown_seconds: float = VERIFICATION_INCREMENTAL_CASE_COOLDOWN_SECONDS,
 ) -> pd.DataFrame:
     records: list[dict[str, object]] = []
+    fresh_case_count = 0
+    effective_max_fresh_cases = _max_fresh_cases_for_tier(benchmark_tier) if max_fresh_cases is None else max(0, int(max_fresh_cases))
     for case in cases:
+        attempted_fresh_case = False
         try:
             outputs = None
             build_source = "fresh"
@@ -1355,7 +1383,41 @@ def run_verification_benchmark(
                 )
                 if outputs is not None:
                     build_source = "cache"
+            if outputs is None and effective_max_fresh_cases and fresh_case_count >= effective_max_fresh_cases:
+                records.append(
+                    {
+                        "benchmark_tier": benchmark_tier,
+                        "build_source": "deferred",
+                        "region": case.region_name,
+                        "date": case.valid_date.isoformat(),
+                        "forecast_lead_days": case.forecast_lead_days,
+                        "forecast_model": forecast_model,
+                        "score_bias_mean": "",
+                        "score_mae": "",
+                        "score_rmse": "",
+                        "exact_category_agreement_fraction": "",
+                        "near_category_agreement_fraction": "",
+                        "status": "deferred",
+                        "error": f"Deferred after reaching fresh-case cap ({effective_max_fresh_cases}) for this run.",
+                        "forecast_score_map_path": "",
+                        "analysis_score_map_path": "",
+                        "score_difference_map_path": "",
+                        "absolute_error_map_path": "",
+                        "category_disagreement_map_path": "",
+                        "missed_high_comfort_map_path": "",
+                        "false_high_comfort_map_path": "",
+                        "forecast_daily_fields_path": "",
+                        "analysis_daily_fields_path": "",
+                        "summary_csv_path": "",
+                        "point_metrics_csv_path": "",
+                        "component_metrics_csv_path": "",
+                        "request_summary_csv_path": "",
+                        "request_detail_csv_path": "",
+                    }
+                )
+                continue
             if outputs is None:
+                attempted_fresh_case = True
                 outputs = run_verification(
                     valid_date=case.valid_date,
                     region_name=case.region_name,
@@ -1366,6 +1428,9 @@ def run_verification_benchmark(
                     forecast_lead_days=case.forecast_lead_days,
                     workflow_name="verification_benchmark",
                 )
+                fresh_case_count += 1
+                if case_cooldown_seconds > 0:
+                    time.sleep(case_cooldown_seconds)
             summary_record = dict(outputs["summary_record"])
             summary_record.update(
                 {
@@ -1393,6 +1458,8 @@ def run_verification_benchmark(
             )
             records.append(summary_record)
         except Exception as exc:
+            if attempted_fresh_case and case_cooldown_seconds > 0:
+                time.sleep(case_cooldown_seconds)
             records.append(
                 {
                     "benchmark_tier": benchmark_tier,
@@ -1450,6 +1517,28 @@ def _parse_args() -> argparse.Namespace:
         default=",".join(str(value) for value in OPENMETEO_VERIFICATION_BENCHMARK_LEAD_DAYS),
         help="Comma-separated verification forecast lead days. Default: 1,2,3,7.",
     )
+    parser.add_argument(
+        "--regions",
+        default=None,
+        help="Optional comma-separated region filter for incremental benchmark runs.",
+    )
+    parser.add_argument(
+        "--dates",
+        default=None,
+        help="Optional comma-separated YYYY-MM-DD filter for incremental benchmark runs.",
+    )
+    parser.add_argument(
+        "--max-fresh-cases",
+        type=int,
+        default=None,
+        help="Optional cap on uncached verification cases fetched in this run. Defaults to tier policy.",
+    )
+    parser.add_argument(
+        "--case-cooldown-seconds",
+        type=float,
+        default=VERIFICATION_INCREMENTAL_CASE_COOLDOWN_SECONDS,
+        help="Sleep between uncached verification cases to reduce burst rate. Default: 4.0.",
+    )
     parser.add_argument("--output-dir", default=str(OUTPUT_DIR))
     return parser.parse_args()
 
@@ -1463,12 +1552,30 @@ def _parse_lead_days(value: str) -> tuple[int, ...]:
     return tuple(dict.fromkeys(lead_days))
 
 
+def _parse_region_filter(value: str | None) -> tuple[str, ...] | None:
+    if value is None:
+        return None
+    regions = tuple(part.strip() for part in value.split(",") if part.strip())
+    return regions or None
+
+
+def _parse_date_filter(value: str | None) -> tuple[date, ...] | None:
+    if value is None:
+        return None
+    dates = tuple(datetime.strptime(part.strip(), "%Y-%m-%d").date() for part in value.split(",") if part.strip())
+    return dates or None
+
+
 def main() -> None:
     args = _parse_args()
     date_override = datetime.strptime(args.date, "%Y-%m-%d").date() if args.date else None
     lead_days = _parse_lead_days(args.lead_days)
     benchmark_tier = args.benchmark_tier
-    cases = _resolved_cases(date_override, benchmark_tier, lead_days)
+    cases = _filter_cases(
+        _resolved_cases(date_override, benchmark_tier, lead_days),
+        region_filter=_parse_region_filter(args.regions),
+        date_filter=_parse_date_filter(args.dates),
+    )
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     summary = run_verification_benchmark(
@@ -1479,6 +1586,8 @@ def main() -> None:
         forecast_run_hour_utc=args.forecast_run_hour_utc,
         benchmark_tier=benchmark_tier,
         case_cache_mode=args.case_cache_mode,
+        max_fresh_cases=args.max_fresh_cases,
+        case_cooldown_seconds=args.case_cooldown_seconds,
     )
 
     lead_stem = "d" + "-".join(str(day) for day in lead_days)

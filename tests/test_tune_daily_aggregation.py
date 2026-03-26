@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+from datetime import date
 import pandas as pd
+from pathlib import Path
 
 from comfortwx.validation.tune_daily_aggregation import (
     _parse_candidate_modes,
     _parse_lead_days,
+    evaluate_daily_aggregation_modes,
     build_policy_comparison,
     build_holdout_mode_selection,
     recommend_modes_by_lead,
     summarize_candidate_modes,
 )
+from comfortwx.validation.verify_benchmark_cases import VerificationBenchmarkCase
 
 
 def test_parse_candidate_modes_preserves_order_and_deduplicates() -> None:
@@ -251,3 +255,52 @@ def test_build_policy_comparison_compares_against_baseline() -> None:
     ].iloc[0]
     assert lead_one_soft["score_mae_improvement_vs_baseline"] == 2.0
     assert lead_two_lead_aware["score_mae_improvement_vs_baseline"] == 2.0
+
+
+def test_evaluate_daily_aggregation_modes_defers_after_fresh_case_cap(monkeypatch, tmp_path: Path) -> None:
+    def _fake_load_or_build_hourly_case(**_kwargs):
+        return object(), object(), "fresh"
+
+    def _fake_aggregate_daily_scores(_dataset, aggregation_mode="baseline"):
+        return {"aggregation_mode": aggregation_mode}
+
+    def _fake_daily_score_metrics(forecast_daily, _analysis_daily):
+        return {
+            "score_bias_mean": 0.0,
+            "score_mae": 5.0 if forecast_daily["aggregation_mode"] == "baseline" else 4.0,
+            "score_rmse": 6.0,
+            "exact_category_agreement_fraction": 0.6,
+            "near_category_agreement_fraction": 0.9,
+        }
+
+    monkeypatch.setattr(
+        "comfortwx.validation.tune_daily_aggregation._load_or_build_hourly_case",
+        _fake_load_or_build_hourly_case,
+    )
+    monkeypatch.setattr(
+        "comfortwx.validation.tune_daily_aggregation.aggregate_daily_scores",
+        _fake_aggregate_daily_scores,
+    )
+    monkeypatch.setattr(
+        "comfortwx.validation.tune_daily_aggregation._daily_score_metrics",
+        _fake_daily_score_metrics,
+    )
+    monkeypatch.setattr("comfortwx.validation.tune_daily_aggregation.time.sleep", lambda _seconds: None)
+
+    frame = evaluate_daily_aggregation_modes(
+        cases=[
+            VerificationBenchmarkCase(region_name="southeast", valid_date=date(2026, 3, 20), forecast_lead_days=1),
+            VerificationBenchmarkCase(region_name="southwest", valid_date=date(2026, 3, 20), forecast_lead_days=1),
+        ],
+        output_dir=tmp_path,
+        mesh_profile="standard",
+        forecast_model="gfs_seamless",
+        forecast_run_hour_utc=12,
+        candidate_modes=("baseline",),
+        case_cache_mode="reuse",
+        benchmark_tier="full-seasonal",
+        max_fresh_cases=1,
+        case_cooldown_seconds=0.0,
+    )
+
+    assert list(frame["status"]) == ["ok", "deferred"]

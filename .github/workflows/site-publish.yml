@@ -8,11 +8,11 @@ on:
         required: false
         default: manual
         type: string
-  schedule:
-    - cron: "35 0 * * *"
-    - cron: "35 6 * * *"
-    - cron: "35 12 * * *"
-    - cron: "35 18 * * *"
+  workflow_run:
+    workflows:
+      - Comfort Index Run Menu
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -23,6 +23,7 @@ concurrency:
 
 jobs:
   publish-site:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -40,6 +41,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ARCHIVE_ARTIFACT_NAME: comfortwx-archive
           VERIFICATION_ARTIFACT_NAME: comfortwx-verification-benchmark
+          ARCHIVE_WORKFLOW_FILE: comfort-index-menu.yml
+          VERIFICATION_WORKFLOW_FILE: verification-benchmark.yml
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
           python scripts/publish_site_from_artifacts.py
 
