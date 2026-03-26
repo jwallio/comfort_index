@@ -20,6 +20,7 @@ import pandas as pd
 from comfortwx.config import (
     OPENMETEO_REQUEST_MAX_RETRIES,
     OPENMETEO_REQUEST_429_BACKOFF_SECONDS,
+    OPENMETEO_REQUEST_429_GLOBAL_COOLDOWN_SECONDS,
     OPENMETEO_REQUEST_BACKOFF_JITTER_SECONDS,
     OPENMETEO_REQUEST_RETRYABLE_STATUS_CODES,
     OPENMETEO_REQUEST_RETRY_BACKOFF_MAX_SECONDS,
@@ -35,6 +36,7 @@ _WORKFLOW_CONTEXT: ContextVar[str] = ContextVar("openmeteo_workflow", default="u
 _LABEL_CONTEXT: ContextVar[str] = ContextVar("openmeteo_label", default="")
 _RUN_SLUG_CONTEXT: ContextVar[str] = ContextVar("openmeteo_run_slug", default="")
 _LAST_REQUEST_TS: ContextVar[float] = ContextVar("openmeteo_last_request_ts", default=0.0)
+_RATE_LIMIT_UNTIL_TS: ContextVar[float] = ContextVar("openmeteo_rate_limit_until_ts", default=0.0)
 
 
 @dataclass
@@ -61,6 +63,7 @@ _REQUEST_RECORDS: list[OpenMeteoRequestRecord] = []
 def reset_openmeteo_request_records() -> None:
     _REQUEST_RECORDS.clear()
     _LAST_REQUEST_TS.set(0.0)
+    _RATE_LIMIT_UNTIL_TS.set(0.0)
 
 
 def current_openmeteo_workflow() -> str:
@@ -142,15 +145,20 @@ def _current_throttle_seconds() -> float:
 
 
 def _maybe_throttle() -> None:
+    now = time.monotonic()
+    sleep_seconds = 0.0
     delay = max(0.0, _current_throttle_seconds())
-    if delay <= 0.0:
-        return
-    last_request_ts = _LAST_REQUEST_TS.get()
-    if last_request_ts <= 0.0:
-        return
-    elapsed = time.monotonic() - last_request_ts
-    if elapsed < delay:
-        time.sleep(delay - elapsed)
+    if delay > 0.0:
+        last_request_ts = _LAST_REQUEST_TS.get()
+        if last_request_ts > 0.0:
+            elapsed = now - last_request_ts
+            if elapsed < delay:
+                sleep_seconds = max(sleep_seconds, delay - elapsed)
+    rate_limit_until = _RATE_LIMIT_UNTIL_TS.get()
+    if rate_limit_until > now:
+        sleep_seconds = max(sleep_seconds, rate_limit_until - now)
+    if sleep_seconds > 0.0:
+        time.sleep(sleep_seconds)
 
 
 def _retry_after_seconds(exc: Exception) -> float | None:
@@ -213,6 +221,13 @@ def _retry_sleep_seconds(exc: Exception, backoff_seconds: float) -> float:
     return sleep_seconds
 
 
+def _register_rate_limit_cooldown(exc: Exception, sleep_seconds: float) -> None:
+    if not isinstance(exc, HTTPError) or exc.code != 429:
+        return
+    cooldown_seconds = max(sleep_seconds, float(OPENMETEO_REQUEST_429_GLOBAL_COOLDOWN_SECONDS))
+    _RATE_LIMIT_UNTIL_TS.set(max(_RATE_LIMIT_UNTIL_TS.get(), time.monotonic() + cooldown_seconds))
+
+
 def fetch_with_retries(
     *,
     base_url: str,
@@ -256,7 +271,9 @@ def fetch_with_retries(
             )
             if not retryable:
                 raise
-            time.sleep(_retry_sleep_seconds(exc, backoff_seconds))
+            sleep_seconds = _retry_sleep_seconds(exc, backoff_seconds)
+            _register_rate_limit_cooldown(exc, sleep_seconds)
+            time.sleep(sleep_seconds)
             backoff_seconds = min(
                 backoff_seconds * float(OPENMETEO_REQUEST_RETRY_BACKOFF_MULTIPLIER),
                 float(OPENMETEO_REQUEST_RETRY_BACKOFF_MAX_SECONDS),

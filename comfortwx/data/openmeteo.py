@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+import hashlib
 import json
+from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
@@ -21,11 +23,12 @@ from comfortwx.config import (
     OPENMETEO_HOURLY_VARS,
     OPENMETEO_POP_THUNDER_THRESHOLD,
     OPENMETEO_REGIONAL_BATCH_SIZE,
+    OPENMETEO_REQUEST_CACHE_DIR,
     OPENMETEO_REQUEST_TIMEOUT_SECONDS,
     OPENMETEO_THUNDER_WEATHER_CODES,
     get_openmeteo_mesh_settings,
 )
-from comfortwx.data.openmeteo_reliability import fetch_with_retries
+from comfortwx.data.openmeteo_reliability import current_openmeteo_workflow, fetch_with_retries
 from comfortwx.mapping.regions import get_region_definition
 
 
@@ -46,12 +49,49 @@ def _meters_to_miles(meters: np.ndarray) -> np.ndarray:
 def _fetch_json(base_url: str, query: dict[str, object]) -> dict[str, object] | list[dict[str, object]]:
     """Fetch JSON from an Open-Meteo endpoint."""
 
+    url = f"{base_url}?{urlencode(query, doseq=True)}"
+    cache_path = _request_cache_path(url) if _should_cache_request(base_url) else None
+    if cache_path is not None:
+        cached_payload = _load_cached_payload(cache_path)
+        if cached_payload is not None:
+            return cached_payload
+
     def _request(base_url_inner: str, query_inner: dict[str, object]) -> dict[str, object] | list[dict[str, object]]:
-        url = f"{base_url_inner}?{urlencode(query_inner, doseq=True)}"
-        with urlopen(url, timeout=float(OPENMETEO_REQUEST_TIMEOUT_SECONDS)) as response:
+        request_url = f"{base_url_inner}?{urlencode(query_inner, doseq=True)}"
+        with urlopen(request_url, timeout=float(OPENMETEO_REQUEST_TIMEOUT_SECONDS)) as response:
             return json.loads(response.read().decode("utf-8"))
 
-    return fetch_with_retries(base_url=base_url, query=query, request_func=_request)
+    payload = fetch_with_retries(base_url=base_url, query=query, request_func=_request)
+    if cache_path is not None:
+        _write_cached_payload(cache_path, payload)
+    return payload
+
+
+def _should_cache_request(base_url: str) -> bool:
+    workflow = current_openmeteo_workflow()
+    if not workflow.startswith("verification"):
+        return False
+    return "single-runs-api" in base_url or "archive-api" in base_url
+
+
+def _request_cache_path(request_url: str) -> Path:
+    digest = hashlib.sha256(request_url.encode("utf-8")).hexdigest()
+    return OPENMETEO_REQUEST_CACHE_DIR / f"{digest}.json"
+
+
+def _load_cached_payload(cache_path: Path) -> dict[str, object] | list[dict[str, object]] | None:
+    if not cache_path.exists():
+        return None
+    try:
+        return json.loads(cache_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        cache_path.unlink(missing_ok=True)
+        return None
+
+
+def _write_cached_payload(cache_path: Path, payload: dict[str, object] | list[dict[str, object]]) -> None:
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
 
 
 def _build_hourly_data_array(values: list[float] | list[int] | list[bool] | None, size: int, fill_value: float = np.nan) -> np.ndarray:

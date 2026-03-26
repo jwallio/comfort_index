@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
 import pytest
 
+import comfortwx.data.openmeteo as openmeteo
 from comfortwx.data.openmeteo import (
+    _fetch_json,
     assemble_point_datasets_to_grid,
     merge_openmeteo_air_quality,
     normalize_openmeteo_forecast_response,
 )
+from comfortwx.data.openmeteo_reliability import openmeteo_request_context, reset_openmeteo_request_records
 
 
 def test_normalize_openmeteo_forecast_response_maps_fields() -> None:
@@ -125,3 +130,27 @@ def test_assemble_point_datasets_to_grid_builds_regional_mesh(region_name: str) 
     assert assembled.sizes["lat"] == 2
     assert assembled.sizes["lon"] == 2
     assert float(assembled["temp_f"].sel(lat=33.5, lon=-86.5).values.squeeze()) == 75.0
+
+
+def test_fetch_json_uses_verification_request_cache(monkeypatch, tmp_path: Path) -> None:
+    calls = {"count": 0}
+    payload = {"hourly": {"time": ["2026-03-22T00:00"]}}
+
+    def _fake_fetch_with_retries(**_kwargs):
+        calls["count"] += 1
+        return payload
+
+    monkeypatch.setattr(openmeteo, "OPENMETEO_REQUEST_CACHE_DIR", tmp_path)
+    monkeypatch.setattr(openmeteo, "fetch_with_retries", _fake_fetch_with_retries)
+
+    reset_openmeteo_request_records()
+    with openmeteo_request_context(workflow="verification_benchmark", label="cache-test", run_slug="cache_test"):
+        first = _fetch_json("https://archive-api.open-meteo.com/v1/archive", {"latitude": 35.0, "longitude": -78.0})
+        second = _fetch_json("https://archive-api.open-meteo.com/v1/archive", {"latitude": 35.0, "longitude": -78.0})
+
+    assert first == payload
+    assert second == payload
+    assert calls["count"] == 1
+    cache_files = list(tmp_path.glob("*.json"))
+    assert len(cache_files) == 1
+    assert json.loads(cache_files[0].read_text(encoding="utf-8")) == payload

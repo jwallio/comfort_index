@@ -9,6 +9,7 @@ from typing import Final
 
 PROJECT_ROOT: Final[Path] = Path(__file__).resolve().parent.parent
 OUTPUT_DIR: Final[Path] = PROJECT_ROOT / "output"
+OPENMETEO_REQUEST_CACHE_DIR: Final[Path] = OUTPUT_DIR / "openmeteo_http_cache"
 STITCHED_CONUS_STATE_FILE: Final[Path] = PROJECT_ROOT / "comfortwx" / "mapping" / "data" / "us_states.geojson"
 
 
@@ -1046,8 +1047,9 @@ OPENMETEO_REQUEST_RETRY_BACKOFF_MAX_SECONDS: Final[float] = 8.0
 OPENMETEO_REQUEST_THROTTLE_SECONDS: Final[float] = 0.35
 OPENMETEO_REQUEST_429_BACKOFF_SECONDS: Final[float] = 18.0
 OPENMETEO_REQUEST_BACKOFF_JITTER_SECONDS: Final[float] = 0.6
-OPENMETEO_VERIFICATION_REQUEST_THROTTLE_SECONDS: Final[float] = 1.25
-OPENMETEO_TUNING_REQUEST_THROTTLE_SECONDS: Final[float] = 1.5
+OPENMETEO_REQUEST_429_GLOBAL_COOLDOWN_SECONDS: Final[float] = 45.0
+OPENMETEO_VERIFICATION_REQUEST_THROTTLE_SECONDS: Final[float] = 2.0
+OPENMETEO_TUNING_REQUEST_THROTTLE_SECONDS: Final[float] = 2.5
 OPENMETEO_REQUEST_RETRYABLE_STATUS_CODES: Final[tuple[int, ...]] = (408, 429, 500, 502, 503, 504)
 OPENMETEO_REGIONAL_MESH_SETTINGS: Final[dict[str, dict[str, float | bool]]] = {
     "southeast": {
