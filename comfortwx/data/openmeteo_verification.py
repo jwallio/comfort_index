@@ -98,7 +98,8 @@ def _normalize_openmeteo_verification_payload(
     visibility_mi = _visibility_to_miles(visibility_values, hourly_units.get("visibility"))
     cape = _build_hourly_data_array(hourly.get("cape"), count)
 
-    thunder = np.isin(weather_code.astype(int), np.array(OPENMETEO_THUNDER_WEATHER_CODES))
+    weather_code_int = np.nan_to_num(weather_code, nan=-9999.0).astype(int)
+    thunder = np.isin(weather_code_int, np.array(OPENMETEO_THUNDER_WEATHER_CODES))
     thunder = thunder | ((cape >= OPENMETEO_CAPE_THUNDER_THRESHOLD) & (pop_pct >= OPENMETEO_POP_THUNDER_THRESHOLD))
 
     resolved_lat = float(payload.get("latitude", requested_lat))
@@ -146,7 +147,11 @@ def resolve_openmeteo_verification_forecast_model(
     forecast_lead_days: int,
 ) -> str:
     normalized_model = requested_model.strip().lower()
-    if normalized_model == OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT and forecast_lead_days <= 1:
+    if normalized_model in {
+        OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
+        "hrrr",
+        OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL,
+    } and forecast_lead_days <= 1:
         return OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL
     return normalized_model
 
@@ -159,6 +164,92 @@ def _verification_forecast_days(
     if resolved_forecast_model == OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL and forecast_lead_days <= 1:
         return max(OPENMETEO_VERIFICATION_FORECAST_DAYS, 2)
     return max(OPENMETEO_VERIFICATION_FORECAST_DAYS, forecast_lead_days + 2)
+
+
+def _forecast_query_for_batch(
+    *,
+    batch: list[tuple[float, float]],
+    run_timestamp: str,
+    forecast_days: int,
+    timezone_name: str,
+    model_name: str,
+) -> dict[str, object]:
+    return {
+        "latitude": ",".join(str(lat) for lat, _ in batch),
+        "longitude": ",".join(str(lon) for _, lon in batch),
+        "run": run_timestamp,
+        "forecast_days": forecast_days,
+        "timezone": timezone_name,
+        "temperature_unit": "fahrenheit",
+        "wind_speed_unit": "mph",
+        "precipitation_unit": "inch",
+        "models": model_name,
+        "hourly": list(OPENMETEO_VERIFICATION_FORECAST_HOURLY_VARS),
+    }
+
+
+def _fetch_forecast_payloads_for_batch(
+    *,
+    batch: list[tuple[float, float]],
+    run_timestamp: str,
+    forecast_days: int,
+    timezone_name: str,
+    resolved_forecast_model: str,
+) -> tuple[list[tuple[dict[str, object], str]], bool]:
+    try:
+        payloads = _payload_list(
+            _fetch_json(
+                OPENMETEO_SINGLE_RUN_URL,
+                _forecast_query_for_batch(
+                    batch=batch,
+                    run_timestamp=run_timestamp,
+                    forecast_days=forecast_days,
+                    timezone_name=timezone_name,
+                    model_name=resolved_forecast_model,
+                ),
+            )
+        )
+        if len(payloads) != len(batch):
+            raise ValueError("Verification batch response size did not match requested mesh points.")
+        return list(zip(payloads, [resolved_forecast_model] * len(payloads), strict=False)), False
+    except Exception:
+        if resolved_forecast_model != OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL:
+            raise
+
+    point_payloads: list[tuple[dict[str, object], str]] = []
+    used_fallback = False
+    for requested_lat, requested_lon in batch:
+        single_point = [(requested_lat, requested_lon)]
+        try:
+            payload = _payload_list(
+                _fetch_json(
+                    OPENMETEO_SINGLE_RUN_URL,
+                    _forecast_query_for_batch(
+                        batch=single_point,
+                        run_timestamp=run_timestamp,
+                        forecast_days=forecast_days,
+                        timezone_name=timezone_name,
+                        model_name=resolved_forecast_model,
+                    ),
+                )
+            )[0]
+            point_payloads.append((payload, resolved_forecast_model))
+        except Exception:
+            fallback_payload = _payload_list(
+                _fetch_json(
+                    OPENMETEO_SINGLE_RUN_URL,
+                    _forecast_query_for_batch(
+                        batch=single_point,
+                        run_timestamp=run_timestamp,
+                        forecast_days=forecast_days,
+                        timezone_name=timezone_name,
+                        model_name=OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
+                    ),
+                )
+            )[0]
+            point_payloads.append((fallback_payload, OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT))
+            used_fallback = True
+    return point_payloads, used_fallback
 
 
 @dataclass
@@ -195,21 +286,10 @@ class OpenMeteoVerificationRegionalLoader:
 
         forecast_point_datasets: dict[tuple[float, float], xr.Dataset] = {}
         analysis_point_datasets: dict[tuple[float, float], xr.Dataset] = {}
+        forecast_used_fallback = False
 
         for start in range(0, len(coordinate_pairs), OPENMETEO_REGIONAL_BATCH_SIZE):
             batch = coordinate_pairs[start : start + OPENMETEO_REGIONAL_BATCH_SIZE]
-            forecast_query = {
-                "latitude": ",".join(str(lat) for lat, _ in batch),
-                "longitude": ",".join(str(lon) for _, lon in batch),
-                "run": run_timestamp,
-                "forecast_days": forecast_days,
-                "timezone": timezone_name,
-                "temperature_unit": "fahrenheit",
-                "wind_speed_unit": "mph",
-                "precipitation_unit": "inch",
-                "models": resolved_forecast_model,
-                "hourly": list(OPENMETEO_VERIFICATION_FORECAST_HOURLY_VARS),
-            }
             analysis_query = {
                 "latitude": ",".join(str(lat) for lat, _ in batch),
                 "longitude": ",".join(str(lon) for _, lon in batch),
@@ -223,19 +303,26 @@ class OpenMeteoVerificationRegionalLoader:
                 "hourly": list(OPENMETEO_VERIFICATION_ANALYSIS_HOURLY_VARS),
             }
 
-            forecast_payloads = _payload_list(_fetch_json(OPENMETEO_SINGLE_RUN_URL, forecast_query))
+            forecast_payloads, batch_used_fallback = _fetch_forecast_payloads_for_batch(
+                batch=batch,
+                run_timestamp=run_timestamp,
+                forecast_days=forecast_days,
+                timezone_name=timezone_name,
+                resolved_forecast_model=resolved_forecast_model,
+            )
+            forecast_used_fallback = forecast_used_fallback or batch_used_fallback
             analysis_payloads = _payload_list(_fetch_json(OPENMETEO_ARCHIVE_URL, analysis_query))
             if len(forecast_payloads) != len(batch) or len(analysis_payloads) != len(batch):
                 raise ValueError("Verification batch response size did not match requested mesh points.")
 
-            for (requested_lat, requested_lon), forecast_payload, analysis_payload in zip(
+            for (requested_lat, requested_lon), (forecast_payload, forecast_payload_model), analysis_payload in zip(
                 batch, forecast_payloads, analysis_payloads, strict=False
             ):
                 forecast_dataset = _normalize_openmeteo_verification_payload(
                     forecast_payload,
                     requested_lat=requested_lat,
                     requested_lon=requested_lon,
-                    source_label=f"openmeteo_single_run:{resolved_forecast_model}",
+                    source_label=f"openmeteo_single_run:{forecast_payload_model}",
                     derive_pop_proxy=False,
                 )
                 forecast_point_datasets[(requested_lat, requested_lon)] = _subset_to_valid_local_day(forecast_dataset, valid_date)
@@ -261,7 +348,11 @@ class OpenMeteoVerificationRegionalLoader:
         )
         forecast_grid.attrs.update(
             {
-                "source": f"openmeteo_single_run:{resolved_forecast_model}",
+                "source": (
+                    f"openmeteo_single_run:{resolved_forecast_model}"
+                    if not forecast_used_fallback
+                    else f"openmeteo_single_run:{resolved_forecast_model}+{OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT}_fallback"
+                ),
                 "verification_region": self.region_name,
                 "verification_run_timestamp_utc": run_timestamp,
                 "mesh_profile": self.mesh_profile,
@@ -279,7 +370,11 @@ class OpenMeteoVerificationRegionalLoader:
             "region_name": self.region_name,
             "mesh_profile": self.mesh_profile,
             "forecast_model_requested": self.forecast_model,
-            "forecast_model": resolved_forecast_model,
+            "forecast_model": (
+                resolved_forecast_model
+                if not forecast_used_fallback
+                else f"{resolved_forecast_model}+{OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT}_fallback"
+            ),
             "analysis_model": self.analysis_model,
             "forecast_run_timestamp_utc": run_timestamp,
             "forecast_lead_days": self.forecast_lead_days,
