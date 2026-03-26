@@ -188,6 +188,7 @@ When run manually from GitHub Actions, the verification workflow lets you choose
 - optional fresh-case cap, cooldown, region filter, and date filter for incremental chunked runs
 
 This workflow is the current backtesting path. It is separate from the daily public product workflow.
+On GitHub Actions, the verification benchmark and tuning workflows now also restore/save the raw Open-Meteo HTTP cache and the scored-hourly verification cache so repeated chunked runs can build on earlier progress instead of starting from a cold cache every time.
 
 Verification tuning command:
 

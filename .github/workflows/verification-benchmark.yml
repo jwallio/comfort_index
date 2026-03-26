@@ -76,6 +76,24 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
+      - name: Restore Open-Meteo HTTP cache
+        id: restore-http-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: output/openmeteo_http_cache
+          key: comfortwx-openmeteo-http-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            comfortwx-openmeteo-http-${{ runner.os }}-${{ github.ref_name }}-
+
+      - name: Restore verification hourly cache
+        id: restore-hourly-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: output/verification_hourly_cache
+          key: comfortwx-verification-hourly-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            comfortwx-verification-hourly-${{ runner.os }}-${{ github.ref_name }}-
+
       - name: Install system libraries
         run: |
           sudo apt-get update
@@ -158,3 +176,17 @@ jobs:
           path: output/verification_site/latest/
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Save Open-Meteo HTTP cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: output/openmeteo_http_cache
+          key: ${{ steps.restore-http-cache.outputs.cache-primary-key }}
+
+      - name: Save verification hourly cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: output/verification_hourly_cache
+          key: ${{ steps.restore-hourly-cache.outputs.cache-primary-key }}
