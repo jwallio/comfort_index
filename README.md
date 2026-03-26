@@ -82,6 +82,12 @@ Reuse existing per-case verification artifacts when iterating on benchmark repor
 python -m comfortwx.validation.verify_benchmark --benchmark-tier default --lead-days 1,2,3,7 --case-cache-mode reuse
 ```
 
+Verification-only daily aggregation tuning harness:
+
+```powershell
+python -m comfortwx.validation.tune_daily_aggregation --benchmark-tier default --lead-days 1,2,3,7 --case-cache-mode reuse
+```
+
 ## Outputs
 
 Typical outputs include:
@@ -205,6 +211,13 @@ Each verification case now also writes a component-attribution CSV that summariz
 Lead-specific benchmark thresholds are now applied so longer leads are judged against more realistic expectations while still being ranked consistently in the improvement-priority outputs.
 
 The benchmark runner can also reuse already-written per-case verification artifacts. That makes it much easier to iterate on benchmark tiers, calibration summaries, and HTML reporting without refetching the same Open-Meteo cases on every pass.
+
+The daily aggregation tuning runner builds on the same benchmark cases, but compares multiple candidate daily aggregation modes instead of one fixed mode. It writes:
+- per-case candidate score CSVs
+- candidate summary CSVs by lead and aggregation mode
+- recommended mode by forecast lead
+- held-out mode-selection summary
+- compact HTML and chart outputs for tuning review
 
 The verification workflow also writes a self-contained verification mini-site under `output/verification_site/latest/`. The daily GitHub Pages build is prepared to pull in the most recent verification artifact and expose it under `/verification/` on the public site when a benchmark artifact is available.
 

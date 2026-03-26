@@ -170,6 +170,66 @@ DAILY_AGGREGATION_MODES: Final[dict[str, dict[str, object]]] = {
             "score_drop": 8.0,
         },
     },
+    "balanced_soft": {
+        "graded_reliability": True,
+        "usable_score_min": 60.0,
+        "usable_score_full": 74.0,
+        "strong_score_min": 71.0,
+        "strong_score_full": 85.0,
+        "prime_clean_penalty_weights": {"rain": 0.32, "thunder": 0.34, "gust": 0.14},
+        "soft_rain_signal": True,
+        "soft_gust_signal": True,
+        "soft_score_crash_signal": True,
+        "soft_score_drop_signal": True,
+        "measurable_rain_pop_min": 42.0,
+        "measurable_rain_pop_full": 72.0,
+        "measurable_rain_qpf_min": 0.005,
+        "measurable_rain_qpf_full": 0.03,
+        "gust_soft_min": 24.0,
+        "gust_soft_full": 36.0,
+        "score_crash_floor": 34.0,
+        "score_crash_ceiling": 49.0,
+        "score_drop_min": 11.0,
+        "score_drop_full": 22.0,
+        "disruption_weights": {
+            "measurable_rain": 10.0,
+            "heavy_precip": 6.5,
+            "thunder": 23.0,
+            "strong_gusts": 6.5,
+            "score_crash": 5.0,
+            "score_drop": 7.0,
+        },
+    },
+    "long_lead_soft": {
+        "graded_reliability": True,
+        "usable_score_min": 57.0,
+        "usable_score_full": 76.0,
+        "strong_score_min": 68.0,
+        "strong_score_full": 86.0,
+        "prime_clean_penalty_weights": {"rain": 0.28, "thunder": 0.33, "gust": 0.1},
+        "soft_rain_signal": True,
+        "soft_gust_signal": True,
+        "soft_score_crash_signal": True,
+        "soft_score_drop_signal": True,
+        "measurable_rain_pop_min": 38.0,
+        "measurable_rain_pop_full": 68.0,
+        "measurable_rain_qpf_min": 0.004,
+        "measurable_rain_qpf_full": 0.028,
+        "gust_soft_min": 22.0,
+        "gust_soft_full": 35.0,
+        "score_crash_floor": 30.0,
+        "score_crash_ceiling": 50.0,
+        "score_drop_min": 9.0,
+        "score_drop_full": 20.0,
+        "disruption_weights": {
+            "measurable_rain": 8.5,
+            "heavy_precip": 6.0,
+            "thunder": 21.0,
+            "strong_gusts": 5.5,
+            "score_crash": 4.0,
+            "score_drop": 5.5,
+        },
+    },
 }
 
 DAILY_DISRUPTION_WEIGHTS: Final[dict[str, float]] = {
@@ -1137,6 +1197,12 @@ VERIFICATION_CALIBRATION_LINEAR_MIN_POINTS: Final[int] = 200
 VERIFICATION_CALIBRATION_SLOPE_RANGE: Final[tuple[float, float]] = (0.75, 1.25)
 VERIFICATION_CALIBRATION_INTERCEPT_RANGE: Final[tuple[float, float]] = (-15.0, 15.0)
 VERIFICATION_CALIBRATION_BIAS_SHRINKAGE_OFFSET: Final[float] = 2.0
+VERIFICATION_AGGREGATION_TUNING_CANDIDATE_MODES: Final[tuple[str, ...]] = (
+    "baseline",
+    "soft_reliability",
+    "balanced_soft",
+    "long_lead_soft",
+)
 
 
 def get_openmeteo_mesh_settings(region_name: str, mesh_profile: str = OPENMETEO_DEFAULT_MESH_PROFILE) -> dict[str, float | bool]:
