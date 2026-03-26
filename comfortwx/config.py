@@ -1016,6 +1016,7 @@ WESTERN_MOSAIC_FIXED_TARGET_GRID: Final[dict[str, float]] = {
 OPENMETEO_FORECAST_URL: Final[str] = "https://api.open-meteo.com/v1/forecast"
 OPENMETEO_AIR_QUALITY_URL: Final[str] = "https://air-quality-api.open-meteo.com/v1/air-quality"
 OPENMETEO_SINGLE_RUN_URL: Final[str] = "https://single-runs-api.open-meteo.com/v1/forecast"
+OPENMETEO_PREVIOUS_RUNS_URL: Final[str] = "https://previous-runs-api.open-meteo.com/v1/forecast"
 OPENMETEO_ARCHIVE_URL: Final[str] = "https://archive-api.open-meteo.com/v1/archive"
 OPENMETEO_HOURLY_VARS: Final[tuple[str, ...]] = (
     "temperature_2m",
@@ -1038,6 +1039,7 @@ OPENMETEO_THUNDER_WEATHER_CODES: Final[tuple[int, ...]] = (95, 96, 99)
 OPENMETEO_CAPE_THUNDER_THRESHOLD: Final[float] = 1200.0
 OPENMETEO_POP_THUNDER_THRESHOLD: Final[float] = 60.0
 OPENMETEO_REGIONAL_BATCH_SIZE: Final[int] = 12
+OPENMETEO_VERIFICATION_REGIONAL_BATCH_SIZE: Final[int] = 4
 OPENMETEO_DEFAULT_MESH_PROFILE: Final[str] = "standard"
 OPENMETEO_REQUEST_TIMEOUT_SECONDS: Final[float] = 45.0
 OPENMETEO_REQUEST_MAX_RETRIES: Final[int] = 2

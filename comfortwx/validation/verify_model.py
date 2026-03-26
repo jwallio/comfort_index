@@ -93,7 +93,7 @@ def _verification_summary(
         "valid_date": valid_date.isoformat(),
         "region_name": metadata["region_name"],
         "forecast_lead_days": metadata["forecast_lead_days"],
-        "forecast_source": f"Open-Meteo Single Runs ({metadata['forecast_model']})",
+        "forecast_source": f"Open-Meteo Previous Runs ({metadata['forecast_model']})",
         "analysis_source": f"Open-Meteo Archive ({metadata['analysis_model']})",
         "forecast_run_timestamp_utc": metadata["forecast_run_timestamp_utc"],
         "mesh_profile": metadata["mesh_profile"],

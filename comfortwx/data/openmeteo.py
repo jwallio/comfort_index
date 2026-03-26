@@ -71,7 +71,7 @@ def _should_cache_request(base_url: str) -> bool:
     workflow = current_openmeteo_workflow()
     if not workflow.startswith("verification"):
         return False
-    return "single-runs-api" in base_url or "archive-api" in base_url
+    return "single-runs-api" in base_url or "previous-runs-api" in base_url or "archive-api" in base_url
 
 
 def _request_cache_path(request_url: str) -> Path:

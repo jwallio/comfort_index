@@ -12,6 +12,7 @@ from comfortwx.data.openmeteo_verification import (
     _subset_to_valid_local_day,
     _forecast_query_for_batch,
     _normalize_openmeteo_verification_payload,
+    _normalize_previous_run_payload,
     resolve_openmeteo_verification_forecast_model,
 )
 from comfortwx.validation.verify_model import _verification_summary
@@ -154,8 +155,8 @@ def test_forecast_batch_does_not_fan_out_on_rate_limit(monkeypatch) -> None:
     try:
         _fetch_forecast_payloads_for_batch(
             batch=[(35.0, -78.0), (36.0, -79.0)],
-            run_timestamp="2026-03-19T12:00",
             valid_date=date(2026, 3, 20),
+            forecast_lead_days=1,
             timezone_name="America/New_York",
             resolved_forecast_model="ncep_hrrr_conus",
         )
@@ -187,15 +188,47 @@ def test_subset_to_valid_local_day_raises_when_no_hours_match() -> None:
         raise AssertionError("Expected empty valid-day subset to raise.")
 
 
-def test_forecast_query_requests_exact_valid_day_hour_window() -> None:
+def test_forecast_query_requests_previous_runs_variables_for_valid_day() -> None:
     query = _forecast_query_for_batch(
         batch=[(35.0, -78.0)],
-        run_timestamp="2026-03-19T12:00",
         valid_date=date(2026, 3, 20),
+        forecast_lead_days=2,
         timezone_name="America/New_York",
         model_name="gfs_seamless",
     )
 
-    assert query["start_hour"] == "2026-03-20T00:00"
-    assert query["end_hour"] == "2026-03-20T23:00"
-    assert "forecast_days" not in query
+    assert query["start_date"] == "2026-03-20"
+    assert query["end_date"] == "2026-03-20"
+    assert query["hourly"][0] == "temperature_2m_previous_day2"
+    assert "run" not in query
+
+
+def test_normalize_previous_run_payload_remaps_hourly_fields() -> None:
+    payload = {
+        "latitude": 35.0,
+        "longitude": -78.0,
+        "timezone": "America/New_York",
+        "hourly_units": {
+            "temperature_2m_previous_day3": "°F",
+            "visibility_previous_day3": "m",
+        },
+        "hourly": {
+            "time": ["2026-03-20T00:00", "2026-03-20T01:00"],
+            "temperature_2m_previous_day3": [55.0, 56.0],
+            "dew_point_2m_previous_day3": [45.0, 46.0],
+            "precipitation_previous_day3": [0.0, 0.1],
+            "precipitation_probability_previous_day3": [10.0, 40.0],
+            "cloud_cover_previous_day3": [20.0, 40.0],
+            "wind_speed_10m_previous_day3": [5.0, 7.0],
+            "wind_gusts_10m_previous_day3": [12.0, 14.0],
+            "weather_code_previous_day3": [1, 3],
+            "visibility_previous_day3": [16093.44, 8046.72],
+        },
+    }
+
+    normalized = _normalize_previous_run_payload(payload, forecast_lead_days=3)
+
+    assert normalized["hourly"]["temperature_2m"] == [55.0, 56.0]
+    assert normalized["hourly"]["visibility"] == [16093.44, 8046.72]
+    assert normalized["hourly_units"]["temperature_2m"] == "°F"
+    assert normalized["hourly_units"]["visibility"] == "m"
