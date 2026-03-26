@@ -5,6 +5,7 @@ import pandas as pd
 from pathlib import Path
 
 from comfortwx.validation.tune_daily_aggregation import (
+    _hourly_cache_paths,
     _parse_candidate_modes,
     _parse_lead_days,
     evaluate_daily_aggregation_modes,
@@ -26,6 +27,19 @@ def test_parse_candidate_modes_preserves_order_and_deduplicates() -> None:
 
 def test_parse_lead_days_preserves_order_and_deduplicates() -> None:
     assert _parse_lead_days("1,2,2,7") == (1, 2, 7)
+
+
+def test_hourly_cache_paths_include_cache_version(tmp_path: Path) -> None:
+    forecast_path, analysis_path = _hourly_cache_paths(
+        cache_dir=tmp_path,
+        region_name="southeast",
+        valid_date=date(2026, 3, 20),
+        forecast_model="gfs_seamless",
+        forecast_lead_days=1,
+    )
+
+    assert "v2_previous_runs" in forecast_path.name
+    assert "v2_previous_runs" in analysis_path.name
 
 
 def test_summarize_candidate_modes_and_recommendations() -> None:

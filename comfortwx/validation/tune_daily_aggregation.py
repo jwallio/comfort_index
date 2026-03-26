@@ -24,6 +24,7 @@ from comfortwx.config import (
     OUTPUT_DIR,
     VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES,
     VERIFICATION_AGGREGATION_TUNING_CANDIDATE_MODES,
+    VERIFICATION_HOURLY_CACHE_VERSION,
     VERIFICATION_INCREMENTAL_CASE_COOLDOWN_SECONDS,
 )
 from comfortwx.data.openmeteo_reliability import openmeteo_request_context
@@ -75,7 +76,7 @@ def _hourly_cache_paths(
         requested_model=forecast_model,
         forecast_lead_days=forecast_lead_days,
     )
-    prefix = f"comfortwx_verify_{region_name}_{resolved_forecast_model}_d{forecast_lead_days}"
+    prefix = f"comfortwx_verify_{region_name}_{resolved_forecast_model}_d{forecast_lead_days}_{VERIFICATION_HOURLY_CACHE_VERSION}"
     stem = f"{valid_date:%Y%m%d}"
     return (
         cache_dir / f"{prefix}_forecast_hourly_scored_{stem}.nc",

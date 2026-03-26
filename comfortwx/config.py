@@ -1231,6 +1231,7 @@ VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES: Final[dict[str, dict[int, str]]]
         7: "long_lead_soft",
     },
 }
+VERIFICATION_HOURLY_CACHE_VERSION: Final[str] = "v2_previous_runs"
 VERIFICATION_INCREMENTAL_MAX_FRESH_CASES_BY_TIER: Final[dict[str, int]] = {
     "default": 0,
     "full-seasonal": 12,
