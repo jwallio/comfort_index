@@ -1264,6 +1264,34 @@ VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES: Final[dict[str, dict[str, object
             },
         },
     },
+    "experimental_regional_blend_plus": {
+        "default": {
+            1: "baseline",
+            2: "baseline",
+            3: "baseline",
+            7: "baseline",
+        },
+        "regions": {
+            "southeast": {
+                1: "long_lead_soft",
+                2: "long_lead_soft",
+                3: "long_lead_soft",
+                7: "long_lead_soft",
+            },
+            "plains": {
+                1: "long_lead_soft",
+                2: "long_lead_soft",
+                3: "long_lead_soft",
+                7: "long_lead_soft",
+            },
+            "northeast": {
+                1: "long_lead_soft",
+                2: "baseline",
+                3: "baseline",
+                7: "long_lead_soft",
+            },
+        },
+    },
 }
 VERIFICATION_HOURLY_CACHE_VERSION: Final[str] = "v2_previous_runs"
 VERIFICATION_INCREMENTAL_MAX_FRESH_CASES_BY_TIER: Final[dict[str, int]] = {
