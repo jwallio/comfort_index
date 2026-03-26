@@ -121,3 +121,24 @@ def test_soft_reliability_aggregation_is_less_brittle_near_threshold_crossings()
     assert tuned_delta < baseline_delta
     assert "reliability_score" in tuned_lower
     assert "disruption_penalty" in tuned_lower
+
+
+def test_soft_aggregation_modes_do_not_propagate_nan_event_signals() -> None:
+    times = xr.date_range("2026-06-01T08:00", periods=13, freq="1h")
+    scored = xr.Dataset(
+        data_vars={
+            "hourly_score": (("time", "lat", "lon"), np.full((13, 1, 1), 70.0)),
+            "dewpoint_f": (("time", "lat", "lon"), np.full((13, 1, 1), 45.0)),
+            "gust_mph": (("time", "lat", "lon"), np.full((13, 1, 1), np.nan)),
+            "qpf_in": (("time", "lat", "lon"), np.full((13, 1, 1), np.nan)),
+            "pop_pct": (("time", "lat", "lon"), np.full((13, 1, 1), np.nan)),
+            "thunder": (("time", "lat", "lon"), np.zeros((13, 1, 1), dtype=bool)),
+        },
+        coords={"time": times, "lat": [35.0], "lon": [-108.0]},
+    )
+
+    for aggregation_mode in ("soft_reliability", "balanced_soft", "long_lead_soft"):
+        daily = aggregate_daily_scores(scored, aggregation_mode=aggregation_mode)
+        assert np.isfinite(float(daily["daily_score"].values.squeeze()))
+        assert np.isfinite(float(daily["reliability_score"].values.squeeze()))
+        assert np.isfinite(float(daily["disruption_penalty"].values.squeeze()))

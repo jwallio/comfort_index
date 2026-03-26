@@ -54,16 +54,16 @@ def _linear_ramp(values: xr.DataArray, start: float, end: float) -> xr.DataArray
     """Return a 0..1 ramp between two thresholds."""
 
     if end <= start:
-        return xr.where(values >= end, 1.0, 0.0)
-    return ((values - start) / (end - start)).clip(0.0, 1.0)
+        return xr.where(values >= end, 1.0, 0.0).fillna(0.0)
+    return ((values - start) / (end - start)).clip(0.0, 1.0).fillna(0.0)
 
 
 def _inverse_linear_ramp(values: xr.DataArray, low: float, high: float) -> xr.DataArray:
     """Return a 1..0 ramp as values rise from low to high."""
 
     if high <= low:
-        return xr.where(values <= low, 1.0, 0.0)
-    return ((high - values) / (high - low)).clip(0.0, 1.0)
+        return xr.where(values <= low, 1.0, 0.0).fillna(0.0)
+    return ((high - values) / (high - low)).clip(0.0, 1.0).fillna(0.0)
 
 
 def _score_drop_fraction(scores: xr.DataArray, weights: xr.DataArray, drop_threshold: float) -> xr.DataArray:
@@ -79,7 +79,7 @@ def _score_drop_signal(scores: xr.DataArray, weights: xr.DataArray, min_drop: fl
     """Return a graded weighted score-drop signal."""
 
     drop_magnitude = (-scores.diff("time")).clip(min=0.0)
-    drop_signal = _linear_ramp(drop_magnitude, min_drop, full_drop)
+    drop_signal = _linear_ramp(drop_magnitude, min_drop, full_drop).fillna(0.0)
     drop_weights = weights.isel(time=slice(1, None))
     return _weighted_mean(drop_signal, drop_weights)
 
