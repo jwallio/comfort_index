@@ -1211,24 +1211,58 @@ VERIFICATION_AGGREGATION_TUNING_CANDIDATE_MODES: Final[tuple[str, ...]] = (
     "balanced_soft",
     "long_lead_soft",
 )
-VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES: Final[dict[str, dict[int, str]]] = {
+VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES: Final[dict[str, dict[str, object]]] = {
     "baseline": {
-        1: "baseline",
-        2: "baseline",
-        3: "baseline",
-        7: "baseline",
+        "default": {
+            1: "baseline",
+            2: "baseline",
+            3: "baseline",
+            7: "baseline",
+        },
     },
     "experimental_lead_aware_soft": {
-        1: "baseline",
-        2: "long_lead_soft",
-        3: "long_lead_soft",
-        7: "long_lead_soft",
+        "default": {
+            1: "baseline",
+            2: "long_lead_soft",
+            3: "long_lead_soft",
+            7: "long_lead_soft",
+        },
     },
     "experimental_all_leads_soft": {
-        1: "long_lead_soft",
-        2: "long_lead_soft",
-        3: "long_lead_soft",
-        7: "long_lead_soft",
+        "default": {
+            1: "long_lead_soft",
+            2: "long_lead_soft",
+            3: "long_lead_soft",
+            7: "long_lead_soft",
+        },
+    },
+    "experimental_regional_blend": {
+        "default": {
+            1: "baseline",
+            2: "baseline",
+            3: "baseline",
+            7: "baseline",
+        },
+        "regions": {
+            "southeast": {
+                1: "long_lead_soft",
+                2: "long_lead_soft",
+                3: "long_lead_soft",
+                7: "long_lead_soft",
+            },
+            "plains": {
+                1: "long_lead_soft",
+                2: "long_lead_soft",
+                3: "long_lead_soft",
+                7: "long_lead_soft",
+            },
+            "northeast": {
+                1: "baseline",
+                2: "baseline",
+                3: "baseline",
+                7: "long_lead_soft",
+            },
+        },
     },
 }
 VERIFICATION_HOURLY_CACHE_VERSION: Final[str] = "v2_previous_runs"

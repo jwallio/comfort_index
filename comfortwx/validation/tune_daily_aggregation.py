@@ -396,10 +396,26 @@ def build_holdout_mode_selection(case_scores: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def _resolve_policy_mode(policy_definition: dict[str, object], *, region_name: str, lead_day: int) -> str:
+    default_modes = policy_definition.get("default", {})
+    region_overrides = policy_definition.get("regions", {})
+    if not isinstance(default_modes, dict):
+        raise ValueError("Policy definition default modes must be a mapping.")
+    if not isinstance(region_overrides, dict):
+        raise ValueError("Policy definition region overrides must be a mapping.")
+
+    regional_modes = region_overrides.get(region_name, {})
+    if isinstance(regional_modes, dict) and lead_day in regional_modes:
+        return str(regional_modes[lead_day])
+    if lead_day in default_modes:
+        return str(default_modes[lead_day])
+    return "baseline"
+
+
 def build_policy_comparison(
     case_scores: pd.DataFrame,
     *,
-    policy_definitions: dict[str, dict[int, str]] = VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES,
+    policy_definitions: dict[str, dict[str, object]] = VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     ok = _ok_case_scores(case_scores)
     if ok.empty:
@@ -411,8 +427,9 @@ def build_policy_comparison(
         if case_rows.empty:
             continue
         lead_day = int(case_rows["forecast_lead_days"].iloc[0])
+        region_name = str(case_rows["region"].iloc[0])
         for policy_name, policy_modes in policy_definitions.items():
-            aggregation_mode = policy_modes.get(lead_day, "baseline")
+            aggregation_mode = _resolve_policy_mode(policy_modes, region_name=region_name, lead_day=lead_day)
             matched_row = case_rows.loc[case_rows["aggregation_mode"] == aggregation_mode]
             if matched_row.empty:
                 continue
@@ -438,7 +455,7 @@ def build_policy_comparison(
 
     policy_case_scores = pd.DataFrame.from_records(policy_case_records)
     policy_summary = (
-        policy_case_scores.groupby(["forecast_lead_days", "policy_name", "aggregation_mode"], dropna=False)
+        policy_case_scores.groupby(["forecast_lead_days", "policy_name"], dropna=False)
         .agg(
             case_count=("case_label", "count"),
             mean_score_mae=("score_mae", "mean"),
@@ -446,6 +463,7 @@ def build_policy_comparison(
             mean_abs_bias=("score_bias_mean", lambda values: float(np.mean(np.abs(values)))),
             mean_exact_category_agreement=("exact_category_agreement_fraction", "mean"),
             mean_near_category_agreement=("near_category_agreement_fraction", "mean"),
+            aggregation_modes_used=("aggregation_mode", lambda values: ",".join(sorted(set(str(value) for value in values)))),
         )
         .reset_index()
         .sort_values(["forecast_lead_days", "mean_score_mae", "mean_score_rmse", "policy_name"])
