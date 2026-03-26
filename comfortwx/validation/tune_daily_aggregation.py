@@ -21,6 +21,7 @@ from comfortwx.config import (
     OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
     OPENMETEO_VERIFICATION_FORECAST_RUN_HOUR_UTC,
     OUTPUT_DIR,
+    VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES,
     VERIFICATION_AGGREGATION_TUNING_CANDIDATE_MODES,
 )
 from comfortwx.data.openmeteo_verification import (
@@ -341,6 +342,86 @@ def build_holdout_mode_selection(case_scores: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def build_policy_comparison(
+    case_scores: pd.DataFrame,
+    *,
+    policy_definitions: dict[str, dict[int, str]] = VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    ok = _ok_case_scores(case_scores)
+    if ok.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    policy_case_records: list[dict[str, object]] = []
+    for case_label in ok["case_label"].drop_duplicates():
+        case_rows = ok.loc[ok["case_label"] == case_label].copy()
+        if case_rows.empty:
+            continue
+        lead_day = int(case_rows["forecast_lead_days"].iloc[0])
+        for policy_name, policy_modes in policy_definitions.items():
+            aggregation_mode = policy_modes.get(lead_day, "baseline")
+            matched_row = case_rows.loc[case_rows["aggregation_mode"] == aggregation_mode]
+            if matched_row.empty:
+                continue
+            selected_row = matched_row.iloc[0]
+            policy_case_records.append(
+                {
+                    "policy_name": policy_name,
+                    "aggregation_mode": aggregation_mode,
+                    "case_label": case_label,
+                    "region": str(selected_row["region"]),
+                    "date": selected_row["date"].date().isoformat(),
+                    "forecast_lead_days": lead_day,
+                    "score_bias_mean": float(selected_row["score_bias_mean"]),
+                    "score_mae": float(selected_row["score_mae"]),
+                    "score_rmse": float(selected_row["score_rmse"]),
+                    "exact_category_agreement_fraction": float(selected_row["exact_category_agreement_fraction"]),
+                    "near_category_agreement_fraction": float(selected_row["near_category_agreement_fraction"]),
+                }
+            )
+
+    if not policy_case_records:
+        return pd.DataFrame(), pd.DataFrame()
+
+    policy_case_scores = pd.DataFrame.from_records(policy_case_records)
+    policy_summary = (
+        policy_case_scores.groupby(["forecast_lead_days", "policy_name", "aggregation_mode"], dropna=False)
+        .agg(
+            case_count=("case_label", "count"),
+            mean_score_mae=("score_mae", "mean"),
+            mean_score_rmse=("score_rmse", "mean"),
+            mean_abs_bias=("score_bias_mean", lambda values: float(np.mean(np.abs(values)))),
+            mean_exact_category_agreement=("exact_category_agreement_fraction", "mean"),
+            mean_near_category_agreement=("near_category_agreement_fraction", "mean"),
+        )
+        .reset_index()
+        .sort_values(["forecast_lead_days", "mean_score_mae", "mean_score_rmse", "policy_name"])
+    )
+
+    baseline = policy_summary.loc[policy_summary["policy_name"] == "baseline", [
+        "forecast_lead_days",
+        "mean_score_mae",
+        "mean_score_rmse",
+        "mean_near_category_agreement",
+    ]].rename(
+        columns={
+            "mean_score_mae": "baseline_mean_score_mae",
+            "mean_score_rmse": "baseline_mean_score_rmse",
+            "mean_near_category_agreement": "baseline_mean_near_category_agreement",
+        }
+    )
+    policy_summary = policy_summary.merge(baseline, on="forecast_lead_days", how="left")
+    policy_summary["score_mae_improvement_vs_baseline"] = (
+        policy_summary["baseline_mean_score_mae"] - policy_summary["mean_score_mae"]
+    ).round(3)
+    policy_summary["score_rmse_improvement_vs_baseline"] = (
+        policy_summary["baseline_mean_score_rmse"] - policy_summary["mean_score_rmse"]
+    ).round(3)
+    policy_summary["near_category_agreement_change_vs_baseline"] = (
+        policy_summary["mean_near_category_agreement"] - policy_summary["baseline_mean_near_category_agreement"]
+    ).round(4)
+    return policy_case_scores, policy_summary
+
+
 def _save_chart(fig: plt.Figure, path: Path) -> Path:
     fig.savefig(path, dpi=180, bbox_inches="tight")
     plt.close(fig)
@@ -399,6 +480,26 @@ def _write_holdout_improvement_chart(holdout_summary: pd.DataFrame, *, output_di
     return _save_chart(fig, output_dir / f"comfortwx_tune_daily_aggregation_{stem}_holdout_improvement.png")
 
 
+def _write_policy_comparison_chart(policy_summary: pd.DataFrame, *, output_dir: Path, stem: str) -> Path | None:
+    if policy_summary.empty:
+        return None
+    pivot = policy_summary.pivot(
+        index="forecast_lead_days",
+        columns="policy_name",
+        values="mean_score_mae",
+    )
+    fig, ax = plt.subplots(figsize=(9.0, 4.8))
+    for policy_name in pivot.columns:
+        ax.plot(pivot.index, pivot[policy_name], marker="o", linewidth=2.0, label=policy_name)
+    ax.set_xlabel("Forecast lead day")
+    ax.set_ylabel("Mean MAE")
+    ax.set_title("Experimental Aggregation Policy Comparison")
+    ax.set_xticks(list(pivot.index))
+    ax.grid(alpha=0.25, linewidth=0.5)
+    ax.legend(frameon=False)
+    return _save_chart(fig, output_dir / f"comfortwx_tune_daily_aggregation_{stem}_policy_comparison.png")
+
+
 def _html_table(frame: pd.DataFrame) -> str:
     if frame.empty:
         return "<p>No results available.</p>"
@@ -410,6 +511,7 @@ def _write_tuning_report(
     candidate_summary: pd.DataFrame,
     recommended_modes: pd.DataFrame,
     holdout_summary: pd.DataFrame,
+    policy_summary: pd.DataFrame,
     chart_paths: dict[str, Path],
     output_dir: Path,
     stem: str,
@@ -455,6 +557,8 @@ def _write_tuning_report(
                 _html_table(candidate_summary),
                 "<h2>Held-Out Selection Summary</h2>",
                 _html_table(holdout_summary),
+                "<h2>Experimental Policy Comparison</h2>",
+                _html_table(policy_summary),
                 "<h2>Charts</h2>",
                 "<div class='chart-grid'>",
                 *chart_blocks,
@@ -542,6 +646,12 @@ def main() -> None:
     holdout_summary_path = output_dir / f"comfortwx_tune_daily_aggregation_{stem}_holdout_selection.csv"
     holdout_summary.to_csv(holdout_summary_path, index=False)
 
+    policy_case_scores, policy_summary = build_policy_comparison(case_scores)
+    policy_case_scores_path = output_dir / f"comfortwx_tune_daily_aggregation_{stem}_policy_case_scores.csv"
+    policy_case_scores.to_csv(policy_case_scores_path, index=False)
+    policy_summary_path = output_dir / f"comfortwx_tune_daily_aggregation_{stem}_policy_summary.csv"
+    policy_summary.to_csv(policy_summary_path, index=False)
+
     chart_paths: dict[str, Path] = {}
     candidate_mae_chart = _write_candidate_mae_chart(candidate_summary, output_dir=output_dir, stem=stem)
     if candidate_mae_chart is not None:
@@ -549,11 +659,15 @@ def main() -> None:
     holdout_chart = _write_holdout_improvement_chart(holdout_summary, output_dir=output_dir, stem=stem)
     if holdout_chart is not None:
         chart_paths["Held-out improvement by lead"] = holdout_chart
+    policy_chart = _write_policy_comparison_chart(policy_summary, output_dir=output_dir, stem=stem)
+    if policy_chart is not None:
+        chart_paths["Experimental policy comparison"] = policy_chart
 
     report_path = _write_tuning_report(
         candidate_summary=candidate_summary,
         recommended_modes=recommended_modes,
         holdout_summary=holdout_summary,
+        policy_summary=policy_summary,
         chart_paths=chart_paths,
         output_dir=output_dir,
         stem=stem,
@@ -563,6 +677,8 @@ def main() -> None:
     print(f"Saved candidate summary: {candidate_summary_path}")
     print(f"Saved recommended modes: {recommended_modes_path}")
     print(f"Saved holdout selection summary: {holdout_summary_path}")
+    print(f"Saved policy case scores: {policy_case_scores_path}")
+    print(f"Saved policy summary: {policy_summary_path}")
     for label, path in chart_paths.items():
         print(f"Saved {label}: {path}")
     print(f"Saved tuning report: {report_path}")

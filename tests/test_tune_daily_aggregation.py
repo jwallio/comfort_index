@@ -5,6 +5,7 @@ import pandas as pd
 from comfortwx.validation.tune_daily_aggregation import (
     _parse_candidate_modes,
     _parse_lead_days,
+    build_policy_comparison,
     build_holdout_mode_selection,
     recommend_modes_by_lead,
     summarize_candidate_modes,
@@ -176,3 +177,77 @@ def test_build_holdout_mode_selection_prefers_better_training_mode() -> None:
     assert not holdout.empty
     assert set(holdout["selected_aggregation_mode"]) == {"soft_reliability"}
     assert (holdout["score_mae_improvement"] > 0).all()
+
+
+def test_build_policy_comparison_compares_against_baseline() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "case_label": "southeast 2026-03-20 D+1",
+                "region": "southeast",
+                "date": "2026-03-20",
+                "forecast_lead_days": 1,
+                "aggregation_mode": "baseline",
+                "status": "ok",
+                "score_bias_mean": 1.2,
+                "score_mae": 8.0,
+                "score_rmse": 10.0,
+                "exact_category_agreement_fraction": 0.60,
+                "near_category_agreement_fraction": 0.88,
+            },
+            {
+                "case_label": "southeast 2026-03-20 D+1",
+                "region": "southeast",
+                "date": "2026-03-20",
+                "forecast_lead_days": 1,
+                "aggregation_mode": "long_lead_soft",
+                "status": "ok",
+                "score_bias_mean": 1.0,
+                "score_mae": 6.0,
+                "score_rmse": 8.0,
+                "exact_category_agreement_fraction": 0.64,
+                "near_category_agreement_fraction": 0.90,
+            },
+            {
+                "case_label": "southeast 2026-03-20 D+2",
+                "region": "southeast",
+                "date": "2026-03-20",
+                "forecast_lead_days": 2,
+                "aggregation_mode": "baseline",
+                "status": "ok",
+                "score_bias_mean": 1.1,
+                "score_mae": 9.0,
+                "score_rmse": 11.0,
+                "exact_category_agreement_fraction": 0.58,
+                "near_category_agreement_fraction": 0.85,
+            },
+            {
+                "case_label": "southeast 2026-03-20 D+2",
+                "region": "southeast",
+                "date": "2026-03-20",
+                "forecast_lead_days": 2,
+                "aggregation_mode": "long_lead_soft",
+                "status": "ok",
+                "score_bias_mean": 0.8,
+                "score_mae": 7.0,
+                "score_rmse": 9.0,
+                "exact_category_agreement_fraction": 0.63,
+                "near_category_agreement_fraction": 0.91,
+            },
+        ]
+    )
+
+    policy_case_scores, policy_summary = build_policy_comparison(frame)
+
+    assert not policy_case_scores.empty
+    assert not policy_summary.empty
+    lead_one_soft = policy_summary.loc[
+        (policy_summary["forecast_lead_days"] == 1)
+        & (policy_summary["policy_name"] == "experimental_all_leads_soft")
+    ].iloc[0]
+    lead_two_lead_aware = policy_summary.loc[
+        (policy_summary["forecast_lead_days"] == 2)
+        & (policy_summary["policy_name"] == "experimental_lead_aware_soft")
+    ].iloc[0]
+    assert lead_one_soft["score_mae_improvement_vs_baseline"] == 2.0
+    assert lead_two_lead_aware["score_mae_improvement_vs_baseline"] == 2.0

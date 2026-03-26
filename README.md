@@ -217,6 +217,7 @@ The daily aggregation tuning runner builds on the same benchmark cases, but comp
 - candidate summary CSVs by lead and aggregation mode
 - recommended mode by forecast lead
 - held-out mode-selection summary
+- experimental policy comparison CSVs against baseline
 - compact HTML and chart outputs for tuning review
 
 The verification workflow also writes a self-contained verification mini-site under `output/verification_site/latest/`. The daily GitHub Pages build is prepared to pull in the most recent verification artifact and expose it under `/verification/` on the public site when a benchmark artifact is available.
