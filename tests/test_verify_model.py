@@ -9,6 +9,8 @@ from urllib.error import HTTPError
 import comfortwx.data.openmeteo_verification as openmeteo_verification
 from comfortwx.data.openmeteo_verification import (
     _fetch_forecast_payloads_for_batch,
+    _subset_to_valid_local_day,
+    _forecast_query_for_batch,
     _normalize_openmeteo_verification_payload,
     resolve_openmeteo_verification_forecast_model,
 )
@@ -153,7 +155,7 @@ def test_forecast_batch_does_not_fan_out_on_rate_limit(monkeypatch) -> None:
         _fetch_forecast_payloads_for_batch(
             batch=[(35.0, -78.0), (36.0, -79.0)],
             run_timestamp="2026-03-19T12:00",
-            forecast_days=2,
+            valid_date=date(2026, 3, 20),
             timezone_name="America/New_York",
             resolved_forecast_model="ncep_hrrr_conus",
         )
@@ -163,3 +165,37 @@ def test_forecast_batch_does_not_fan_out_on_rate_limit(monkeypatch) -> None:
         raise AssertionError("Expected HTTP 429 to be raised.")
 
     assert calls["count"] == 1
+
+
+def test_subset_to_valid_local_day_raises_when_no_hours_match() -> None:
+    dataset = xr.Dataset(
+        data_vars={
+            "temp_f": (("time", "lat", "lon"), np.array([[[60.0]], [[61.0]]])),
+        },
+        coords={
+            "time": xr.date_range("2026-03-19T00:00", periods=2, freq="1h"),
+            "lat": [35.0],
+            "lon": [-78.0],
+        },
+    )
+
+    try:
+        _subset_to_valid_local_day(dataset, date(2026, 3, 20))
+    except ValueError as exc:
+        assert "returned no hourly data" in str(exc)
+    else:
+        raise AssertionError("Expected empty valid-day subset to raise.")
+
+
+def test_forecast_query_requests_exact_valid_day_hour_window() -> None:
+    query = _forecast_query_for_batch(
+        batch=[(35.0, -78.0)],
+        run_timestamp="2026-03-19T12:00",
+        valid_date=date(2026, 3, 20),
+        timezone_name="America/New_York",
+        model_name="gfs_seamless",
+    )
+
+    assert query["start_hour"] == "2026-03-20T00:00"
+    assert query["end_hour"] == "2026-03-20T23:00"
+    assert "forecast_days" not in query

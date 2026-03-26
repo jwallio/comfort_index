@@ -134,7 +134,10 @@ def _normalize_openmeteo_verification_payload(
 
 
 def _subset_to_valid_local_day(dataset: xr.Dataset, valid_date: date) -> xr.Dataset:
-    return dataset.sel(time=dataset["time"].dt.date == valid_date)
+    subset = dataset.sel(time=dataset["time"].dt.date == valid_date)
+    if subset.sizes.get("time", 0) == 0:
+        raise ValueError(f"Forecast request returned no hourly data for valid date {valid_date:%Y-%m-%d}.")
+    return subset
 
 
 def _forecast_run_timestamp(valid_date: date, *, run_hour_utc: int, lead_days: int) -> str:
@@ -172,7 +175,7 @@ def _forecast_query_for_batch(
     *,
     batch: list[tuple[float, float]],
     run_timestamp: str,
-    forecast_days: int,
+    valid_date: date,
     timezone_name: str,
     model_name: str,
 ) -> dict[str, object]:
@@ -180,8 +183,9 @@ def _forecast_query_for_batch(
         "latitude": ",".join(str(lat) for lat, _ in batch),
         "longitude": ",".join(str(lon) for _, lon in batch),
         "run": run_timestamp,
-        "forecast_days": forecast_days,
         "timezone": timezone_name,
+        "start_hour": f"{valid_date:%Y-%m-%d}T00:00",
+        "end_hour": f"{valid_date:%Y-%m-%d}T23:00",
         "temperature_unit": "fahrenheit",
         "wind_speed_unit": "mph",
         "precipitation_unit": "inch",
@@ -194,7 +198,7 @@ def _fetch_forecast_payloads_for_batch(
     *,
     batch: list[tuple[float, float]],
     run_timestamp: str,
-    forecast_days: int,
+    valid_date: date,
     timezone_name: str,
     resolved_forecast_model: str,
 ) -> tuple[list[tuple[dict[str, object], str]], bool]:
@@ -205,7 +209,7 @@ def _fetch_forecast_payloads_for_batch(
                 _forecast_query_for_batch(
                     batch=batch,
                     run_timestamp=run_timestamp,
-                    forecast_days=forecast_days,
+                    valid_date=valid_date,
                     timezone_name=timezone_name,
                     model_name=resolved_forecast_model,
                 ),
@@ -231,7 +235,7 @@ def _fetch_forecast_payloads_for_batch(
                     _forecast_query_for_batch(
                         batch=single_point,
                         run_timestamp=run_timestamp,
-                        forecast_days=forecast_days,
+                        valid_date=valid_date,
                         timezone_name=timezone_name,
                         model_name=resolved_forecast_model,
                     ),
@@ -247,7 +251,7 @@ def _fetch_forecast_payloads_for_batch(
                     _forecast_query_for_batch(
                         batch=single_point,
                         run_timestamp=run_timestamp,
-                        forecast_days=forecast_days,
+                        valid_date=valid_date,
                         timezone_name=timezone_name,
                         model_name=OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
                     ),
@@ -301,11 +305,6 @@ class OpenMeteoVerificationRegionalLoader:
             requested_model=self.forecast_model,
             forecast_lead_days=self.forecast_lead_days,
         )
-        forecast_days = _verification_forecast_days(
-            resolved_forecast_model=resolved_forecast_model,
-            forecast_lead_days=self.forecast_lead_days,
-        )
-
         forecast_point_datasets: dict[tuple[float, float], xr.Dataset] = {}
         analysis_point_datasets: dict[tuple[float, float], xr.Dataset] = {}
         forecast_used_fallback = False
@@ -328,7 +327,7 @@ class OpenMeteoVerificationRegionalLoader:
             forecast_payloads, batch_used_fallback = _fetch_forecast_payloads_for_batch(
                 batch=batch,
                 run_timestamp=run_timestamp,
-                forecast_days=forecast_days,
+                valid_date=valid_date,
                 timezone_name=timezone_name,
                 resolved_forecast_model=resolved_forecast_model,
             )
