@@ -5,30 +5,31 @@ import os
 import shutil
 import subprocess
 import tempfile
-import urllib.request
 import zipfile
 from pathlib import Path
 
 
-def github_request(url: str, token: str) -> bytes:
-    request = urllib.request.Request(
-        url,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "comfortwx-site-publisher",
-        },
+def gh_api_json(endpoint: str) -> dict:
+    result = subprocess.run(
+        ["gh", "api", endpoint],
+        check=True,
+        capture_output=True,
+        text=True,
     )
-    with urllib.request.urlopen(request) as response:
-        return response.read()
+    return json.loads(result.stdout)
 
 
-def latest_artifact_id(repository: str, token: str, artifact_name: str) -> int | None:
-    payload = github_request(
-        f"https://api.github.com/repos/{repository}/actions/artifacts?per_page=100",
-        token,
-    )
-    data = json.loads(payload.decode("utf-8"))
+def gh_api_download(endpoint: str, destination: Path) -> None:
+    with destination.open("wb") as handle:
+        subprocess.run(
+            ["gh", "api", endpoint],
+            check=True,
+            stdout=handle,
+        )
+
+
+def latest_artifact_id(repository: str, artifact_name: str) -> int | None:
+    data = gh_api_json(f"repos/{repository}/actions/artifacts?per_page=100")
     artifacts = [
         artifact
         for artifact in data.get("artifacts", [])
@@ -42,18 +43,13 @@ def latest_artifact_id(repository: str, token: str, artifact_name: str) -> int |
 
 def download_and_extract_artifact(
     repository: str,
-    token: str,
     artifact_id: int,
     target_dir: Path,
 ) -> None:
-    archive_bytes = github_request(
-        f"https://api.github.com/repos/{repository}/actions/artifacts/{artifact_id}/zip",
-        token,
-    )
     with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as handle:
-        handle.write(archive_bytes)
         archive_path = Path(handle.name)
     try:
+        gh_api_download(f"repos/{repository}/actions/artifacts/{artifact_id}/zip", archive_path)
         with zipfile.ZipFile(archive_path) as zf:
             zf.extractall(target_dir)
     finally:
@@ -87,7 +83,6 @@ def write_fallback_site(site_dir: Path, message: str) -> None:
 
 def main() -> None:
     repository = os.environ["GITHUB_REPOSITORY"]
-    token = os.environ["GH_TOKEN"]
     archive_artifact_name = os.environ.get("ARCHIVE_ARTIFACT_NAME", "comfortwx-archive")
     verification_artifact_name = os.environ.get(
         "VERIFICATION_ARTIFACT_NAME",
@@ -102,11 +97,11 @@ def main() -> None:
     shutil.rmtree(archive_dir, ignore_errors=True)
     shutil.rmtree(verification_dir, ignore_errors=True)
 
-    archive_id = latest_artifact_id(repository, token, archive_artifact_name)
+    archive_id = latest_artifact_id(repository, archive_artifact_name)
     if archive_id is None:
         write_fallback_site(site_dir, "No non-expired archive artifact is currently available.")
     else:
-        download_and_extract_artifact(repository, token, archive_id, archive_dir)
+        download_and_extract_artifact(repository, archive_id, archive_dir)
         copied = (
             copy_tree_if_exists(archive_dir / "output" / "archive", site_dir)
             or copy_tree_if_exists(archive_dir / "archive", site_dir)
@@ -114,9 +109,9 @@ def main() -> None:
         if not copied:
             write_fallback_site(site_dir, "The latest archive artifact did not contain an archive directory.")
 
-    verification_id = latest_artifact_id(repository, token, verification_artifact_name)
+    verification_id = latest_artifact_id(repository, verification_artifact_name)
     if verification_id is not None:
-        download_and_extract_artifact(repository, token, verification_id, verification_dir)
+        download_and_extract_artifact(repository, verification_id, verification_dir)
         verification_site = site_dir / "verification"
         copied = (
             copy_tree_if_exists(
