@@ -105,6 +105,7 @@ def main() -> None:
         copied = (
             copy_tree_if_exists(archive_dir / "output" / "archive", site_dir)
             or copy_tree_if_exists(archive_dir / "archive", site_dir)
+            or copy_tree_if_exists(archive_dir, site_dir)
         )
         if not copied:
             write_fallback_site(site_dir, "The latest archive artifact did not contain an archive directory.")
