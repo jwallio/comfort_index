@@ -11,6 +11,7 @@ from typing import Final
 PROJECT_ROOT: Final[Path] = Path(__file__).resolve().parent.parent
 OUTPUT_DIR: Final[Path] = PROJECT_ROOT / "output"
 OPENMETEO_REQUEST_CACHE_DIR: Final[Path] = OUTPUT_DIR / "openmeteo_http_cache"
+NOAA_ANALYSIS_CACHE_DIR: Final[Path] = OUTPUT_DIR / "noaa_analysis_cache"
 STITCHED_CONUS_STATE_FILE: Final[Path] = PROJECT_ROOT / "comfortwx" / "mapping" / "data" / "us_states.geojson"
 
 
@@ -1135,7 +1136,9 @@ OPENMETEO_REGIONAL_MESH_PROFILES: Final[dict[str, dict[str, dict[str, float | bo
 OPENMETEO_VERIFICATION_DEFAULT_REGION: Final[str] = "southeast"
 OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT: Final[str] = "gfs_seamless"
 OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL: Final[str] = "ncep_hrrr_conus"
-OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT: Final[str] = "best_match"
+OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT: Final[str] = "noaa_urma_rtma"
+OPENMETEO_VERIFICATION_ANALYSIS_MODEL_OPENMETEO_ARCHIVE: Final[str] = "best_match"
+OPENMETEO_VERIFICATION_ANALYSIS_MODEL_NOAA_URMA_RTMA: Final[str] = "noaa_urma_rtma"
 OPENMETEO_VERIFICATION_FORECAST_RUN_HOUR_UTC: Final[int] = 12
 OPENMETEO_VERIFICATION_FORECAST_LEAD_DAYS: Final[int] = 1
 OPENMETEO_VERIFICATION_BENCHMARK_LEAD_DAYS: Final[tuple[int, ...]] = (1, 2, 3, 7)
@@ -1170,6 +1173,11 @@ OPENMETEO_VERIFICATION_SAMPLE_POINT_NAMES: Final[tuple[str, ...]] = (
     "southwest",
     "southeast",
 )
+NOAA_URMA_ANALYSIS_BASE_URL: Final[str] = "https://noaa-urma-pds.s3.amazonaws.com"
+NOAA_RTMA_ANALYSIS_BASE_URL: Final[str] = "https://noaa-rtma-pds.s3.amazonaws.com"
+NOAA_ANALYSIS_TIMEOUT_SECONDS: Final[float] = 120.0
+NOAA_ANALYSIS_LOCAL_HOURS: Final[tuple[int, int]] = LOCAL_DAY_HOURS
+NOAA_ANALYSIS_CACHE_VERSION: Final[str] = "v1_urma_rtma_surface_truth"
 
 VERIFICATION_HIGH_COMFORT_CATEGORY_MIN_INDEX: Final[int] = 3
 VERIFICATION_BENCHMARK_THRESHOLDS: Final[dict[str, float]] = {
@@ -1334,7 +1342,7 @@ VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES: Final[dict[str, dict[str, object
         },
     },
 }
-VERIFICATION_HOURLY_CACHE_VERSION: Final[str] = "v2_previous_runs"
+VERIFICATION_HOURLY_CACHE_VERSION: Final[str] = "v3_noaa_truth"
 VERIFICATION_INCREMENTAL_MAX_FRESH_CASES_BY_TIER: Final[dict[str, int]] = {
     "default": 0,
     "full-seasonal": 12,

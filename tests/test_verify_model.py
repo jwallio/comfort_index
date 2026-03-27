@@ -15,6 +15,7 @@ from comfortwx.data.openmeteo_verification import (
     _normalize_previous_run_payload,
     resolve_openmeteo_verification_forecast_model,
 )
+from comfortwx.data.noaa_analysis import _precip_analysis_url, _surface_analysis_url, _utc_hour_schedule
 from comfortwx.validation.verify_model import _verification_summary, build_verification_file_prefix
 
 
@@ -108,19 +109,21 @@ def test_build_verification_file_prefix_adds_policy_suffix_for_non_baseline() ->
         build_verification_file_prefix(
             region_name="southeast",
             resolved_forecast_model="gfs_seamless",
+            analysis_model="noaa_urma_rtma",
             forecast_lead_days=2,
             aggregation_policy="baseline",
         )
-        == "comfortwx_verify_southeast_gfs_seamless_d2"
+        == "comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2"
     )
     assert (
         build_verification_file_prefix(
             region_name="southeast",
             resolved_forecast_model="gfs_seamless",
+            analysis_model="noaa_urma_rtma",
             forecast_lead_days=2,
             aggregation_policy="experimental_regime_aware",
         )
-        == "comfortwx_verify_southeast_gfs_seamless_d2_policy_experimental_regime_aware"
+        == "comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_regime_aware"
     )
 
 
@@ -257,3 +260,19 @@ def test_normalize_previous_run_payload_remaps_hourly_fields() -> None:
     assert normalized["hourly"]["visibility"] == [16093.44, 8046.72]
     assert normalized["hourly_units"]["temperature_2m"] == "°F"
     assert normalized["hourly_units"]["visibility"] == "m"
+
+
+def test_noaa_analysis_urls_and_local_hour_schedule() -> None:
+    schedule = _utc_hour_schedule(date(2025, 3, 20), "America/New_York")
+
+    assert schedule[0][0].hour == 8
+    assert schedule[-1][0].hour == 20
+    assert schedule[0][1].hour == 12
+    assert "urma2p5.20250320/urma2p5.t12z.2dvaranl_ndfd.grb2_wexp" in _surface_analysis_url(
+        source="urma",
+        utc_dt=schedule[0][1],
+    )
+    assert "rtma2p5.2025032012.pcp.184.grb2" in _precip_analysis_url(
+        source="rtma",
+        utc_dt=schedule[0][1],
+    )

@@ -22,6 +22,7 @@ from comfortwx.config import (
     OPENMETEO_VERIFICATION_FORECAST_LEAD_DAYS,
     OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
     OPENMETEO_VERIFICATION_FORECAST_RUN_HOUR_UTC,
+    OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT,
     OPENMETEO_VERIFICATION_SAMPLE_POINT_NAMES,
     OUTPUT_DIR,
     VERIFICATION_HIGH_COMFORT_CATEGORY_MIN_INDEX,
@@ -80,10 +81,12 @@ def build_verification_file_prefix(
     *,
     region_name: str,
     resolved_forecast_model: str,
+    analysis_model: str,
     forecast_lead_days: int,
     aggregation_policy: str,
 ) -> str:
-    prefix = f"comfortwx_verify_{region_name}_{resolved_forecast_model}_d{forecast_lead_days}"
+    normalized_analysis_model = "".join(character if character.isalnum() else "_" for character in analysis_model.strip().lower()).strip("_")
+    prefix = f"comfortwx_verify_{region_name}_{resolved_forecast_model}_{normalized_analysis_model}_d{forecast_lead_days}"
     normalized_policy = aggregation_policy.strip().lower()
     if normalized_policy == "baseline":
         return prefix
@@ -114,7 +117,7 @@ def _verification_summary(
         "region_name": metadata["region_name"],
         "forecast_lead_days": metadata["forecast_lead_days"],
         "forecast_source": f"Open-Meteo Previous Runs ({metadata['forecast_model']})",
-        "analysis_source": f"Open-Meteo Archive ({metadata['analysis_model']})",
+        "analysis_source": str(metadata["analysis_model"]).replace("_", " "),
         "forecast_run_timestamp_utc": metadata["forecast_run_timestamp_utc"],
         "mesh_profile": metadata["mesh_profile"],
         "mesh_point_count": metadata["mesh_point_count"],
@@ -454,6 +457,7 @@ def run_verification(
     forecast_model: str,
     forecast_run_hour_utc: int,
     forecast_lead_days: int,
+    analysis_model: str = OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT,
     aggregation_policy: str = "baseline",
     workflow_name: str = "verification_model",
 ) -> dict[str, object]:
@@ -471,6 +475,7 @@ def run_verification(
     file_prefix = build_verification_file_prefix(
         region_name=region_name,
         resolved_forecast_model=resolved_forecast_model,
+        analysis_model=analysis_model,
         forecast_lead_days=forecast_lead_days,
         aggregation_policy=aggregation_policy,
     )
@@ -481,6 +486,7 @@ def run_verification(
             region_name=region_name,
             mesh_profile=mesh_profile,
             forecast_model=forecast_model,
+            analysis_model=analysis_model,
             forecast_run_hour_utc=forecast_run_hour_utc,
             forecast_lead_days=forecast_lead_days,
         )
@@ -616,6 +622,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--region", default=OPENMETEO_VERIFICATION_DEFAULT_REGION, choices=list_region_names())
     parser.add_argument("--mesh-profile", default="standard", help="Regional mesh profile. Default: standard.")
     parser.add_argument("--forecast-model", default=OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT)
+    parser.add_argument("--analysis-model", default=OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT)
     parser.add_argument("--forecast-run-hour-utc", type=int, default=OPENMETEO_VERIFICATION_FORECAST_RUN_HOUR_UTC)
     parser.add_argument("--forecast-lead-days", type=int, default=OPENMETEO_VERIFICATION_FORECAST_LEAD_DAYS)
     parser.add_argument(
@@ -637,6 +644,7 @@ def main() -> None:
         output_dir=Path(args.output_dir),
         mesh_profile=args.mesh_profile,
         forecast_model=args.forecast_model,
+        analysis_model=args.analysis_model,
         forecast_run_hour_utc=args.forecast_run_hour_utc,
         forecast_lead_days=args.forecast_lead_days,
         aggregation_policy=args.aggregation_policy,

@@ -28,6 +28,14 @@ on:
         description: Comma-separated forecast leads to verify
         required: false
         default: "1,2,3,7"
+      analysis_model:
+        description: Verification truth source
+        required: true
+        default: noaa_urma_rtma
+        type: choice
+        options:
+          - noaa_urma_rtma
+          - best_match
       aggregation_policies:
         description: Comma-separated verification aggregation policies to compare
         required: false
@@ -99,6 +107,15 @@ jobs:
           restore-keys: |
             comfortwx-verification-hourly-${{ runner.os }}-${{ github.ref_name }}-
 
+      - name: Restore NOAA analysis cache
+        id: restore-noaa-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: output/noaa_analysis_cache
+          key: comfortwx-noaa-analysis-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            comfortwx-noaa-analysis-${{ runner.os }}-${{ github.ref_name }}-
+
       - name: Install system libraries
         run: |
           sudo apt-get update
@@ -121,6 +138,7 @@ jobs:
           WORKFLOW_BENCHMARK_DATE: ${{ github.event.inputs.benchmark_date }}
           WORKFLOW_MESH_PROFILE: ${{ github.event.inputs.mesh_profile }}
           WORKFLOW_LEAD_DAYS: ${{ github.event.inputs.lead_days }}
+          WORKFLOW_ANALYSIS_MODEL: ${{ github.event.inputs.analysis_model }}
           WORKFLOW_AGGREGATION_POLICIES: ${{ github.event.inputs.aggregation_policies }}
           WORKFLOW_CASE_CACHE_MODE: ${{ github.event.inputs.case_cache_mode }}
           WORKFLOW_MAX_FRESH_CASES: ${{ github.event.inputs.max_fresh_cases }}
@@ -132,6 +150,7 @@ jobs:
           benchmark_date="${WORKFLOW_BENCHMARK_DATE:-}"
           mesh_profile="${WORKFLOW_MESH_PROFILE:-standard}"
           lead_days="${WORKFLOW_LEAD_DAYS:-1,2,3,7}"
+          analysis_model="${WORKFLOW_ANALYSIS_MODEL:-noaa_urma_rtma}"
           aggregation_policies="${WORKFLOW_AGGREGATION_POLICIES:-baseline}"
           case_cache_mode="${WORKFLOW_CASE_CACHE_MODE:-reuse}"
           max_fresh_cases="${WORKFLOW_MAX_FRESH_CASES:-}"
@@ -145,6 +164,7 @@ jobs:
             --benchmark-tier "$benchmark_tier"
             --mesh-profile "$mesh_profile"
             --lead-days "$lead_days"
+            --analysis-model "$analysis_model"
             --aggregation-policies "$aggregation_policies"
             --case-cache-mode "$case_cache_mode"
             --case-cooldown-seconds "$case_cooldown_seconds"
@@ -198,3 +218,10 @@ jobs:
         with:
           path: output/verification_hourly_cache
           key: ${{ steps.restore-hourly-cache.outputs.cache-primary-key }}
+
+      - name: Save NOAA analysis cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: output/noaa_analysis_cache
+          key: ${{ steps.restore-noaa-cache.outputs.cache-primary-key }}

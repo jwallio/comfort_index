@@ -38,8 +38,9 @@ def test_hourly_cache_paths_include_cache_version(tmp_path: Path) -> None:
         forecast_lead_days=1,
     )
 
-    assert "v2_previous_runs" in forecast_path.name
-    assert "v2_previous_runs" in analysis_path.name
+    assert "v3_noaa_truth" in forecast_path.name
+    assert "v3_noaa_truth" in analysis_path.name
+    assert "noaa_urma_rtma" in forecast_path.name
 
 
 def test_summarize_candidate_modes_and_recommendations() -> None:

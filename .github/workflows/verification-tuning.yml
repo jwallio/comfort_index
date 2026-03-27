@@ -20,6 +20,14 @@ on:
         description: Comma-separated forecast leads to tune
         required: false
         default: "1,2,3,7"
+      analysis_model:
+        description: Verification truth source
+        required: true
+        default: noaa_urma_rtma
+        type: choice
+        options:
+          - noaa_urma_rtma
+          - best_match
       candidate_modes:
         description: Comma-separated aggregation modes to compare
         required: false
@@ -89,6 +97,15 @@ jobs:
           restore-keys: |
             comfortwx-verification-hourly-${{ runner.os }}-${{ github.ref_name }}-
 
+      - name: Restore NOAA analysis cache
+        id: restore-noaa-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: output/noaa_analysis_cache
+          key: comfortwx-noaa-analysis-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            comfortwx-noaa-analysis-${{ runner.os }}-${{ github.ref_name }}-
+
       - name: Install system libraries
         run: |
           sudo apt-get update
@@ -106,6 +123,7 @@ jobs:
           WORKFLOW_BENCHMARK_TIER: ${{ github.event.inputs.benchmark_tier }}
           WORKFLOW_BENCHMARK_DATE: ${{ github.event.inputs.benchmark_date }}
           WORKFLOW_LEAD_DAYS: ${{ github.event.inputs.lead_days }}
+          WORKFLOW_ANALYSIS_MODEL: ${{ github.event.inputs.analysis_model }}
           WORKFLOW_CANDIDATE_MODES: ${{ github.event.inputs.candidate_modes }}
           WORKFLOW_CASE_CACHE_MODE: ${{ github.event.inputs.case_cache_mode }}
           WORKFLOW_MAX_FRESH_CASES: ${{ github.event.inputs.max_fresh_cases }}
@@ -116,6 +134,7 @@ jobs:
           benchmark_tier="${WORKFLOW_BENCHMARK_TIER:-default}"
           benchmark_date="${WORKFLOW_BENCHMARK_DATE:-}"
           lead_days="${WORKFLOW_LEAD_DAYS:-1,2,3,7}"
+          analysis_model="${WORKFLOW_ANALYSIS_MODEL:-noaa_urma_rtma}"
           candidate_modes="${WORKFLOW_CANDIDATE_MODES:-baseline,soft_reliability,balanced_soft,long_lead_soft}"
           case_cache_mode="${WORKFLOW_CASE_CACHE_MODE:-reuse}"
           max_fresh_cases="${WORKFLOW_MAX_FRESH_CASES:-}"
@@ -128,6 +147,7 @@ jobs:
             python -m comfortwx.validation.tune_daily_aggregation
             --benchmark-tier "$benchmark_tier"
             --lead-days "$lead_days"
+            --analysis-model "$analysis_model"
             --candidate-modes "$candidate_modes"
             --case-cache-mode "$case_cache_mode"
             --case-cooldown-seconds "$case_cooldown_seconds"
@@ -171,3 +191,10 @@ jobs:
         with:
           path: output/verification_hourly_cache
           key: ${{ steps.restore-hourly-cache.outputs.cache-primary-key }}
+
+      - name: Save NOAA analysis cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: output/noaa_analysis_cache
+          key: ${{ steps.restore-noaa-cache.outputs.cache-primary-key }}

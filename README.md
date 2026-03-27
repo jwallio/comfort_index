@@ -62,7 +62,13 @@ Verification run:
 python -m comfortwx.validation.verify_model --date 2026-03-20 --region southeast
 ```
 
-By default, the verification runner now prefers Open-Meteo `HRRR` for `Day 1` forecast verification while keeping the longer-lead benchmark path on the current forecast model selection. That improves short-range source fidelity without changing the Comfort Index scoring engine.
+By default, verification now uses NOAA `URMA` surface analysis with `RTMA` fallback as the truth source, while still preferring Open-Meteo `HRRR` for `Day 1` forecast verification and the existing forecast-model selection for longer leads.
+
+To compare against the older Open-Meteo archive proxy truth explicitly:
+
+```powershell
+python -m comfortwx.validation.verify_model --date 2026-03-20 --region southeast --analysis-model best_match
+```
 
 Benchmark verification suite:
 
@@ -187,7 +193,7 @@ Verification benchmark command:
 python -m comfortwx.validation.verify_benchmark
 ```
 
-The `Comfort Index Verification Benchmark` GitHub Actions workflow runs the proxy forecast-vs-analysis benchmark suite and uploads a `comfortwx-verification-benchmark` artifact containing:
+The `Comfort Index Verification Benchmark` GitHub Actions workflow runs the forecast-vs-analysis benchmark suite and uploads a `comfortwx-verification-benchmark` artifact containing:
 - combined benchmark summary CSV
 - benchmark HTML report
 - benchmark summary PNG charts
@@ -208,12 +214,15 @@ When run manually from GitHub Actions, the verification workflow lets you choose
 - optional benchmark date override in `YYYY-MM-DD`
 - mesh profile (`standard` or `fine`)
 - forecast leads as a comma-separated list such as `1,2,3,7`
+- analysis model:
+  - `noaa_urma_rtma` (default NOAA truth)
+  - `best_match` (legacy Open-Meteo proxy truth)
 - verification aggregation policies as a comma-separated list such as `baseline,experimental_regime_aware`
 - case cache mode (`reuse` or `refresh`)
 - optional fresh-case cap, cooldown, region filter, and date filter for incremental chunked runs
 
 This workflow is the current backtesting path. It is separate from the daily public product workflow.
-On GitHub Actions, the verification benchmark and tuning workflows now also restore/save the raw Open-Meteo HTTP cache and the scored-hourly verification cache so repeated chunked runs can build on earlier progress instead of starting from a cold cache every time.
+On GitHub Actions, the verification benchmark and tuning workflows now also restore/save the raw Open-Meteo HTTP cache, the scored-hourly verification cache, and the NOAA analysis cache so repeated chunked runs can build on earlier progress instead of starting from a cold cache every time.
 
 Verification tuning command:
 
@@ -233,6 +242,7 @@ When run manually from GitHub Actions, the tuning workflow lets you choose:
 - benchmark tier
 - optional benchmark date override
 - lead days
+- analysis model
 - candidate aggregation modes
 - case cache mode (`reuse` or `refresh`)
 - optional fresh-case cap, cooldown, region filter, and date filter for incremental chunked runs
@@ -286,6 +296,8 @@ To keep Open-Meteo rate limits under control, verification and tuning now also:
 - avoid exploding a rate-limited HRRR batch into point-by-point fallback requests
 - cap uncached `full-seasonal` runs to a smaller number of fresh cases per run by default, so repeated `--case-cache-mode reuse` runs can fill the cache incrementally instead of bursting the API in one pass
 - support `--regions`, `--dates`, `--max-fresh-cases`, and `--case-cooldown-seconds` for explicit chunking when needed
+
+With the NOAA truth path, verification also caches raw NOAA analysis files under `output/noaa_analysis_cache` so repeated benchmark and tuning runs do not need to refetch the same URMA/RTMA GRIB files.
 
 The daily aggregation tuning runner builds on the same benchmark cases, but compares multiple candidate daily aggregation modes instead of one fixed mode. It writes:
 - per-case candidate score CSVs
