@@ -259,6 +259,22 @@ def _component_summary_fields(component_metrics: pd.DataFrame) -> dict[str, obje
     return summary
 
 
+def _apply_truth_observability_overrides(
+    *,
+    forecast_hourly: xr.Dataset,
+    analysis_hourly: xr.Dataset,
+    metadata: dict[str, object],
+) -> tuple[xr.Dataset, xr.Dataset]:
+    forecast_adjusted = forecast_hourly.copy()
+    analysis_adjusted = analysis_hourly.copy()
+    if not bool(metadata.get("analysis_has_thunder_truth", True)):
+        if "thunder" in forecast_adjusted:
+            forecast_adjusted["thunder"] = xr.zeros_like(forecast_adjusted["thunder"]).astype(bool)
+        if "thunder" in analysis_adjusted:
+            analysis_adjusted["thunder"] = xr.zeros_like(analysis_adjusted["thunder"]).astype(bool)
+    return forecast_adjusted, analysis_adjusted
+
+
 def _write_difference_map(
     *,
     forecast_daily: xr.Dataset,
@@ -496,6 +512,11 @@ def run_verification(
             run_slug=request_report_slug,
         ):
             forecast_hourly, analysis_hourly, metadata = loader.load_pair(valid_date)
+        forecast_hourly, analysis_hourly = _apply_truth_observability_overrides(
+            forecast_hourly=forecast_hourly,
+            analysis_hourly=analysis_hourly,
+            metadata=metadata,
+        )
         forecast_scored_hourly = score_hourly_dataset(forecast_hourly)
         analysis_scored_hourly = score_hourly_dataset(analysis_hourly)
         forecast_daily = aggregate_daily_scores(forecast_scored_hourly, aggregation_mode=aggregation_mode)

@@ -17,11 +17,11 @@ from comfortwx.config import (
     NOAA_ANALYSIS_CACHE_DIR,
     NOAA_ANALYSIS_CACHE_VERSION,
     NOAA_ANALYSIS_LOCAL_HOURS,
+    NOAA_ANALYSIS_OBSERVED_PRECIP_QPF_MIN_IN,
     NOAA_ANALYSIS_TIMEOUT_SECONDS,
     NOAA_RTMA_ANALYSIS_BASE_URL,
     NOAA_URMA_ANALYSIS_BASE_URL,
     OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT,
-    OPENMETEO_VERIFICATION_ANALYSIS_POP_PROXY_QPF_FULL_IN,
     OPENMETEO_VERIFICATION_ANALYSIS_MODEL_NOAA_URMA_RTMA,
     OPENMETEO_VERIFICATION_ANALYSIS_MODEL_OPENMETEO_ARCHIVE,
     get_openmeteo_mesh_settings,
@@ -147,6 +147,11 @@ def _nearest_point_lookup(
     return lookup
 
 
+def _observed_occurrence_pop_from_qpf(qpf_in: np.ndarray) -> np.ndarray:
+    qpf_array = np.array(qpf_in, dtype=float)
+    return np.where(np.clip(qpf_array, 0.0, None) >= NOAA_ANALYSIS_OBSERVED_PRECIP_QPF_MIN_IN, 100.0, 0.0)
+
+
 def _point_dataset(
     *,
     requested_lat: float,
@@ -163,7 +168,7 @@ def _point_dataset(
 ) -> xr.Dataset:
     time_index = pd.to_datetime(local_times)
     qpf_array = np.array(qpf_in, dtype=float)
-    pop_pct = np.clip((np.clip(qpf_array, 0.0, None) / OPENMETEO_VERIFICATION_ANALYSIS_POP_PROXY_QPF_FULL_IN) * 100.0, 0.0, 100.0)
+    pop_pct = _observed_occurrence_pop_from_qpf(qpf_array)
     return xr.Dataset(
         data_vars={
             "temp_f": (("time", "lat", "lon"), np.array(temp_f, dtype=np.float32)[:, None, None]),
@@ -316,5 +321,7 @@ class NoaaAnalysisRegionalLoader:
             "analysis_timezone": timezone_name,
             "analysis_hour_count": len(schedule),
             "mesh_point_count": len(coordinate_pairs),
+            "analysis_has_thunder_truth": False,
+            "analysis_precip_signal_mode": "observed_occurrence",
         }
         return grid, metadata

@@ -16,7 +16,12 @@ from comfortwx.data.openmeteo_verification import (
     resolve_openmeteo_verification_forecast_model,
 )
 from comfortwx.data.noaa_analysis import _precip_analysis_url, _surface_analysis_url, _utc_hour_schedule
-from comfortwx.validation.verify_model import _verification_summary, build_verification_file_prefix
+from comfortwx.validation.verify_model import (
+    _apply_truth_observability_overrides,
+    _verification_summary,
+    build_verification_file_prefix,
+)
+from comfortwx.data.noaa_analysis import _observed_occurrence_pop_from_qpf
 
 
 def test_normalize_openmeteo_verification_payload_derives_pop_proxy_and_visibility_units() -> None:
@@ -53,6 +58,11 @@ def test_normalize_openmeteo_verification_payload_derives_pop_proxy_and_visibili
     assert float(dataset["pop_pct"].isel(time=1).values.squeeze()) == 100.0
     assert float(dataset["visibility_mi"].isel(time=0).values.squeeze()) == 10.0
     assert bool(dataset["thunder"].isel(time=1).values.squeeze()) is True
+
+
+def test_noaa_observed_occurrence_pop_is_deterministic() -> None:
+    values = _observed_occurrence_pop_from_qpf(np.array([0.0, 0.0005, 0.001, 0.02]))
+    assert values.tolist() == [0.0, 0.0, 100.0, 100.0]
 
 
 def test_verification_summary_reports_score_and_category_agreement() -> None:
@@ -115,6 +125,30 @@ def test_build_verification_file_prefix_adds_policy_suffix_for_non_baseline() ->
         )
         == "comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2"
     )
+
+
+def test_truth_observability_override_disables_thunder_on_both_sides() -> None:
+    forecast_hourly = xr.Dataset(
+        data_vars={
+            "thunder": (("time", "lat", "lon"), np.array([[[True]], [[False]]], dtype=bool)),
+        },
+        coords={"time": xr.date_range("2026-03-20T00:00", periods=2, freq="1h"), "lat": [35.0], "lon": [-78.0]},
+    )
+    analysis_hourly = xr.Dataset(
+        data_vars={
+            "thunder": (("time", "lat", "lon"), np.array([[[False]], [[False]]], dtype=bool)),
+        },
+        coords={"time": xr.date_range("2026-03-20T00:00", periods=2, freq="1h"), "lat": [35.0], "lon": [-78.0]},
+    )
+
+    forecast_adjusted, analysis_adjusted = _apply_truth_observability_overrides(
+        forecast_hourly=forecast_hourly,
+        analysis_hourly=analysis_hourly,
+        metadata={"analysis_has_thunder_truth": False},
+    )
+
+    assert not bool(forecast_adjusted["thunder"].any())
+    assert not bool(analysis_adjusted["thunder"].any())
     assert (
         build_verification_file_prefix(
             region_name="southeast",
