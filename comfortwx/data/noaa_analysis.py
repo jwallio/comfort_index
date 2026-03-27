@@ -38,6 +38,11 @@ def _kelvin_to_fahrenheit(values: np.ndarray) -> np.ndarray:
     return values * 9.0 / 5.0 - 459.67
 
 
+def _normalize_longitudes(longitude: np.ndarray) -> np.ndarray:
+    longitude_array = np.asarray(longitude, dtype=float)
+    return np.where(longitude_array > 180.0, longitude_array - 360.0, longitude_array)
+
+
 def _utc_hour_schedule(valid_date: date, timezone_name: str) -> list[tuple[datetime, datetime]]:
     local_zone = ZoneInfo(timezone_name)
     start_hour, end_hour = NOAA_ANALYSIS_LOCAL_HOURS
@@ -113,6 +118,7 @@ def _open_precip_dataset(path: Path) -> xr.Dataset:
 
 def _bbox_subset_indices(latitude: np.ndarray, longitude: np.ndarray, bounds: tuple[float, float, float, float]) -> tuple[slice, slice]:
     lon_min, lon_max, lat_min, lat_max = bounds
+    longitude = _normalize_longitudes(longitude)
     mask = (
         (latitude >= lat_min - 1.0)
         & (latitude <= lat_max + 1.0)
@@ -136,6 +142,7 @@ def _nearest_point_lookup(
     coordinate_pairs: list[tuple[float, float]],
     bounds: tuple[float, float, float, float],
 ) -> dict[tuple[float, float], tuple[int, int]]:
+    longitude = _normalize_longitudes(longitude)
     y_slice, x_slice = _bbox_subset_indices(latitude, longitude, bounds)
     lat_subset = latitude[y_slice, x_slice]
     lon_subset = longitude[y_slice, x_slice]

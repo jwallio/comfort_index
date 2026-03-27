@@ -21,7 +21,7 @@ from comfortwx.validation.verify_model import (
     _verification_summary,
     build_verification_file_prefix,
 )
-from comfortwx.data.noaa_analysis import _observed_occurrence_pop_from_qpf
+from comfortwx.data.noaa_analysis import _nearest_point_lookup, _observed_occurrence_pop_from_qpf
 
 
 def test_normalize_openmeteo_verification_payload_derives_pop_proxy_and_visibility_units() -> None:
@@ -149,6 +149,19 @@ def test_truth_observability_override_disables_thunder_on_both_sides() -> None:
 
     assert not bool(forecast_adjusted["thunder"].any())
     assert not bool(analysis_adjusted["thunder"].any())
+
+
+def test_noaa_lookup_normalizes_0_360_longitudes() -> None:
+    latitude = np.array([[35.0, 35.0], [34.0, 34.0]])
+    longitude = np.array([[270.0, 271.0], [270.0, 271.0]])
+    lookup = _nearest_point_lookup(
+        latitude=latitude,
+        longitude=longitude,
+        coordinate_pairs=[(35.0, -90.0), (34.0, -89.0)],
+        bounds=(-91.0, -88.0, 33.0, 36.0),
+    )
+    assert lookup[(35.0, -90.0)] == (0, 0)
+    assert lookup[(34.0, -89.0)] == (1, 1)
     assert (
         build_verification_file_prefix(
             region_name="southeast",
