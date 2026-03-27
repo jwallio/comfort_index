@@ -76,6 +76,12 @@ Benchmark verification suite with an explicit tier:
 python -m comfortwx.validation.verify_benchmark --benchmark-tier full-seasonal --lead-days 1,2,3,7
 ```
 
+Focused MAE verification tier for the highest-value tuning regions:
+
+```powershell
+python -m comfortwx.validation.verify_benchmark --benchmark-tier focused-mae --lead-days 1,2,3,7
+```
+
 Benchmark verification suite comparing baseline vs a candidate verification policy:
 
 ```powershell
@@ -186,6 +192,7 @@ The `Comfort Index Verification Benchmark` GitHub Actions workflow runs the prox
 When run manually from GitHub Actions, the verification workflow lets you choose:
 - benchmark tier:
   - `default`
+  - `focused-mae`
   - `full-seasonal`
 - optional benchmark date override in `YYYY-MM-DD`
 - mesh profile (`standard` or `fine`)
@@ -224,6 +231,10 @@ Benchmark tiers:
   - `southeast`, `southwest`, `plains`, `northeast`
   - dates: `2026-01-15`, `2026-03-20`
   - intended for quicker routine benchmark runs
+- `focused-mae`
+  - `southeast`, `plains`, `northeast`
+  - dates: `2025-01-15`, `2025-03-20`, `2025-04-20`, `2025-06-20`, `2025-07-20`, `2025-08-20`, `2025-10-20`, `2025-11-15`
+  - intended for faster MAE tuning across the regions currently driving the biggest verification misses
 - `full-seasonal`
   - `west_coast`, `southwest`, `rockies`, `plains`, `southeast`, `northeast`, `great_lakes`
   - dates: `2025-01-15`, `2025-03-20`, `2025-05-15`, `2025-07-20`, `2025-09-20`, `2025-11-15`

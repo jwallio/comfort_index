@@ -16,14 +16,27 @@ class VerificationBenchmarkCase:
 
 
 VERIFICATION_BENCHMARK_TIER_DEFAULT: str = "default"
+VERIFICATION_BENCHMARK_TIER_FOCUSED_MAE: str = "focused-mae"
 VERIFICATION_BENCHMARK_TIER_FULL_SEASONAL: str = "full-seasonal"
 VERIFICATION_BENCHMARK_TIERS: tuple[str, ...] = (
     VERIFICATION_BENCHMARK_TIER_DEFAULT,
+    VERIFICATION_BENCHMARK_TIER_FOCUSED_MAE,
     VERIFICATION_BENCHMARK_TIER_FULL_SEASONAL,
 )
 
 _DEFAULT_BENCHMARK_REGIONS: tuple[str, ...] = ("southeast", "southwest", "plains", "northeast")
 _DEFAULT_BENCHMARK_DATES: tuple[date, ...] = (date(2026, 1, 15), date(2026, 3, 20))
+_FOCUSED_MAE_BENCHMARK_REGIONS: tuple[str, ...] = ("southeast", "plains", "northeast")
+_FOCUSED_MAE_BENCHMARK_DATES: tuple[date, ...] = (
+    date(2025, 1, 15),
+    date(2025, 3, 20),
+    date(2025, 4, 20),
+    date(2025, 6, 20),
+    date(2025, 7, 20),
+    date(2025, 8, 20),
+    date(2025, 10, 20),
+    date(2025, 11, 15),
+)
 _FULL_SEASONAL_BENCHMARK_REGIONS: tuple[str, ...] = (
     "west_coast",
     "southwest",
@@ -63,6 +76,10 @@ DEFAULT_VERIFICATION_BENCHMARK_CASES: tuple[VerificationBenchmarkCase, ...] = _b
     regions=_DEFAULT_BENCHMARK_REGIONS,
     dates=_DEFAULT_BENCHMARK_DATES,
 )
+FOCUSED_MAE_VERIFICATION_BENCHMARK_CASES: tuple[VerificationBenchmarkCase, ...] = _build_cases(
+    regions=_FOCUSED_MAE_BENCHMARK_REGIONS,
+    dates=_FOCUSED_MAE_BENCHMARK_DATES,
+)
 FULL_SEASONAL_VERIFICATION_BENCHMARK_CASES: tuple[VerificationBenchmarkCase, ...] = _build_cases(
     regions=_FULL_SEASONAL_BENCHMARK_REGIONS,
     dates=_FULL_SEASONAL_BENCHMARK_DATES,
@@ -70,6 +87,7 @@ FULL_SEASONAL_VERIFICATION_BENCHMARK_CASES: tuple[VerificationBenchmarkCase, ...
 
 VERIFICATION_BENCHMARK_CASE_SETS: dict[str, tuple[VerificationBenchmarkCase, ...]] = {
     VERIFICATION_BENCHMARK_TIER_DEFAULT: DEFAULT_VERIFICATION_BENCHMARK_CASES,
+    VERIFICATION_BENCHMARK_TIER_FOCUSED_MAE: FOCUSED_MAE_VERIFICATION_BENCHMARK_CASES,
     VERIFICATION_BENCHMARK_TIER_FULL_SEASONAL: FULL_SEASONAL_VERIFICATION_BENCHMARK_CASES,
 }
 

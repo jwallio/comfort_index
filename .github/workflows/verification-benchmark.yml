@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - default
+          - focused-mae
           - full-seasonal
       benchmark_date:
         description: Optional YYYY-MM-DD override for all benchmark regions. Leave blank for the default multi-date case set.

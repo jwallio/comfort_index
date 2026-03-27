@@ -34,8 +34,10 @@ from comfortwx.validation.verify_benchmark import (
 )
 from comfortwx.validation.verify_benchmark_cases import DEFAULT_VERIFICATION_BENCHMARK_CASES, VerificationBenchmarkCase
 from comfortwx.validation.verify_benchmark_cases import (
+    FOCUSED_MAE_VERIFICATION_BENCHMARK_CASES,
     FULL_SEASONAL_VERIFICATION_BENCHMARK_CASES,
     VERIFICATION_BENCHMARK_TIER_DEFAULT,
+    VERIFICATION_BENCHMARK_TIER_FOCUSED_MAE,
     VERIFICATION_BENCHMARK_TIER_FULL_SEASONAL,
 )
 
@@ -44,17 +46,26 @@ def test_resolved_cases_cover_required_regions_and_multiple_dates() -> None:
     regions = {case.region_name for case in DEFAULT_VERIFICATION_BENCHMARK_CASES}
     dates = {case.valid_date for case in DEFAULT_VERIFICATION_BENCHMARK_CASES}
     lead_days = {case.forecast_lead_days for case in DEFAULT_VERIFICATION_BENCHMARK_CASES}
+    focused_mae_regions = {case.region_name for case in FOCUSED_MAE_VERIFICATION_BENCHMARK_CASES}
+    focused_mae_dates = {case.valid_date for case in FOCUSED_MAE_VERIFICATION_BENCHMARK_CASES}
     full_seasonal_regions = {case.region_name for case in FULL_SEASONAL_VERIFICATION_BENCHMARK_CASES}
 
     assert {"southeast", "southwest", "plains", "northeast"}.issubset(regions)
     assert len(dates) >= 2
     assert {1, 2, 3, 7}.issubset(lead_days)
+    assert focused_mae_regions == {"southeast", "plains", "northeast"}
+    assert len(focused_mae_dates) >= 8
     assert {"west_coast", "rockies", "great_lakes"}.issubset(full_seasonal_regions)
 
     override_cases = _resolved_cases(date(2026, 3, 20), VERIFICATION_BENCHMARK_TIER_DEFAULT)
     assert {case.valid_date for case in override_cases} == {date(2026, 3, 20)}
     assert {case.region_name for case in override_cases} == {"southeast", "southwest", "plains", "northeast"}
     assert {case.forecast_lead_days for case in override_cases} == {1, 2, 3, 7}
+
+    focused_mae_override_cases = _resolved_cases(date(2026, 3, 20), VERIFICATION_BENCHMARK_TIER_FOCUSED_MAE)
+    assert {case.valid_date for case in focused_mae_override_cases} == {date(2026, 3, 20)}
+    assert {case.region_name for case in focused_mae_override_cases} == {"southeast", "plains", "northeast"}
+    assert {case.forecast_lead_days for case in focused_mae_override_cases} == {1, 2, 3, 7}
 
     full_seasonal_override_cases = _resolved_cases(date(2026, 3, 20), VERIFICATION_BENCHMARK_TIER_FULL_SEASONAL)
     assert {case.valid_date for case in full_seasonal_override_cases} == {date(2026, 3, 20)}
