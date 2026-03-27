@@ -43,6 +43,7 @@ from comfortwx.validation.verify_benchmark import (
     _resolved_cases,
 )
 from comfortwx.validation.verify_benchmark_cases import VERIFICATION_BENCHMARK_TIER_DEFAULT
+from comfortwx.validation.verify_benchmark_cases import VERIFICATION_BENCHMARK_TIERS
 
 
 def _parse_lead_days(value: str) -> tuple[int, ...]:
@@ -687,7 +688,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--benchmark-tier",
         default=VERIFICATION_BENCHMARK_TIER_DEFAULT,
-        choices=["default", "full-seasonal"],
+        choices=list(VERIFICATION_BENCHMARK_TIERS),
         help="Benchmark case tier. Default: default.",
     )
     parser.add_argument("--date", default=None, help="Optional YYYY-MM-DD override for all benchmark regions.")
