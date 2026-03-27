@@ -23,6 +23,22 @@ def test_output_file_prefixes_preserve_existing_standard_names() -> None:
         )
         == "comfortwx_mosaic_southwest_rockies_openmeteo"
     )
+    assert (
+        _region_file_prefix("openmeteo", "southwest", "standard", "baseline", "experimental_regime_aware")
+        == "comfortwx_region_southwest_openmeteo_policy_experimental_regime_aware"
+    )
+    assert (
+        _mosaic_file_prefix(
+            ["southwest", "rockies"],
+            "openmeteo",
+            "standard",
+            "baseline",
+            "taper",
+            "adaptive",
+            "experimental_regime_aware",
+        )
+        == "comfortwx_mosaic_southwest_rockies_openmeteo_policy_experimental_regime_aware"
+    )
 
 
 def test_pilot_day_row_captures_status_metadata() -> None:

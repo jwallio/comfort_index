@@ -25,6 +25,14 @@ on:
         description: Optional start valid date in YYYY-MM-DD format. Leave blank for today.
         required: false
         default: ""
+      aggregation_policy:
+        description: Optional candidate aggregation policy. Use baseline for the normal public product path.
+        required: true
+        default: baseline
+        type: choice
+        options:
+          - baseline
+          - experimental_regime_aware
   schedule:
     - cron: "20 0 * * *"
     - cron: "20 6 * * *"
@@ -74,10 +82,12 @@ jobs:
           WORKFLOW_RUN_MODE: ${{ github.event.inputs.run_mode }}
           WORKFLOW_FORECAST_DAYS: ${{ github.event.inputs.forecast_days }}
           WORKFLOW_START_DATE: ${{ github.event.inputs.start_date }}
+          WORKFLOW_AGGREGATION_POLICY: ${{ github.event.inputs.aggregation_policy }}
         run: |
           run_mode="${WORKFLOW_RUN_MODE:-pilot-day-archive}"
           forecast_days="${WORKFLOW_FORECAST_DAYS:-7}"
           start_date="${WORKFLOW_START_DATE:-}"
+          aggregation_policy="${WORKFLOW_AGGREGATION_POLICY:-baseline}"
           export COMFORTWX_RUN_TIMESTAMP_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
           cmd=(
@@ -87,6 +97,7 @@ jobs:
             --presentation-theme shareable
             --pilot-cache-mode reuse
             --pilot-span-days "$forecast_days"
+            --aggregation-policy "$aggregation_policy"
           )
 
           if [ "$run_mode" = "pilot-day" ]; then

@@ -36,6 +36,12 @@ Run a multi-day archived forecast sequence locally:
 python -m comfortwx.main --pilot-day-archive --source openmeteo --pilot-span-days 7 --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse
 ```
 
+Run a side-by-side candidate product build without changing the default public path:
+
+```powershell
+python -m comfortwx.main --pilot-day-archive --source openmeteo --pilot-span-days 7 --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse --aggregation-policy experimental_regime_aware
+```
+
 ## Main Commands
 
 Regional run:
@@ -162,6 +168,11 @@ When run manually from GitHub Actions, the workflow menu lets you choose:
 - `pilot-day` or `pilot-day-archive`
 - `1`, `2`, `3`, or `7` consecutive forecast days
 - an optional start date in `YYYY-MM-DD`
+- aggregation policy:
+  - `baseline`
+  - `experimental_regime_aware`
+
+The product workflow keeps `baseline` as the default public-scoring path. The candidate policy is available only as an explicit side-by-side evaluation option.
 
 If GitHub Pages is enabled for the repository, the site-publish workflow updates the public site from the latest archived run artifact. If Pages is not available, the archive build still completes and uploads artifacts.
 

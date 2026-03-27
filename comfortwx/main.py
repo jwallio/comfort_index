@@ -20,6 +20,8 @@ from comfortwx.config import (
     PILOT_DAY_REGIONS,
     PUBLIC_CITY_RANKING_LOCATIONS,
     STITCHED_CONUS_PRESENTATION,
+    list_verification_aggregation_policies,
+    resolve_verification_aggregation_mode,
 )
 from comfortwx.data.loaders import get_loader
 from comfortwx.data.openmeteo_reliability import (
@@ -74,6 +76,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--mosaic-blend-method", default="taper", help="Optional mosaic blend method. Default: taper.")
     parser.add_argument("--mosaic-target-grid", default="adaptive", help="Optional mosaic target-grid policy. Default: adaptive.")
     parser.add_argument("--aggregation-mode", default="baseline", help="Optional daily aggregation mode. Default: baseline.")
+    parser.add_argument(
+        "--aggregation-policy",
+        default="baseline",
+        choices=list_verification_aggregation_policies(),
+        help="Optional candidate aggregation policy for side-by-side evaluation. Default: baseline.",
+    )
     parser.add_argument("--publish-preset", default=None, help="Optional publish bundle preset. Example: --publish-preset standard")
     parser.add_argument("--presentation-theme", default="default", help="Presentation theme for polished maps. Default: default.")
     parser.add_argument("--pilot-day", action="store_true", help="Run all currently supported real pilot regions and seam mosaics for one date.")
@@ -169,10 +177,45 @@ def _build_regional_daily(
     return scored_hourly, regional_daily, region
 
 
-def _region_file_prefix(loader_name: str, region_name: str, mesh_profile: str, aggregation_mode: str) -> str:
+def _policy_suffix(aggregation_policy: str) -> str:
+    normalized_policy = aggregation_policy.strip().lower()
+    if normalized_policy == "baseline":
+        return ""
+    slug = "".join(character if character.isalnum() else "_" for character in normalized_policy).strip("_")
+    return f"_policy_{slug}"
+
+
+def _resolve_runtime_aggregation_mode(
+    *,
+    region_name: str,
+    valid_date: date,
+    aggregation_mode: str,
+    aggregation_policy: str,
+    reference_valid_date: date | None = None,
+) -> tuple[str, int]:
+    lead_days = 1 if reference_valid_date is None else max(1, (valid_date - reference_valid_date).days + 1)
+    if aggregation_policy.strip().lower() == "baseline":
+        return aggregation_mode, lead_days
+    resolved_mode = resolve_verification_aggregation_mode(
+        policy_name=aggregation_policy,
+        region_name=region_name,
+        valid_date=valid_date,
+        forecast_lead_days=lead_days,
+    )
+    return resolved_mode, lead_days
+
+
+def _region_file_prefix(
+    loader_name: str,
+    region_name: str,
+    mesh_profile: str,
+    aggregation_mode: str,
+    aggregation_policy: str = "baseline",
+) -> str:
     profile_suffix = "" if mesh_profile == "standard" else f"_{mesh_profile}"
     aggregation_suffix = "" if aggregation_mode == "baseline" else f"_{aggregation_mode}"
-    return f"comfortwx_region_{region_name}" if loader_name == "mock" else f"comfortwx_region_{region_name}_openmeteo{profile_suffix}{aggregation_suffix}"
+    policy_suffix = _policy_suffix(aggregation_policy)
+    return f"comfortwx_region_{region_name}" if loader_name == "mock" else f"comfortwx_region_{region_name}_openmeteo{profile_suffix}{aggregation_suffix}{policy_suffix}"
 
 
 def _mosaic_file_prefix(
@@ -182,14 +225,16 @@ def _mosaic_file_prefix(
     aggregation_mode: str,
     mosaic_blend_method: str,
     mosaic_target_grid: str,
+    aggregation_policy: str = "baseline",
 ) -> str:
     ordered_regions = "_".join(region_names)
     profile_suffix = "" if mesh_profile == "standard" else f"_{mesh_profile}"
     method_suffix = "" if mosaic_blend_method == "taper" and mosaic_target_grid == "adaptive" else f"_{mosaic_blend_method}_{mosaic_target_grid}"
     aggregation_suffix = "" if aggregation_mode == "baseline" else f"_{aggregation_mode}"
+    policy_suffix = _policy_suffix(aggregation_policy)
     if loader_name == "mock":
-        return f"comfortwx_mosaic_{ordered_regions}{aggregation_suffix}{method_suffix}"
-    return f"comfortwx_mosaic_{ordered_regions}_openmeteo{profile_suffix}{aggregation_suffix}{method_suffix}"
+        return f"comfortwx_mosaic_{ordered_regions}{aggregation_suffix}{policy_suffix}{method_suffix}"
+    return f"comfortwx_mosaic_{ordered_regions}_openmeteo{profile_suffix}{aggregation_suffix}{policy_suffix}{method_suffix}"
 
 
 def _load_daily_dataset(path: Path) -> xr.Dataset:
@@ -231,12 +276,13 @@ def _write_region_outputs_from_daily(
     region: RegionDefinition,
     mesh_profile: str,
     aggregation_mode: str,
+    aggregation_policy: str,
     publish_preset_name: str | None,
     presentation_theme: str,
     existing_samples_path: Path | None = None,
 ) -> dict[str, Path]:
     publish_preset = resolve_publish_preset(publish_preset_name) if publish_preset_name else None
-    file_prefix = _region_file_prefix(loader_name, region.name, mesh_profile, aggregation_mode)
+    file_prefix = _region_file_prefix(loader_name, region.name, mesh_profile, aggregation_mode, aggregation_policy)
     field_path = output_dir / f"{file_prefix}_daily_fields_{valid_date:%Y%m%d}.nc"
     map_paths = render_daily_maps(
         daily=daily,
@@ -253,6 +299,7 @@ def _write_region_outputs_from_daily(
     summary_record["source"] = loader_name
     summary_record["mesh_profile"] = mesh_profile
     summary_record["aggregation_mode"] = aggregation_mode
+    summary_record["aggregation_policy"] = aggregation_policy
     stacked = daily["daily_score"].stack(points=("lat", "lon"))
     best_point = stacked.isel(points=int(stacked.argmax("points").values))
     summary_record["sample_best_lat"] = round(float(best_point["lat"].values), 2)
@@ -309,6 +356,7 @@ def _write_mosaic_outputs_from_rasters(
     mosaic_blend_method: str,
     mosaic_target_grid: str,
     aggregation_mode: str,
+    aggregation_policy: str,
     publish_preset_name: str | None,
     presentation_theme: str,
 ) -> dict[str, Path]:
@@ -320,8 +368,10 @@ def _write_mosaic_outputs_from_rasters(
     )
     mosaic_daily.attrs["mesh_profile"] = mesh_profile
     mosaic_daily.attrs["aggregation_mode"] = aggregation_mode
+    mosaic_daily.attrs["aggregation_policy"] = aggregation_policy
     mosaic_summary["mesh_profile"] = mesh_profile
     mosaic_summary["aggregation_mode"] = aggregation_mode
+    mosaic_summary["aggregation_policy"] = aggregation_policy
     stitched_conus = len(normalized_regions) >= 4
     file_prefix = _mosaic_file_prefix(
         normalized_regions,
@@ -330,6 +380,7 @@ def _write_mosaic_outputs_from_rasters(
         aggregation_mode,
         mosaic_blend_method,
         mosaic_target_grid,
+        aggregation_policy,
     )
     field_path = output_dir / f"{file_prefix}_daily_fields_{valid_date:%Y%m%d}.nc"
     mosaic_daily.to_netcdf(field_path)
@@ -423,6 +474,8 @@ def run_pipeline(
     mosaic_blend_method: str = "taper",
     mosaic_target_grid: str = "adaptive",
     aggregation_mode: str = "baseline",
+    aggregation_policy: str = "baseline",
+    reference_valid_date: date | None = None,
     publish_preset_name: str | None = None,
     presentation_theme: str = "default",
 ) -> dict[str, Path]:
@@ -444,6 +497,13 @@ def run_pipeline(
 
         rasters: list[RegionalDailyRaster] = []
         for mosaic_region_name in normalized_regions:
+            resolved_aggregation_mode, _ = _resolve_runtime_aggregation_mode(
+                region_name=mosaic_region_name,
+                valid_date=valid_date,
+                aggregation_mode=aggregation_mode,
+                aggregation_policy=aggregation_policy,
+                reference_valid_date=reference_valid_date,
+            )
             _, regional_daily, region = _build_regional_daily(
                 valid_date=valid_date,
                 loader_name=loader_name,
@@ -451,7 +511,7 @@ def run_pipeline(
                 lon_points=lon_points,
                 region_name=mosaic_region_name,
                 mesh_profile=mesh_profile,
-                aggregation_mode=aggregation_mode,
+                aggregation_mode=resolved_aggregation_mode,
             )
             rasters.append(RegionalDailyRaster(region=region, daily=regional_daily))
 
@@ -462,14 +522,16 @@ def run_pipeline(
         )
         mosaic_daily.attrs["mesh_profile"] = mesh_profile
         mosaic_daily.attrs["aggregation_mode"] = aggregation_mode
+        mosaic_daily.attrs["aggregation_policy"] = aggregation_policy
         mosaic_summary["mesh_profile"] = mesh_profile
         mosaic_summary["aggregation_mode"] = aggregation_mode
+        mosaic_summary["aggregation_policy"] = aggregation_policy
         stitched_conus = len(normalized_regions) >= 4
         ordered_regions = "_".join(normalized_regions)
         profile_suffix = "" if mesh_profile == "standard" else f"_{mesh_profile}"
         method_suffix = "" if mosaic_blend_method == "taper" and mosaic_target_grid == "adaptive" else f"_{mosaic_blend_method}_{mosaic_target_grid}"
         aggregation_suffix = "" if aggregation_mode == "baseline" else f"_{aggregation_mode}"
-        file_prefix = f"comfortwx_mosaic_{ordered_regions}_openmeteo{profile_suffix}{aggregation_suffix}{method_suffix}"
+        file_prefix = f"comfortwx_mosaic_{ordered_regions}_openmeteo{profile_suffix}{aggregation_suffix}{_policy_suffix(aggregation_policy)}{method_suffix}"
         field_path = output_dir / f"{file_prefix}_daily_fields_{valid_date:%Y%m%d}.nc"
         mosaic_daily.to_netcdf(field_path)
         extent = (
@@ -535,7 +597,8 @@ def run_pipeline(
         print(f"Valid date: {valid_date:%Y-%m-%d}")
         print(
             f"Mosaic regions: {', '.join(normalized_regions)} source={loader_name} mesh_profile={mesh_profile} "
-            f"aggregation_mode={aggregation_mode} blend_method={mosaic_blend_method} target_grid={mosaic_target_grid}"
+            f"aggregation_mode={aggregation_mode} aggregation_policy={aggregation_policy} "
+            f"blend_method={mosaic_blend_method} target_grid={mosaic_target_grid}"
         )
         print(f"Saved mosaic daily fields: {field_path}")
         print(f"Saved mosaic raw map: {map_paths['raw_map']}")
@@ -563,6 +626,13 @@ def run_pipeline(
         }
 
     if region is not None:
+        resolved_aggregation_mode, _ = _resolve_runtime_aggregation_mode(
+            region_name=region.name,
+            valid_date=valid_date,
+            aggregation_mode=aggregation_mode,
+            aggregation_policy=aggregation_policy,
+            reference_valid_date=reference_valid_date,
+        )
         scored_hourly, regional_daily, region = _build_regional_daily(
             valid_date=valid_date,
             loader_name=loader_name,
@@ -570,12 +640,16 @@ def run_pipeline(
             lon_points=lon_points,
             region_name=region.name,
             mesh_profile=mesh_profile,
-            aggregation_mode=aggregation_mode,
+            aggregation_mode=resolved_aggregation_mode,
         )
 
-        profile_suffix = "" if mesh_profile == "standard" else f"_{mesh_profile}"
-        aggregation_suffix = "" if aggregation_mode == "baseline" else f"_{aggregation_mode}"
-        file_prefix = f"comfortwx_region_{region.name}" if loader_name == "mock" else f"comfortwx_region_{region.name}_openmeteo{profile_suffix}{aggregation_suffix}"
+        file_prefix = _region_file_prefix(
+            loader_name,
+            region.name,
+            mesh_profile,
+            resolved_aggregation_mode,
+            aggregation_policy,
+        )
         field_path = output_dir / f"{file_prefix}_daily_fields_{valid_date:%Y%m%d}.nc"
         regional_daily.to_netcdf(field_path)
         map_paths = render_daily_maps(
@@ -592,7 +666,8 @@ def run_pipeline(
         summary_record = regional_summary_record(regional_daily, region)
         summary_record["source"] = loader_name
         summary_record["mesh_profile"] = mesh_profile
-        summary_record["aggregation_mode"] = aggregation_mode
+        summary_record["aggregation_mode"] = resolved_aggregation_mode
+        summary_record["aggregation_policy"] = aggregation_policy
         stacked = regional_daily["daily_score"].stack(points=("lat", "lon"))
         best_point = stacked.isel(points=int(stacked.argmax("points").values))
         summary_record["sample_best_lat"] = round(float(best_point["lat"].values), 2)
@@ -648,7 +723,8 @@ def run_pipeline(
         print(f"Valid date: {valid_date:%Y-%m-%d}")
         print(
             f"Region: {region.name} source={loader_name} mesh_profile={mesh_profile} "
-            f"aggregation_mode={aggregation_mode} core={region.core_bounds} expanded={region.expanded_bounds}"
+            f"aggregation_mode={resolved_aggregation_mode} aggregation_policy={aggregation_policy} "
+            f"core={region.core_bounds} expanded={region.expanded_bounds}"
         )
         print(f"Saved regional daily fields: {field_path}")
         print(f"Saved regional raw map: {map_paths['raw_map']}")
@@ -687,7 +763,14 @@ def run_pipeline(
         if point_lat is None or point_lon is None:
             raise ValueError("Open-Meteo point mode requires --lat and --lon.")
         scored_hourly = score_hourly_dataset(hourly)
-        daily = aggregate_daily_scores(scored_hourly)
+        resolved_aggregation_mode, _ = _resolve_runtime_aggregation_mode(
+            region_name="southeast",
+            valid_date=valid_date,
+            aggregation_mode=aggregation_mode,
+            aggregation_policy=aggregation_policy,
+            reference_valid_date=reference_valid_date,
+        )
+        daily = aggregate_daily_scores(scored_hourly, aggregation_mode=resolved_aggregation_mode)
         inspection_outputs = export_point_inspection(
             scored_hourly=scored_hourly,
             daily=daily,
@@ -711,7 +794,14 @@ def run_pipeline(
         }
 
     scored_hourly = score_hourly_dataset(hourly)
-    daily = aggregate_daily_scores(scored_hourly, aggregation_mode=aggregation_mode)
+    resolved_aggregation_mode, _ = _resolve_runtime_aggregation_mode(
+        region_name=region_name or "southeast",
+        valid_date=valid_date,
+        aggregation_mode=aggregation_mode,
+        aggregation_policy=aggregation_policy,
+        reference_valid_date=reference_valid_date,
+    )
+    daily = aggregate_daily_scores(scored_hourly, aggregation_mode=resolved_aggregation_mode)
     field_path = _save_daily_fields(daily=daily, valid_date=valid_date, output_dir=output_dir)
     include_presentation = bool(publish_preset["include_presentation"]) if publish_preset else False
     map_paths = render_daily_maps(
@@ -905,6 +995,7 @@ def _iter_pilot_valid_dates(start_valid_date: date, span_days: int) -> list[date
 def run_pilot_day(
     *,
     valid_date: date,
+    reference_valid_date: date | None,
     loader_name: str,
     output_dir: Path,
     publish_preset_name: str,
@@ -915,6 +1006,7 @@ def run_pilot_day(
     mosaic_blend_method: str,
     mosaic_target_grid: str,
     aggregation_mode: str,
+    aggregation_policy: str,
     pilot_cache_mode: str,
 ) -> dict[str, Path]:
     """Run all currently supported real pilot regions and seam mosaics for one date."""
@@ -944,7 +1036,14 @@ def run_pilot_day(
     with openmeteo_request_context(workflow="pilot_day", label=f"pilot_day:{valid_date.isoformat()}", run_slug=run_slug):
         for region_name in PILOT_DAY_REGIONS:
             region = get_region_definition(region_name)
-            region_prefix = _region_file_prefix(loader_name, region_name, mesh_profile, aggregation_mode)
+            resolved_region_mode, _ = _resolve_runtime_aggregation_mode(
+                region_name=region_name,
+                valid_date=valid_date,
+                aggregation_mode=aggregation_mode,
+                aggregation_policy=aggregation_policy,
+                reference_valid_date=reference_valid_date,
+            )
+            region_prefix = _region_file_prefix(loader_name, region_name, mesh_profile, resolved_region_mode, aggregation_policy)
             existing_field_path = output_dir / f"{region_prefix}_daily_fields_{valid_date:%Y%m%d}.nc"
             existing_samples_path = output_dir / f"{region_prefix}_samples_{valid_date:%Y%m%d}.csv"
             try:
@@ -954,7 +1053,7 @@ def run_pilot_day(
                         regional_daily,
                         region=region,
                         mesh_profile=mesh_profile,
-                        aggregation_mode=aggregation_mode,
+                        aggregation_mode=resolved_region_mode,
                     ):
                         result = _write_region_outputs_from_daily(
                             daily=regional_daily,
@@ -963,7 +1062,8 @@ def run_pilot_day(
                             loader_name=loader_name,
                             region=region,
                             mesh_profile=mesh_profile,
-                            aggregation_mode=aggregation_mode,
+                            aggregation_mode=resolved_region_mode,
+                            aggregation_policy=aggregation_policy,
                             publish_preset_name=publish_preset_name,
                             presentation_theme=presentation_theme,
                             existing_samples_path=existing_samples_path,
@@ -985,6 +1085,8 @@ def run_pilot_day(
                                 region_name=region_name,
                                 mesh_profile=mesh_profile,
                                 aggregation_mode=aggregation_mode,
+                                aggregation_policy=aggregation_policy,
+                                reference_valid_date=reference_valid_date,
                                 publish_preset_name=publish_preset_name,
                                 presentation_theme=presentation_theme,
                             )
@@ -1006,6 +1108,8 @@ def run_pilot_day(
                             region_name=region_name,
                             mesh_profile=mesh_profile,
                             aggregation_mode=aggregation_mode,
+                            aggregation_policy=aggregation_policy,
+                            reference_valid_date=reference_valid_date,
                             publish_preset_name=publish_preset_name,
                             presentation_theme=presentation_theme,
                         )
@@ -1068,6 +1172,7 @@ def run_pilot_day(
                 mosaic_blend_method=mosaic_blend_method,
                 mosaic_target_grid=mosaic_target_grid,
                 aggregation_mode=aggregation_mode,
+                aggregation_policy=aggregation_policy,
                 publish_preset_name=publish_preset_name,
                 presentation_theme=presentation_theme,
             )
@@ -1190,6 +1295,7 @@ def run_pilot_day(
 def run_pilot_day_archive(
     *,
     valid_date: date,
+    reference_valid_date: date | None,
     loader_name: str,
     output_dir: Path,
     archive_root: Path | None,
@@ -1202,6 +1308,7 @@ def run_pilot_day_archive(
     mosaic_blend_method: str,
     mosaic_target_grid: str,
     aggregation_mode: str,
+    aggregation_policy: str,
     pilot_cache_mode: str,
 ) -> dict[str, Path]:
     """Run a pilot-day build into a dated archive folder and refresh the archive landing page."""
@@ -1216,6 +1323,7 @@ def run_pilot_day_archive(
 
     pilot_outputs = run_pilot_day(
         valid_date=valid_date,
+        reference_valid_date=reference_valid_date,
         loader_name=loader_name,
         output_dir=run_dir,
         publish_preset_name=publish_preset_name,
@@ -1226,6 +1334,7 @@ def run_pilot_day_archive(
         mosaic_blend_method=mosaic_blend_method,
         mosaic_target_grid=mosaic_target_grid,
         aggregation_mode=aggregation_mode,
+        aggregation_policy=aggregation_policy,
         pilot_cache_mode=pilot_cache_mode,
     )
     archive_csv_path, archive_json_path, archive_html_path = write_archive_index(archive_root=resolved_archive_root)
@@ -1257,6 +1366,7 @@ def run_pilot_day_series(
     mosaic_blend_method: str,
     mosaic_target_grid: str,
     aggregation_mode: str,
+    aggregation_policy: str,
     pilot_cache_mode: str,
 ) -> dict[str, Path]:
     valid_dates = _iter_pilot_valid_dates(start_valid_date, span_days)
@@ -1266,6 +1376,7 @@ def run_pilot_day_series(
         if archive_mode:
             last_outputs = run_pilot_day_archive(
                 valid_date=current_valid_date,
+                reference_valid_date=start_valid_date,
                 loader_name=loader_name,
                 output_dir=output_dir,
                 archive_root=archive_root,
@@ -1278,11 +1389,13 @@ def run_pilot_day_series(
                 mosaic_blend_method=mosaic_blend_method,
                 mosaic_target_grid=mosaic_target_grid,
                 aggregation_mode=aggregation_mode,
+                aggregation_policy=aggregation_policy,
                 pilot_cache_mode=pilot_cache_mode,
             )
         else:
             last_outputs = run_pilot_day(
                 valid_date=current_valid_date,
+                reference_valid_date=start_valid_date,
                 loader_name=loader_name,
                 output_dir=output_dir,
                 publish_preset_name=publish_preset_name,
@@ -1293,6 +1406,7 @@ def run_pilot_day_series(
                 mosaic_blend_method=mosaic_blend_method,
                 mosaic_target_grid=mosaic_target_grid,
                 aggregation_mode=aggregation_mode,
+                aggregation_policy=aggregation_policy,
                 pilot_cache_mode=pilot_cache_mode,
             )
     if len(valid_dates) > 1:
@@ -1328,6 +1442,7 @@ def main() -> None:
             mosaic_blend_method=args.mosaic_blend_method,
             mosaic_target_grid=args.mosaic_target_grid,
             aggregation_mode=args.aggregation_mode,
+            aggregation_policy=args.aggregation_policy,
             pilot_cache_mode=args.pilot_cache_mode,
         )
         return
@@ -1348,6 +1463,7 @@ def main() -> None:
             mosaic_blend_method=args.mosaic_blend_method,
             mosaic_target_grid=args.mosaic_target_grid,
             aggregation_mode=args.aggregation_mode,
+            aggregation_policy=args.aggregation_policy,
             pilot_cache_mode=args.pilot_cache_mode,
         )
         return
@@ -1384,6 +1500,8 @@ def main() -> None:
                     mosaic_blend_method=args.mosaic_blend_method,
                     mosaic_target_grid=args.mosaic_target_grid,
                     aggregation_mode=args.aggregation_mode,
+                    aggregation_policy=args.aggregation_policy,
+                    reference_valid_date=valid_date,
                     publish_preset_name=args.publish_preset,
                     presentation_theme=args.presentation_theme,
                 )
@@ -1409,6 +1527,8 @@ def main() -> None:
         mosaic_blend_method=args.mosaic_blend_method,
         mosaic_target_grid=args.mosaic_target_grid,
         aggregation_mode=args.aggregation_mode,
+        aggregation_policy=args.aggregation_policy,
+        reference_valid_date=valid_date,
         publish_preset_name=args.publish_preset,
         presentation_theme=args.presentation_theme,
     )
