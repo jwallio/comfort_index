@@ -35,6 +35,7 @@ from comfortwx.config import (
     VERIFICATION_BENCHMARK_THRESHOLDS,
     VERIFICATION_INCREMENTAL_CASE_COOLDOWN_SECONDS,
     VERIFICATION_INCREMENTAL_MAX_FRESH_CASES_BY_TIER,
+    list_verification_aggregation_policies,
 )
 from comfortwx.data.openmeteo_verification import resolve_openmeteo_verification_forecast_model
 from comfortwx.scoring.categories import categorize_scores
@@ -45,7 +46,7 @@ from comfortwx.validation.verify_benchmark_cases import (
     VERIFICATION_BENCHMARK_TIERS,
     get_benchmark_case_set,
 )
-from comfortwx.validation.verify_model import run_verification
+from comfortwx.validation.verify_model import build_verification_file_prefix, run_verification
 
 
 def _resolved_cases(
@@ -85,6 +86,19 @@ def _resolved_cases(
         for region_name in regions_in_order
         for lead_day in lead_days
     ]
+
+
+def _parse_aggregation_policies(value: str) -> tuple[str, ...]:
+    policies = tuple(part.strip() for part in value.split(",") if part.strip())
+    if not policies:
+        raise ValueError("At least one aggregation policy is required.")
+    available = set(list_verification_aggregation_policies())
+    invalid = [policy for policy in policies if policy not in available]
+    if invalid:
+        raise ValueError(
+            f"Unknown aggregation policies: {', '.join(invalid)}. Available policies: {', '.join(sorted(available))}."
+        )
+    return tuple(dict.fromkeys(policies))
 
 
 def _max_fresh_cases_for_tier(benchmark_tier: str) -> int:
@@ -129,7 +143,14 @@ def _ok_cases(summary: pd.DataFrame) -> pd.DataFrame:
     ok["forecast_lead_days"] = ok["forecast_lead_days"].astype(int)
     ok["lead_label"] = ok["forecast_lead_days"].map(_lead_label)
     ok["case_label"] = ok.apply(
-        lambda row: f"{row['region']} {row['date']:%Y-%m-%d} {row['lead_label']}",
+        lambda row: (
+            f"{row['region']} {row['date']:%Y-%m-%d} {row['lead_label']}"
+            + (
+                f" [{row['verification_aggregation_policy']}]"
+                if "verification_aggregation_policy" in row and str(row["verification_aggregation_policy"]).strip()
+                else ""
+            )
+        ),
         axis=1,
     )
     ok["score_bias_mean"] = ok["score_bias_mean"].astype(float)
@@ -165,13 +186,19 @@ def _existing_verification_case_outputs(
     region_name: str,
     forecast_model: str,
     forecast_lead_days: int,
+    aggregation_policy: str,
     output_dir: Path,
 ) -> dict[str, object] | None:
     resolved_forecast_model = resolve_openmeteo_verification_forecast_model(
         requested_model=forecast_model,
         forecast_lead_days=forecast_lead_days,
     )
-    file_prefix = f"comfortwx_verify_{region_name}_{resolved_forecast_model}_d{forecast_lead_days}"
+    file_prefix = build_verification_file_prefix(
+        region_name=region_name,
+        resolved_forecast_model=resolved_forecast_model,
+        forecast_lead_days=forecast_lead_days,
+        aggregation_policy=aggregation_policy,
+    )
     date_stem = f"{valid_date:%Y%m%d}"
     output_paths = {
         "forecast_daily_fields": output_dir / f"{file_prefix}_forecast_daily_fields_{date_stem}.nc",
@@ -430,6 +457,7 @@ def _apply_threshold_flags(summary: pd.DataFrame) -> pd.DataFrame:
 def format_benchmark_table(summary: pd.DataFrame) -> str:
     columns = [
         "case_label",
+        "verification_aggregation_policy",
         "region",
         "date",
         "forecast_lead_days",
@@ -1361,6 +1389,7 @@ def run_verification_benchmark(
     forecast_model: str,
     forecast_run_hour_utc: int,
     benchmark_tier: str,
+    aggregation_policies: tuple[str, ...] = ("baseline",),
     case_cache_mode: str = "reuse",
     max_fresh_cases: int | None = None,
     case_cooldown_seconds: float = VERIFICATION_INCREMENTAL_CASE_COOLDOWN_SECONDS,
@@ -1371,23 +1400,147 @@ def run_verification_benchmark(
     for case in cases:
         attempted_fresh_case = False
         try:
-            outputs = None
-            build_source = "fresh"
-            if case_cache_mode == "reuse":
-                outputs = _existing_verification_case_outputs(
+            outputs_by_policy: dict[str, tuple[str, dict[str, object]]] = {}
+            missing_policies: list[str] = []
+            for aggregation_policy in aggregation_policies:
+                outputs = None
+                build_source = "fresh"
+                if case_cache_mode == "reuse":
+                    outputs = _existing_verification_case_outputs(
+                        valid_date=case.valid_date,
+                        region_name=case.region_name,
+                        forecast_model=forecast_model,
+                        forecast_lead_days=case.forecast_lead_days,
+                        aggregation_policy=aggregation_policy,
+                        output_dir=output_dir,
+                    )
+                    if outputs is not None:
+                        build_source = "cache"
+                if outputs is None:
+                    missing_policies.append(aggregation_policy)
+                else:
+                    outputs_by_policy[aggregation_policy] = (build_source, outputs)
+
+            if missing_policies and effective_max_fresh_cases and fresh_case_count >= effective_max_fresh_cases:
+                for aggregation_policy in missing_policies:
+                    records.append(
+                        {
+                            "benchmark_tier": benchmark_tier,
+                            "verification_aggregation_policy": aggregation_policy,
+                            "build_source": "deferred",
+                            "region": case.region_name,
+                            "date": case.valid_date.isoformat(),
+                            "forecast_lead_days": case.forecast_lead_days,
+                            "forecast_model": forecast_model,
+                            "score_bias_mean": "",
+                            "score_mae": "",
+                            "score_rmse": "",
+                            "exact_category_agreement_fraction": "",
+                            "near_category_agreement_fraction": "",
+                            "status": "deferred",
+                            "error": f"Deferred after reaching fresh-case cap ({effective_max_fresh_cases}) for this run.",
+                            "forecast_score_map_path": "",
+                            "analysis_score_map_path": "",
+                            "score_difference_map_path": "",
+                            "absolute_error_map_path": "",
+                            "category_disagreement_map_path": "",
+                            "missed_high_comfort_map_path": "",
+                            "false_high_comfort_map_path": "",
+                            "forecast_daily_fields_path": "",
+                            "analysis_daily_fields_path": "",
+                            "summary_csv_path": "",
+                            "point_metrics_csv_path": "",
+                            "component_metrics_csv_path": "",
+                            "request_summary_csv_path": "",
+                            "request_detail_csv_path": "",
+                        }
+                    )
+                for aggregation_policy, (build_source, outputs) in outputs_by_policy.items():
+                    summary_record = dict(outputs["summary_record"])
+                    summary_record.update(
+                        {
+                            "benchmark_tier": benchmark_tier,
+                            "build_source": build_source,
+                            "region": case.region_name,
+                            "date": case.valid_date.isoformat(),
+                            "forecast_lead_days": case.forecast_lead_days,
+                            "status": "ok",
+                            "forecast_score_map_path": str(outputs["forecast_score_map"]),
+                            "analysis_score_map_path": str(outputs["analysis_score_map"]),
+                            "score_difference_map_path": str(outputs["score_difference_map"]),
+                            "absolute_error_map_path": str(outputs["absolute_error_map"]),
+                            "category_disagreement_map_path": str(outputs["category_disagreement_map"]),
+                            "missed_high_comfort_map_path": str(outputs["missed_high_comfort_map"]),
+                            "false_high_comfort_map_path": str(outputs["false_high_comfort_map"]),
+                            "forecast_daily_fields_path": str(outputs["forecast_daily_fields"]),
+                            "analysis_daily_fields_path": str(outputs["analysis_daily_fields"]),
+                            "summary_csv_path": str(outputs["summary_csv"]),
+                            "point_metrics_csv_path": str(outputs["point_metrics_csv"]),
+                            "component_metrics_csv_path": str(outputs["component_metrics_csv"]),
+                            "request_summary_csv_path": str(outputs["request_summary_csv"]),
+                            "request_detail_csv_path": str(outputs["request_detail_csv"]),
+                        }
+                    )
+                    records.append(summary_record)
+                continue
+
+            for aggregation_policy in missing_policies:
+                attempted_fresh_case = True
+                outputs = run_verification(
                     valid_date=case.valid_date,
                     region_name=case.region_name,
-                    forecast_model=forecast_model,
-                    forecast_lead_days=case.forecast_lead_days,
                     output_dir=output_dir,
+                    mesh_profile=mesh_profile,
+                    forecast_model=forecast_model,
+                    forecast_run_hour_utc=forecast_run_hour_utc,
+                    forecast_lead_days=case.forecast_lead_days,
+                    aggregation_policy=aggregation_policy,
+                    workflow_name="verification_benchmark",
                 )
-                if outputs is not None:
-                    build_source = "cache"
-            if outputs is None and effective_max_fresh_cases and fresh_case_count >= effective_max_fresh_cases:
+                outputs_by_policy[aggregation_policy] = ("fresh", outputs)
+
+            if missing_policies:
+                fresh_case_count += 1
+                if case_cooldown_seconds > 0:
+                    time.sleep(case_cooldown_seconds)
+
+            for aggregation_policy in aggregation_policies:
+                build_source, outputs = outputs_by_policy[aggregation_policy]
+                summary_record = dict(outputs["summary_record"])
+                summary_record.update(
+                    {
+                        "benchmark_tier": benchmark_tier,
+                        "build_source": build_source,
+                        "region": case.region_name,
+                        "date": case.valid_date.isoformat(),
+                        "forecast_lead_days": case.forecast_lead_days,
+                        "status": "ok",
+                        "forecast_score_map_path": str(outputs["forecast_score_map"]),
+                        "analysis_score_map_path": str(outputs["analysis_score_map"]),
+                        "score_difference_map_path": str(outputs["score_difference_map"]),
+                        "absolute_error_map_path": str(outputs["absolute_error_map"]),
+                        "category_disagreement_map_path": str(outputs["category_disagreement_map"]),
+                        "missed_high_comfort_map_path": str(outputs["missed_high_comfort_map"]),
+                        "false_high_comfort_map_path": str(outputs["false_high_comfort_map"]),
+                        "forecast_daily_fields_path": str(outputs["forecast_daily_fields"]),
+                        "analysis_daily_fields_path": str(outputs["analysis_daily_fields"]),
+                        "summary_csv_path": str(outputs["summary_csv"]),
+                        "point_metrics_csv_path": str(outputs["point_metrics_csv"]),
+                        "component_metrics_csv_path": str(outputs["component_metrics_csv"]),
+                        "request_summary_csv_path": str(outputs["request_summary_csv"]),
+                        "request_detail_csv_path": str(outputs["request_detail_csv"]),
+                    }
+                )
+                records.append(summary_record)
+        except Exception as exc:
+            if attempted_fresh_case and case_cooldown_seconds > 0:
+                time.sleep(case_cooldown_seconds)
+            for aggregation_policy in aggregation_policies:
                 records.append(
                     {
                         "benchmark_tier": benchmark_tier,
-                        "build_source": "deferred",
+                        "verification_aggregation_policy": aggregation_policy,
+                        "build_source": "error",
                         "region": case.region_name,
                         "date": case.valid_date.isoformat(),
                         "forecast_lead_days": case.forecast_lead_days,
@@ -1397,8 +1550,8 @@ def run_verification_benchmark(
                         "score_rmse": "",
                         "exact_category_agreement_fraction": "",
                         "near_category_agreement_fraction": "",
-                        "status": "deferred",
-                        "error": f"Deferred after reaching fresh-case cap ({effective_max_fresh_cases}) for this run.",
+                        "status": "error",
+                        "error": str(exc),
                         "forecast_score_map_path": "",
                         "analysis_score_map_path": "",
                         "score_difference_map_path": "",
@@ -1415,83 +1568,50 @@ def run_verification_benchmark(
                         "request_detail_csv_path": "",
                     }
                 )
-                continue
-            if outputs is None:
-                attempted_fresh_case = True
-                outputs = run_verification(
-                    valid_date=case.valid_date,
-                    region_name=case.region_name,
-                    output_dir=output_dir,
-                    mesh_profile=mesh_profile,
-                    forecast_model=forecast_model,
-                    forecast_run_hour_utc=forecast_run_hour_utc,
-                    forecast_lead_days=case.forecast_lead_days,
-                    workflow_name="verification_benchmark",
-                )
-                fresh_case_count += 1
-                if case_cooldown_seconds > 0:
-                    time.sleep(case_cooldown_seconds)
-            summary_record = dict(outputs["summary_record"])
-            summary_record.update(
-                {
-                    "benchmark_tier": benchmark_tier,
-                    "build_source": build_source,
-                    "region": case.region_name,
-                    "date": case.valid_date.isoformat(),
-                    "forecast_lead_days": case.forecast_lead_days,
-                    "status": "ok",
-                    "forecast_score_map_path": str(outputs["forecast_score_map"]),
-                    "analysis_score_map_path": str(outputs["analysis_score_map"]),
-                    "score_difference_map_path": str(outputs["score_difference_map"]),
-                    "absolute_error_map_path": str(outputs["absolute_error_map"]),
-                    "category_disagreement_map_path": str(outputs["category_disagreement_map"]),
-                    "missed_high_comfort_map_path": str(outputs["missed_high_comfort_map"]),
-                    "false_high_comfort_map_path": str(outputs["false_high_comfort_map"]),
-                    "forecast_daily_fields_path": str(outputs["forecast_daily_fields"]),
-                    "analysis_daily_fields_path": str(outputs["analysis_daily_fields"]),
-                    "summary_csv_path": str(outputs["summary_csv"]),
-                    "point_metrics_csv_path": str(outputs["point_metrics_csv"]),
-                    "component_metrics_csv_path": str(outputs["component_metrics_csv"]),
-                    "request_summary_csv_path": str(outputs["request_summary_csv"]),
-                    "request_detail_csv_path": str(outputs["request_detail_csv"]),
-                }
-            )
-            records.append(summary_record)
-        except Exception as exc:
-            if attempted_fresh_case and case_cooldown_seconds > 0:
-                time.sleep(case_cooldown_seconds)
-            records.append(
-                {
-                    "benchmark_tier": benchmark_tier,
-                    "build_source": "error",
-                    "region": case.region_name,
-                    "date": case.valid_date.isoformat(),
-                    "forecast_lead_days": case.forecast_lead_days,
-                    "forecast_model": forecast_model,
-                    "score_bias_mean": "",
-                    "score_mae": "",
-                    "score_rmse": "",
-                    "exact_category_agreement_fraction": "",
-                    "near_category_agreement_fraction": "",
-                    "status": "error",
-                    "error": str(exc),
-                    "forecast_score_map_path": "",
-                    "analysis_score_map_path": "",
-                    "score_difference_map_path": "",
-                    "absolute_error_map_path": "",
-                    "category_disagreement_map_path": "",
-                    "missed_high_comfort_map_path": "",
-                    "false_high_comfort_map_path": "",
-                    "forecast_daily_fields_path": "",
-                    "analysis_daily_fields_path": "",
-                    "summary_csv_path": "",
-                    "point_metrics_csv_path": "",
-                    "component_metrics_csv_path": "",
-                    "request_summary_csv_path": "",
-                    "request_detail_csv_path": "",
-                }
-            )
     return _apply_threshold_flags(pd.DataFrame.from_records(records))
+
+
+def _write_aggregation_policy_summary(summary: pd.DataFrame, *, output_dir: Path, stem: str) -> tuple[pd.DataFrame, Path | None]:
+    ok = _ok_cases(summary)
+    if ok.empty or "verification_aggregation_policy" not in ok.columns or ok["verification_aggregation_policy"].nunique() <= 1:
+        return pd.DataFrame(), None
+    policy_summary = (
+        ok.groupby(["forecast_lead_days", "verification_aggregation_policy"], dropna=False)
+        .agg(
+            case_count=("case_label", "count"),
+            mean_score_bias=("score_bias_mean", "mean"),
+            mean_score_mae=("score_mae", "mean"),
+            mean_score_rmse=("score_rmse", "mean"),
+            mean_exact_category_agreement=("exact_category_agreement_fraction", "mean"),
+            mean_near_category_agreement=("near_category_agreement_fraction", "mean"),
+        )
+        .reset_index()
+        .sort_values(["forecast_lead_days", "mean_score_mae", "verification_aggregation_policy"])
+    )
+    baseline = policy_summary.loc[
+        policy_summary["verification_aggregation_policy"] == "baseline",
+        ["forecast_lead_days", "mean_score_mae", "mean_score_rmse", "mean_near_category_agreement"],
+    ].rename(
+        columns={
+            "mean_score_mae": "baseline_mean_score_mae",
+            "mean_score_rmse": "baseline_mean_score_rmse",
+            "mean_near_category_agreement": "baseline_mean_near_category_agreement",
+        }
+    )
+    if not baseline.empty:
+        policy_summary = policy_summary.merge(baseline, on="forecast_lead_days", how="left")
+        policy_summary["score_mae_improvement_vs_baseline"] = (
+            policy_summary["baseline_mean_score_mae"] - policy_summary["mean_score_mae"]
+        ).round(3)
+        policy_summary["score_rmse_improvement_vs_baseline"] = (
+            policy_summary["baseline_mean_score_rmse"] - policy_summary["mean_score_rmse"]
+        ).round(3)
+        policy_summary["near_category_agreement_change_vs_baseline"] = (
+            policy_summary["mean_near_category_agreement"] - policy_summary["baseline_mean_near_category_agreement"]
+        ).round(4)
+    csv_path = output_dir / f"comfortwx_verify_benchmark_{stem}_aggregation_policy_summary.csv"
+    policy_summary.to_csv(csv_path, index=False)
+    return policy_summary, csv_path
 
 
 def _parse_args() -> argparse.Namespace:
@@ -1516,6 +1636,11 @@ def _parse_args() -> argparse.Namespace:
         "--lead-days",
         default=",".join(str(value) for value in OPENMETEO_VERIFICATION_BENCHMARK_LEAD_DAYS),
         help="Comma-separated verification forecast lead days. Default: 1,2,3,7.",
+    )
+    parser.add_argument(
+        "--aggregation-policies",
+        default="baseline",
+        help="Comma-separated verification aggregation policies to compare. Default: baseline.",
     )
     parser.add_argument(
         "--regions",
@@ -1570,6 +1695,7 @@ def main() -> None:
     args = _parse_args()
     date_override = datetime.strptime(args.date, "%Y-%m-%d").date() if args.date else None
     lead_days = _parse_lead_days(args.lead_days)
+    aggregation_policies = _parse_aggregation_policies(args.aggregation_policies)
     benchmark_tier = args.benchmark_tier
     cases = _filter_cases(
         _resolved_cases(date_override, benchmark_tier, lead_days),
@@ -1585,6 +1711,7 @@ def main() -> None:
         forecast_model=args.forecast_model,
         forecast_run_hour_utc=args.forecast_run_hour_utc,
         benchmark_tier=benchmark_tier,
+        aggregation_policies=aggregation_policies,
         case_cache_mode=args.case_cache_mode,
         max_fresh_cases=args.max_fresh_cases,
         case_cooldown_seconds=args.case_cooldown_seconds,
@@ -1599,31 +1726,41 @@ def main() -> None:
     )
     summary_path = output_dir / f"comfortwx_verify_benchmark_{stem}.csv"
     summary.to_csv(summary_path, index=False)
-    charts = _write_benchmark_charts(summary, output_dir=output_dir, stem=stem)
-    component_heatmap = _write_component_heatmap(summary, output_dir=output_dir, stem=stem)
+    baseline_summary = summary
+    if "verification_aggregation_policy" in summary.columns and len(aggregation_policies) > 1:
+        baseline_only = summary.loc[summary["verification_aggregation_policy"] == "baseline"].copy()
+        if not baseline_only.empty:
+            baseline_summary = baseline_only
+    policy_summary, aggregation_policy_summary_csv_path = _write_aggregation_policy_summary(
+        summary,
+        output_dir=output_dir,
+        stem=stem,
+    )
+    charts = _write_benchmark_charts(baseline_summary, output_dir=output_dir, stem=stem)
+    component_heatmap = _write_component_heatmap(baseline_summary, output_dir=output_dir, stem=stem)
     if component_heatmap is not None:
         charts["component_heatmap"] = component_heatmap
-    region_summary, region_summary_csv_path = _write_region_summary(summary, output_dir=output_dir, stem=stem)
+    region_summary, region_summary_csv_path = _write_region_summary(baseline_summary, output_dir=output_dir, stem=stem)
     region_summary_chart = _write_region_summary_chart(region_summary, output_dir=output_dir, stem=stem)
     if region_summary_chart is not None:
         charts["region_summary_chart"] = region_summary_chart
-    lead_summary, lead_summary_csv_path = _write_lead_summary(summary, output_dir=output_dir, stem=stem)
+    lead_summary, lead_summary_csv_path = _write_lead_summary(baseline_summary, output_dir=output_dir, stem=stem)
     lead_summary_chart = _write_lead_summary_chart(lead_summary, output_dir=output_dir, stem=stem)
     if lead_summary_chart is not None:
         charts["lead_summary_chart"] = lead_summary_chart
-    region_lead_summary, region_lead_summary_csv_path = _write_region_lead_summary(summary, output_dir=output_dir, stem=stem)
+    region_lead_summary, region_lead_summary_csv_path = _write_region_lead_summary(baseline_summary, output_dir=output_dir, stem=stem)
     region_lead_heatmap = _write_region_lead_heatmap(region_lead_summary, output_dir=output_dir, stem=stem)
     if region_lead_heatmap is not None:
         charts["region_lead_heatmap"] = region_lead_heatmap
-    component_priority_summary, component_priority_csv_path = _write_component_priority_summary(summary, output_dir=output_dir, stem=stem)
+    component_priority_summary, component_priority_csv_path = _write_component_priority_summary(baseline_summary, output_dir=output_dir, stem=stem)
     component_priority_chart = _write_component_priority_chart(component_priority_summary, output_dir=output_dir, stem=stem)
     if component_priority_chart is not None:
         charts["component_priority_chart"] = component_priority_chart
-    priority_cases, priority_cases_csv_path = _write_priority_case_summary(summary, output_dir=output_dir, stem=stem)
+    priority_cases, priority_cases_csv_path = _write_priority_case_summary(baseline_summary, output_dir=output_dir, stem=stem)
     priority_case_chart = _write_priority_case_chart(priority_cases, output_dir=output_dir, stem=stem)
     if priority_case_chart is not None:
         charts["priority_case_chart"] = priority_case_chart
-    calibration_summary, calibration_summary_csv_path = _build_calibration_summary(summary, output_dir=output_dir, stem=stem)
+    calibration_summary, calibration_summary_csv_path = _build_calibration_summary(baseline_summary, output_dir=output_dir, stem=stem)
     calibration_mae_chart = _write_calibration_mae_chart(calibration_summary, output_dir=output_dir, stem=stem)
     if calibration_mae_chart is not None:
         charts["calibration_mae_chart"] = calibration_mae_chart
@@ -1631,7 +1768,7 @@ def main() -> None:
     if calibration_lead_chart is not None:
         charts["calibration_lead_chart"] = calibration_lead_chart
     report_path = _write_benchmark_html_report(
-        summary,
+        baseline_summary,
         charts=charts,
         benchmark_tier=benchmark_tier,
         region_summary=region_summary,
@@ -1650,7 +1787,7 @@ def main() -> None:
         stem=stem,
     )
     verification_site_index = _write_verification_site(
-        summary=summary,
+        summary=baseline_summary,
         summary_path=summary_path,
         charts=charts,
         report_path=report_path,
@@ -1665,6 +1802,8 @@ def main() -> None:
     )
 
     print(f"Saved verification benchmark summary: {summary_path}")
+    if aggregation_policy_summary_csv_path is not None:
+        print(f"Saved aggregation policy comparison summary: {aggregation_policy_summary_csv_path}")
     if region_summary_csv_path is not None:
         print(f"Saved regional benchmark summary: {region_summary_csv_path}")
     if lead_summary_csv_path is not None:

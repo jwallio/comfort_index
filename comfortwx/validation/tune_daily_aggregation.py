@@ -26,6 +26,7 @@ from comfortwx.config import (
     VERIFICATION_AGGREGATION_TUNING_CANDIDATE_MODES,
     VERIFICATION_HOURLY_CACHE_VERSION,
     VERIFICATION_INCREMENTAL_CASE_COOLDOWN_SECONDS,
+    resolve_verification_aggregation_mode,
 )
 from comfortwx.data.openmeteo_reliability import openmeteo_request_context
 from comfortwx.data.openmeteo_verification import (
@@ -62,12 +63,6 @@ def _parse_candidate_modes(value: str) -> tuple[str, ...]:
 
 def _case_label(region_name: str, valid_date: date, forecast_lead_days: int) -> str:
     return f"{region_name} {valid_date:%Y-%m-%d} D+{forecast_lead_days}"
-
-
-def _calendar_regime_for_date(valid_date: date) -> str:
-    if valid_date.month in (11, 12, 1, 2):
-        return "cool_season"
-    return "warm_season"
 
 
 def _hourly_cache_paths(
@@ -405,14 +400,27 @@ def build_holdout_mode_selection(case_scores: pd.DataFrame) -> pd.DataFrame:
 def _resolve_policy_mode(
     policy_definition: dict[str, object],
     *,
+    policy_name: str,
     region_name: str,
     lead_day: int,
     valid_date: date,
 ) -> str:
+    # Runtime policies should resolve through the shared config helper so
+    # verification runners and tuning compare the same effective modes.
+    # Test helpers and ad hoc comparisons can still inject local policy
+    # definitions that are not registered in config.
+    if policy_name in VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES:
+        return resolve_verification_aggregation_mode(
+            policy_name=policy_name,
+            region_name=region_name,
+            valid_date=valid_date,
+            forecast_lead_days=lead_day,
+        )
+
     regime_definitions = policy_definition.get("calendar_regimes", {})
     selected_definition = policy_definition
     if isinstance(regime_definitions, dict):
-        regime_name = _calendar_regime_for_date(valid_date)
+        regime_name = "cool_season" if valid_date.month in (11, 12, 1, 2) else "warm_season"
         regime_definition = regime_definitions.get(regime_name)
         if isinstance(regime_definition, dict):
             selected_definition = {
@@ -424,16 +432,16 @@ def _resolve_policy_mode(
     default_modes = selected_definition.get("default", {})
     region_overrides = selected_definition.get("regions", {})
     if not isinstance(default_modes, dict):
-        raise ValueError("Policy definition default modes must be a mapping.")
+        raise ValueError("Verification aggregation policy default modes must be a mapping.")
     if not isinstance(region_overrides, dict):
-        raise ValueError("Policy definition region overrides must be a mapping.")
+        raise ValueError("Verification aggregation policy region overrides must be a mapping.")
 
     regional_modes = region_overrides.get(region_name, {})
     if isinstance(regional_modes, dict) and lead_day in regional_modes:
         return str(regional_modes[lead_day])
     if lead_day in default_modes:
         return str(default_modes[lead_day])
-    return "baseline"
+    raise ValueError(f"Policy '{policy_name}' does not define a mode for lead day {lead_day}.")
 
 
 def build_policy_comparison(
@@ -455,6 +463,7 @@ def build_policy_comparison(
         for policy_name, policy_modes in policy_definitions.items():
             aggregation_mode = _resolve_policy_mode(
                 policy_modes,
+                policy_name=policy_name,
                 region_name=region_name,
                 lead_day=lead_day,
                 valid_date=case_rows["date"].iloc[0].date(),

@@ -10,7 +10,9 @@ import xarray as xr
 from comfortwx.validation.verify_benchmark import (
     _apply_score_calibration,
     _apply_threshold_flags,
+    _parse_aggregation_policies,
     _build_calibration_summary,
+    _write_aggregation_policy_summary,
     _priority_table,
     _parse_lead_days,
     _write_benchmark_charts,
@@ -62,6 +64,13 @@ def test_resolved_cases_cover_required_regions_and_multiple_dates() -> None:
 def test_parse_lead_days_preserves_order_and_deduplicates() -> None:
     assert _parse_lead_days("1,2,3,7") == (1, 2, 3, 7)
     assert _parse_lead_days("1, 3, 3, 7") == (1, 3, 7)
+
+
+def test_parse_aggregation_policies_preserves_order_and_deduplicates() -> None:
+    assert _parse_aggregation_policies("baseline,experimental_regime_aware,baseline") == (
+        "baseline",
+        "experimental_regime_aware",
+    )
 
 
 def test_run_verification_benchmark_collects_summary_rows(monkeypatch, tmp_path: Path) -> None:
@@ -124,6 +133,60 @@ def test_run_verification_benchmark_collects_summary_rows(monkeypatch, tmp_path:
     table = format_benchmark_table(frame)
     assert "southeast" in table
     assert "5.5" in table
+
+
+def test_run_verification_benchmark_collects_multiple_policies(monkeypatch, tmp_path: Path) -> None:
+    def _fake_run_verification(**kwargs):
+        valid_date = kwargs["valid_date"]
+        region_name = kwargs["region_name"]
+        aggregation_policy = kwargs["aggregation_policy"]
+        score_mae = 5.5 if aggregation_policy == "baseline" else 4.5
+        return {
+            "forecast_score_map": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_forecast.png",
+            "analysis_score_map": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_analysis.png",
+            "score_difference_map": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_diff.png",
+            "absolute_error_map": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_abs_error.png",
+            "category_disagreement_map": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_category_disagreement.png",
+            "missed_high_comfort_map": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_missed.png",
+            "false_high_comfort_map": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_false.png",
+            "forecast_daily_fields": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_forecast.nc",
+            "analysis_daily_fields": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_analysis.nc",
+            "summary_csv": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_summary.csv",
+            "point_metrics_csv": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_points.csv",
+            "component_metrics_csv": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_components.csv",
+            "request_summary_csv": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_request_summary.csv",
+            "request_detail_csv": tmp_path / f"{region_name}_{aggregation_policy}_{valid_date:%Y%m%d}_request_detail.csv",
+            "summary_record": {
+                "valid_date": valid_date.isoformat(),
+                "region_name": region_name,
+                "forecast_lead_days": kwargs["forecast_lead_days"],
+                "verification_aggregation_policy": aggregation_policy,
+                "verification_aggregation_mode": "baseline" if aggregation_policy == "baseline" else "long_lead_soft",
+                "score_bias_mean": 1.25,
+                "score_mae": score_mae,
+                "score_rmse": 7.1,
+                "exact_category_agreement_fraction": 0.6,
+                "near_category_agreement_fraction": 0.9,
+            },
+        }
+
+    monkeypatch.setattr("comfortwx.validation.verify_benchmark.run_verification", _fake_run_verification)
+    frame = run_verification_benchmark(
+        cases=[VerificationBenchmarkCase(region_name="southeast", valid_date=date(2026, 3, 20))],
+        output_dir=tmp_path,
+        mesh_profile="standard",
+        forecast_model="gfs_seamless",
+        forecast_run_hour_utc=12,
+        benchmark_tier=VERIFICATION_BENCHMARK_TIER_DEFAULT,
+        aggregation_policies=("baseline", "experimental_regime_aware"),
+    )
+
+    assert len(frame) == 2
+    assert set(frame["verification_aggregation_policy"]) == {"baseline", "experimental_regime_aware"}
+    policy_summary, policy_summary_path = _write_aggregation_policy_summary(frame, output_dir=tmp_path, stem="test")
+    assert not policy_summary.empty
+    assert policy_summary_path is not None and policy_summary_path.exists()
+    assert "score_mae_improvement_vs_baseline" in policy_summary.columns
 
 
 def test_run_verification_benchmark_defers_uncached_cases_after_cap(monkeypatch, tmp_path: Path) -> None:

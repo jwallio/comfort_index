@@ -25,6 +25,8 @@ from comfortwx.config import (
     OPENMETEO_VERIFICATION_SAMPLE_POINT_NAMES,
     OUTPUT_DIR,
     VERIFICATION_HIGH_COMFORT_CATEGORY_MIN_INDEX,
+    list_verification_aggregation_policies,
+    resolve_verification_aggregation_mode,
 )
 from comfortwx.data.openmeteo_reliability import (
     openmeteo_request_context,
@@ -70,6 +72,24 @@ def _category_counts(prefix: str, daily: xr.Dataset) -> dict[str, object]:
     return records
 
 
+def _slugify_policy_name(policy_name: str) -> str:
+    return "".join(character if character.isalnum() else "_" for character in policy_name.strip().lower()).strip("_")
+
+
+def build_verification_file_prefix(
+    *,
+    region_name: str,
+    resolved_forecast_model: str,
+    forecast_lead_days: int,
+    aggregation_policy: str,
+) -> str:
+    prefix = f"comfortwx_verify_{region_name}_{resolved_forecast_model}_d{forecast_lead_days}"
+    normalized_policy = aggregation_policy.strip().lower()
+    if normalized_policy == "baseline":
+        return prefix
+    return f"{prefix}_policy_{_slugify_policy_name(aggregation_policy)}"
+
+
 def _verification_summary(
     *,
     forecast_daily: xr.Dataset,
@@ -98,6 +118,8 @@ def _verification_summary(
         "forecast_run_timestamp_utc": metadata["forecast_run_timestamp_utc"],
         "mesh_profile": metadata["mesh_profile"],
         "mesh_point_count": metadata["mesh_point_count"],
+        "verification_aggregation_policy": metadata["aggregation_policy"],
+        "verification_aggregation_mode": metadata["aggregation_mode"],
         "grid_lat_count": int(forecast_daily.sizes["lat"]),
         "grid_lon_count": int(forecast_daily.sizes["lon"]),
         "forecast_mean_score": round(float(forecast_daily["daily_score"].mean().values), 2),
@@ -432,6 +454,7 @@ def run_verification(
     forecast_model: str,
     forecast_run_hour_utc: int,
     forecast_lead_days: int,
+    aggregation_policy: str = "baseline",
     workflow_name: str = "verification_model",
 ) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -439,7 +462,18 @@ def run_verification(
         requested_model=forecast_model,
         forecast_lead_days=forecast_lead_days,
     )
-    file_prefix = f"comfortwx_verify_{region_name}_{resolved_forecast_model}_d{forecast_lead_days}"
+    aggregation_mode = resolve_verification_aggregation_mode(
+        policy_name=aggregation_policy,
+        region_name=region_name,
+        valid_date=valid_date,
+        forecast_lead_days=forecast_lead_days,
+    )
+    file_prefix = build_verification_file_prefix(
+        region_name=region_name,
+        resolved_forecast_model=resolved_forecast_model,
+        forecast_lead_days=forecast_lead_days,
+        aggregation_policy=aggregation_policy,
+    )
     request_report_slug = f"{file_prefix}_{valid_date:%Y%m%d}"
     reset_openmeteo_request_records()
     try:
@@ -458,8 +492,8 @@ def run_verification(
             forecast_hourly, analysis_hourly, metadata = loader.load_pair(valid_date)
         forecast_scored_hourly = score_hourly_dataset(forecast_hourly)
         analysis_scored_hourly = score_hourly_dataset(analysis_hourly)
-        forecast_daily = aggregate_daily_scores(forecast_scored_hourly)
-        analysis_daily = aggregate_daily_scores(analysis_scored_hourly)
+        forecast_daily = aggregate_daily_scores(forecast_scored_hourly, aggregation_mode=aggregation_mode)
+        analysis_daily = aggregate_daily_scores(analysis_scored_hourly, aggregation_mode=aggregation_mode)
 
         forecast_daily_path = output_dir / f"{file_prefix}_forecast_daily_fields_{valid_date:%Y%m%d}.nc"
         analysis_daily_path = output_dir / f"{file_prefix}_analysis_daily_fields_{valid_date:%Y%m%d}.nc"
@@ -526,7 +560,11 @@ def run_verification(
         summary = _verification_summary(
             forecast_daily=forecast_daily,
             analysis_daily=analysis_daily,
-            metadata=metadata,
+            metadata={
+                **metadata,
+                "aggregation_policy": aggregation_policy,
+                "aggregation_mode": aggregation_mode,
+            },
             valid_date=valid_date,
         )
         component_metrics = _component_metrics(
@@ -580,6 +618,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--forecast-model", default=OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT)
     parser.add_argument("--forecast-run-hour-utc", type=int, default=OPENMETEO_VERIFICATION_FORECAST_RUN_HOUR_UTC)
     parser.add_argument("--forecast-lead-days", type=int, default=OPENMETEO_VERIFICATION_FORECAST_LEAD_DAYS)
+    parser.add_argument(
+        "--aggregation-policy",
+        default="baseline",
+        choices=list_verification_aggregation_policies(),
+        help="Verification-only daily aggregation policy. Default: baseline.",
+    )
     parser.add_argument("--output-dir", default=str(OUTPUT_DIR))
     return parser.parse_args()
 
@@ -595,6 +639,7 @@ def main() -> None:
         forecast_model=args.forecast_model,
         forecast_run_hour_utc=args.forecast_run_hour_utc,
         forecast_lead_days=args.forecast_lead_days,
+        aggregation_policy=args.aggregation_policy,
     )
     print(f"Saved forecast score map: {outputs['forecast_score_map']}")
     print(f"Saved analysis score map: {outputs['analysis_score_map']}")

@@ -15,7 +15,7 @@ from comfortwx.data.openmeteo_verification import (
     _normalize_previous_run_payload,
     resolve_openmeteo_verification_forecast_model,
 )
-from comfortwx.validation.verify_model import _verification_summary
+from comfortwx.validation.verify_model import _verification_summary, build_verification_file_prefix
 
 
 def test_normalize_openmeteo_verification_payload_derives_pop_proxy_and_visibility_units() -> None:
@@ -81,6 +81,8 @@ def test_verification_summary_reports_score_and_category_agreement() -> None:
             "forecast_lead_days": 2,
             "mesh_profile": "standard",
             "mesh_point_count": 4,
+            "aggregation_policy": "experimental_regime_aware",
+            "aggregation_mode": "long_lead_soft",
         },
         valid_date=date(2026, 3, 20),
     )
@@ -97,6 +99,29 @@ def test_verification_summary_reports_score_and_category_agreement() -> None:
     assert summary["false_high_comfort_cell_count"] == 0
     assert summary["high_comfort_precision"] == 1.0
     assert summary["high_comfort_recall"] == 1.0
+    assert summary["verification_aggregation_policy"] == "experimental_regime_aware"
+    assert summary["verification_aggregation_mode"] == "long_lead_soft"
+
+
+def test_build_verification_file_prefix_adds_policy_suffix_for_non_baseline() -> None:
+    assert (
+        build_verification_file_prefix(
+            region_name="southeast",
+            resolved_forecast_model="gfs_seamless",
+            forecast_lead_days=2,
+            aggregation_policy="baseline",
+        )
+        == "comfortwx_verify_southeast_gfs_seamless_d2"
+    )
+    assert (
+        build_verification_file_prefix(
+            region_name="southeast",
+            resolved_forecast_model="gfs_seamless",
+            forecast_lead_days=2,
+            aggregation_policy="experimental_regime_aware",
+        )
+        == "comfortwx_verify_southeast_gfs_seamless_d2_policy_experimental_regime_aware"
+    )
 
 
 def test_component_summary_fields_are_exposed() -> None:

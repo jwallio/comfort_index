@@ -27,6 +27,10 @@ on:
         description: Comma-separated forecast leads to verify
         required: false
         default: "1,2,3,7"
+      aggregation_policies:
+        description: Comma-separated verification aggregation policies to compare
+        required: false
+        default: "baseline"
       case_cache_mode:
         description: Reuse existing verification artifacts when available
         required: true
@@ -116,6 +120,7 @@ jobs:
           WORKFLOW_BENCHMARK_DATE: ${{ github.event.inputs.benchmark_date }}
           WORKFLOW_MESH_PROFILE: ${{ github.event.inputs.mesh_profile }}
           WORKFLOW_LEAD_DAYS: ${{ github.event.inputs.lead_days }}
+          WORKFLOW_AGGREGATION_POLICIES: ${{ github.event.inputs.aggregation_policies }}
           WORKFLOW_CASE_CACHE_MODE: ${{ github.event.inputs.case_cache_mode }}
           WORKFLOW_MAX_FRESH_CASES: ${{ github.event.inputs.max_fresh_cases }}
           WORKFLOW_CASE_COOLDOWN_SECONDS: ${{ github.event.inputs.case_cooldown_seconds }}
@@ -126,6 +131,7 @@ jobs:
           benchmark_date="${WORKFLOW_BENCHMARK_DATE:-}"
           mesh_profile="${WORKFLOW_MESH_PROFILE:-standard}"
           lead_days="${WORKFLOW_LEAD_DAYS:-1,2,3,7}"
+          aggregation_policies="${WORKFLOW_AGGREGATION_POLICIES:-baseline}"
           case_cache_mode="${WORKFLOW_CASE_CACHE_MODE:-reuse}"
           max_fresh_cases="${WORKFLOW_MAX_FRESH_CASES:-}"
           case_cooldown_seconds="${WORKFLOW_CASE_COOLDOWN_SECONDS:-4.0}"
@@ -138,6 +144,7 @@ jobs:
             --benchmark-tier "$benchmark_tier"
             --mesh-profile "$mesh_profile"
             --lead-days "$lead_days"
+            --aggregation-policies "$aggregation_policies"
             --case-cache-mode "$case_cache_mode"
             --case-cooldown-seconds "$case_cooldown_seconds"
           )

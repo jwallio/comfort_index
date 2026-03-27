@@ -76,6 +76,12 @@ Benchmark verification suite with an explicit tier:
 python -m comfortwx.validation.verify_benchmark --benchmark-tier full-seasonal --lead-days 1,2,3,7
 ```
 
+Benchmark verification suite comparing baseline vs a candidate verification policy:
+
+```powershell
+python -m comfortwx.validation.verify_benchmark --benchmark-tier full-seasonal --lead-days 1,2,3,7 --aggregation-policies baseline,experimental_regime_aware
+```
+
 Rate-limit-safe incremental full-seasonal benchmark pass:
 
 ```powershell
@@ -184,6 +190,7 @@ When run manually from GitHub Actions, the verification workflow lets you choose
 - optional benchmark date override in `YYYY-MM-DD`
 - mesh profile (`standard` or `fine`)
 - forecast leads as a comma-separated list such as `1,2,3,7`
+- verification aggregation policies as a comma-separated list such as `baseline,experimental_regime_aware`
 - case cache mode (`reuse` or `refresh`)
 - optional fresh-case cap, cooldown, region filter, and date filter for incremental chunked runs
 
@@ -229,6 +236,8 @@ By default, the benchmark now verifies multiple forecast leads for each benchmar
 - `Day 7`
 
 The benchmark CSV, charts, and HTML report include the lead day so you can compare how Comfort Index skill changes with forecast horizon instead of only looking at a single one-day lead.
+
+When multiple verification aggregation policies are requested, the benchmark writes a combined summary CSV with a `verification_aggregation_policy` column plus an aggregation-policy comparison CSV so baseline and candidate policies can be compared directly without changing the public product path.
 
 The benchmark report layers visuals on top of the CSV outputs:
 - MAE, agreement, bias-vs-RMSE, and ranked-case summary charts

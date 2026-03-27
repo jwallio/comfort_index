@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Final
 
@@ -1339,6 +1340,60 @@ VERIFICATION_INCREMENTAL_MAX_FRESH_CASES_BY_TIER: Final[dict[str, int]] = {
     "full-seasonal": 12,
 }
 VERIFICATION_INCREMENTAL_CASE_COOLDOWN_SECONDS: Final[float] = 4.0
+
+
+def _verification_calendar_regime_for_date(valid_date: date) -> str:
+    if valid_date.month in (11, 12, 1, 2):
+        return "cool_season"
+    return "warm_season"
+
+
+def list_verification_aggregation_policies() -> tuple[str, ...]:
+    return tuple(VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES.keys())
+
+
+def resolve_verification_aggregation_mode(
+    *,
+    policy_name: str,
+    region_name: str,
+    valid_date: date,
+    forecast_lead_days: int,
+) -> str:
+    normalized_name = policy_name.strip()
+    if normalized_name in DAILY_AGGREGATION_MODES:
+        return normalized_name
+    if normalized_name not in VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES:
+        available = ", ".join(sorted(set(DAILY_AGGREGATION_MODES) | set(VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES)))
+        raise ValueError(
+            f"Unknown verification aggregation policy '{policy_name}'. Available policies/modes: {available}."
+        )
+
+    policy_definition = VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES[normalized_name]
+    regime_definitions = policy_definition.get("calendar_regimes", {})
+    selected_definition = policy_definition
+    if isinstance(regime_definitions, dict):
+        regime_name = _verification_calendar_regime_for_date(valid_date)
+        regime_definition = regime_definitions.get(regime_name)
+        if isinstance(regime_definition, dict):
+            selected_definition = {
+                "default": policy_definition.get("default", {}),
+                "regions": policy_definition.get("regions", {}),
+                **regime_definition,
+            }
+
+    default_modes = selected_definition.get("default", {})
+    region_overrides = selected_definition.get("regions", {})
+    if not isinstance(default_modes, dict):
+        raise ValueError("Verification aggregation policy default modes must be a mapping.")
+    if not isinstance(region_overrides, dict):
+        raise ValueError("Verification aggregation policy region overrides must be a mapping.")
+
+    regional_modes = region_overrides.get(region_name, {})
+    if isinstance(regional_modes, dict) and forecast_lead_days in regional_modes:
+        return str(regional_modes[forecast_lead_days])
+    if forecast_lead_days in default_modes:
+        return str(default_modes[forecast_lead_days])
+    return DAILY_AGGREGATION_DEFAULT_MODE
 
 
 def get_openmeteo_mesh_settings(region_name: str, mesh_profile: str = OPENMETEO_DEFAULT_MESH_PROFILE) -> dict[str, float | bool]:
