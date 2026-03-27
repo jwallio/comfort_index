@@ -931,6 +931,10 @@ STITCHED_CONUS_PRESENTATION: Final[dict[str, float | bool | str]] = {
     "score_key_left_label": "Less comfortable",
     "score_key_center_label": "Transition zone",
     "score_key_right_label": "Most comfortable",
+    "score_contour_levels": (20, 40, 60, 80),
+    "score_contour_color": "#495256",
+    "score_contour_alpha": 0.28,
+    "score_contour_linewidth": 0.55,
     "credit_footer": "Map by: Jonathan Wall @_jwall on X",
     "footer_suffix": "Display smoothing, coverage fade, and stitched-footprint outline are presentation-only.",
 }

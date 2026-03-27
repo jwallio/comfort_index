@@ -682,6 +682,39 @@ def _display_field(field: xr.DataArray, *, presentation: bool, smooth_sigma: flo
     return display_field
 
 
+def _apply_stitched_score_contours(
+    ax,
+    raw_field: xr.DataArray,
+    *,
+    projected_stitched_fallback: bool = False,
+) -> None:
+    contour_levels = tuple(float(level) for level in STITCHED_CONUS_PRESENTATION.get("score_contour_levels", ()))
+    if not contour_levels:
+        return
+    contour_kwargs = {
+        "levels": contour_levels,
+        "colors": [str(STITCHED_CONUS_PRESENTATION.get("score_contour_color", "#495256"))],
+        "linewidths": float(STITCHED_CONUS_PRESENTATION.get("score_contour_linewidth", 0.55)),
+        "alpha": float(STITCHED_CONUS_PRESENTATION.get("score_contour_alpha", 0.28)),
+        "zorder": 3.2,
+    }
+    try:
+        if HAS_CARTOPY:
+            contour = ax.contour(
+                raw_field["lon"],
+                raw_field["lat"],
+                raw_field,
+                transform=ccrs.PlateCarree(),
+                **contour_kwargs,
+            )
+            _apply_stitched_land_clip(ax, contour)
+        elif projected_stitched_fallback:
+            contour = _projected_contour(ax, raw_field, **contour_kwargs)
+            _apply_stitched_land_clip(ax, contour)
+    except ValueError:
+        return
+
+
 def _apply_coverage_outline(
     ax,
     coverage_field: xr.DataArray,
@@ -929,7 +962,30 @@ def plot_raw_score_map(
         }
     else:
         kwargs = {"cmap": _continuous_score_cmap(color_scale), "vmin": 0.0, "vmax": 100.0, "shading": "auto"}
-    if HAS_CARTOPY:
+    if presentation and stitched_conus:
+        contour_levels = score_levels if score_levels else tuple(np.arange(0.0, 101.0, 5.0))
+        contour_kwargs = {
+            "levels": contour_levels,
+            "cmap": ListedColormap(color_scale) if score_levels else _continuous_score_cmap(color_scale),
+            "zorder": 1.0,
+            "antialiased": True,
+        }
+        if HAS_CARTOPY:
+            mesh = ax.contourf(
+                raw_field["lon"],
+                raw_field["lat"],
+                raw_field,
+                transform=ccrs.PlateCarree(),
+                **contour_kwargs,
+            )
+            _apply_stitched_land_clip(ax, mesh)
+        elif projected_stitched_fallback:
+            mesh = _projected_contourf(ax, raw_field, **contour_kwargs)
+            _apply_stitched_land_clip(ax, mesh)
+        else:
+            mesh = ax.contourf(raw_field["lon"], raw_field["lat"], raw_field, **contour_kwargs)
+        _apply_stitched_score_contours(ax, raw_field, projected_stitched_fallback=projected_stitched_fallback)
+    elif HAS_CARTOPY:
         mesh = ax.pcolormesh(
             raw_field["lon"],
             raw_field["lat"],
