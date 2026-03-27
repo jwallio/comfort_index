@@ -64,6 +64,12 @@ def _case_label(region_name: str, valid_date: date, forecast_lead_days: int) -> 
     return f"{region_name} {valid_date:%Y-%m-%d} D+{forecast_lead_days}"
 
 
+def _calendar_regime_for_date(valid_date: date) -> str:
+    if valid_date.month in (11, 12, 1, 2):
+        return "cool_season"
+    return "warm_season"
+
+
 def _hourly_cache_paths(
     *,
     cache_dir: Path,
@@ -396,9 +402,27 @@ def build_holdout_mode_selection(case_scores: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def _resolve_policy_mode(policy_definition: dict[str, object], *, region_name: str, lead_day: int) -> str:
-    default_modes = policy_definition.get("default", {})
-    region_overrides = policy_definition.get("regions", {})
+def _resolve_policy_mode(
+    policy_definition: dict[str, object],
+    *,
+    region_name: str,
+    lead_day: int,
+    valid_date: date,
+) -> str:
+    regime_definitions = policy_definition.get("calendar_regimes", {})
+    selected_definition = policy_definition
+    if isinstance(regime_definitions, dict):
+        regime_name = _calendar_regime_for_date(valid_date)
+        regime_definition = regime_definitions.get(regime_name)
+        if isinstance(regime_definition, dict):
+            selected_definition = {
+                "default": policy_definition.get("default", {}),
+                "regions": policy_definition.get("regions", {}),
+                **regime_definition,
+            }
+
+    default_modes = selected_definition.get("default", {})
+    region_overrides = selected_definition.get("regions", {})
     if not isinstance(default_modes, dict):
         raise ValueError("Policy definition default modes must be a mapping.")
     if not isinstance(region_overrides, dict):
@@ -429,7 +453,12 @@ def build_policy_comparison(
         lead_day = int(case_rows["forecast_lead_days"].iloc[0])
         region_name = str(case_rows["region"].iloc[0])
         for policy_name, policy_modes in policy_definitions.items():
-            aggregation_mode = _resolve_policy_mode(policy_modes, region_name=region_name, lead_day=lead_day)
+            aggregation_mode = _resolve_policy_mode(
+                policy_modes,
+                region_name=region_name,
+                lead_day=lead_day,
+                valid_date=case_rows["date"].iloc[0].date(),
+            )
             matched_row = case_rows.loc[case_rows["aggregation_mode"] == aggregation_mode]
             if matched_row.empty:
                 continue

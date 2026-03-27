@@ -340,6 +340,89 @@ def test_build_policy_comparison_supports_region_overrides() -> None:
     assert southeast_blend["score_mae_improvement_vs_baseline"] == 1.0
 
 
+def test_build_policy_comparison_supports_calendar_regimes() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "case_label": "northeast 2025-01-15 D+1",
+                "region": "northeast",
+                "date": "2025-01-15",
+                "forecast_lead_days": 1,
+                "aggregation_mode": "baseline",
+                "status": "ok",
+                "score_bias_mean": 0.5,
+                "score_mae": 5.0,
+                "score_rmse": 6.0,
+                "exact_category_agreement_fraction": 0.82,
+                "near_category_agreement_fraction": 0.94,
+            },
+            {
+                "case_label": "northeast 2025-01-15 D+1",
+                "region": "northeast",
+                "date": "2025-01-15",
+                "forecast_lead_days": 1,
+                "aggregation_mode": "long_lead_soft",
+                "status": "ok",
+                "score_bias_mean": 0.3,
+                "score_mae": 4.0,
+                "score_rmse": 5.0,
+                "exact_category_agreement_fraction": 0.84,
+                "near_category_agreement_fraction": 0.96,
+            },
+            {
+                "case_label": "northeast 2026-03-20 D+1",
+                "region": "northeast",
+                "date": "2026-03-20",
+                "forecast_lead_days": 1,
+                "aggregation_mode": "baseline",
+                "status": "ok",
+                "score_bias_mean": 0.7,
+                "score_mae": 6.0,
+                "score_rmse": 7.0,
+                "exact_category_agreement_fraction": 0.80,
+                "near_category_agreement_fraction": 0.92,
+            },
+            {
+                "case_label": "northeast 2026-03-20 D+1",
+                "region": "northeast",
+                "date": "2026-03-20",
+                "forecast_lead_days": 1,
+                "aggregation_mode": "long_lead_soft",
+                "status": "ok",
+                "score_bias_mean": 0.4,
+                "score_mae": 3.5,
+                "score_rmse": 4.4,
+                "exact_category_agreement_fraction": 0.86,
+                "near_category_agreement_fraction": 0.97,
+            },
+        ]
+    )
+
+    _, policy_summary = build_policy_comparison(
+        frame,
+        policy_definitions={
+            "baseline": {
+                "default": {1: "baseline"},
+            },
+            "seasonal_policy": {
+                "default": {1: "baseline"},
+                "calendar_regimes": {
+                    "cool_season": {
+                        "default": {1: "baseline"},
+                    },
+                    "warm_season": {
+                        "default": {1: "long_lead_soft"},
+                    },
+                },
+            },
+        },
+    )
+
+    seasonal_row = policy_summary.loc[policy_summary["policy_name"] == "seasonal_policy"].iloc[0]
+    assert seasonal_row["mean_score_mae"] == 4.25
+    assert seasonal_row["score_mae_improvement_vs_baseline"] == 1.25
+
+
 def test_evaluate_daily_aggregation_modes_defers_after_fresh_case_cap(monkeypatch, tmp_path: Path) -> None:
     def _fake_load_or_build_hourly_case(**_kwargs):
         return object(), object(), "fresh"
