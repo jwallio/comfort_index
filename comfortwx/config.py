@@ -892,7 +892,7 @@ PRESENTATION_RENDERING: Final[dict[str, float | bool]] = {
 }
 
 PRESENTATION_LOW_END_BORDERLINE: Final[dict[str, float | bool | str]] = {
-    "enabled": True,
+    "enabled": False,
     "lower_bound": 40.0,
     "upper_bound": 50.0,
     "threshold": 45.0,
