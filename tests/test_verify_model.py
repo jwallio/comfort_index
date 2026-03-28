@@ -235,6 +235,14 @@ def test_resolve_openmeteo_verification_forecast_model_prefers_hrrr_for_d1_defau
         )
         == "gfs_seamless"
     )
+    assert (
+        resolve_openmeteo_verification_forecast_model(
+            requested_model="nws_ndfd_hourly",
+            forecast_lead_days=1,
+            region_name="west_coast",
+        )
+        == "nws_ndfd_hourly"
+    )
 
 
 def test_forecast_batch_does_not_fan_out_on_rate_limit(monkeypatch) -> None:

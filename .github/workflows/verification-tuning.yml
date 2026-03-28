@@ -12,6 +12,7 @@ on:
           - default
           - focused-mae
           - full-seasonal
+          - ndfd-west-coast
       benchmark_date:
         description: Optional YYYY-MM-DD override for all benchmark regions. Leave blank for the default multi-date case set.
         required: false
@@ -36,6 +37,7 @@ on:
         options:
           - gfs_seamless
           - ncep_hrrr_conus
+          - nws_ndfd_hourly
       forecast_model_mode:
         description: Auto prefers HRRR for Day 1; exact uses the chosen model literally
         required: true

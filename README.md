@@ -223,6 +223,7 @@ When run manually from GitHub Actions, the verification workflow lets you choose
   - `default`
   - `focused-mae`
   - `full-seasonal`
+  - `ndfd-west-coast`
 - optional benchmark date override in `YYYY-MM-DD`
 - mesh profile (`standard` or `fine`)
 - forecast leads as a comma-separated list such as `1,2,3,7`
@@ -232,6 +233,7 @@ When run manually from GitHub Actions, the verification workflow lets you choose
 - forecast model:
   - `gfs_seamless`
   - `ncep_hrrr_conus`
+  - `nws_ndfd_hourly`
 - forecast model mode:
   - `auto` prefers HRRR for `Day 1`
   - `exact` uses the selected model literally
@@ -280,6 +282,17 @@ Benchmark tiers:
   - `west_coast`, `southwest`, `rockies`, `plains`, `southeast`, `northeast`, `great_lakes`
   - dates: `2025-01-15`, `2025-03-20`, `2025-05-15`, `2025-07-20`, `2025-09-20`, `2025-11-15`
   - intended for broader seasonal coverage and deeper accuracy review
+- `ndfd-west-coast`
+  - `west_coast`
+  - dates: `2024-03-20`, `2024-05-15`, `2024-07-20`, `2024-08-20`
+  - lead: `Day 1` only
+  - intended for first-pass NWS/NDFD archive source comparison against NOAA truth
+
+NDFD scaffold notes:
+- `nws_ndfd_hourly` is a verification-only first scaffold built from archived NDFD core files at NCEI
+- current scope is `west_coast` and `Day 1` only
+- it currently ingests temperature, dew point, cloud cover, wind speed, gusts, and 12-hour PoP
+- QPF is still a PoP-based proxy in this scaffold, so treat it as a source-comparison path, not final production science
 
 By default, the benchmark now verifies multiple forecast leads for each benchmark case:
 - `Day 1`

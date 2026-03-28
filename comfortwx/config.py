@@ -1140,6 +1140,7 @@ OPENMETEO_REGIONAL_MESH_PROFILES: Final[dict[str, dict[str, dict[str, float | bo
 OPENMETEO_VERIFICATION_DEFAULT_REGION: Final[str] = "southeast"
 OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT: Final[str] = "gfs_seamless"
 OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL: Final[str] = "ncep_hrrr_conus"
+OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_HOURLY: Final[str] = "nws_ndfd_hourly"
 OPENMETEO_VERIFICATION_SHORT_LEAD_MODEL_REGION_OVERRIDES: Final[dict[str, str]] = {
     "west_coast": OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
 }
@@ -1186,6 +1187,12 @@ NOAA_RTMA_ANALYSIS_BASE_URL: Final[str] = "https://noaa-rtma-pds.s3.amazonaws.co
 NOAA_ANALYSIS_TIMEOUT_SECONDS: Final[float] = 120.0
 NOAA_ANALYSIS_LOCAL_HOURS: Final[tuple[int, int]] = LOCAL_DAY_HOURS
 NOAA_ANALYSIS_CACHE_VERSION: Final[str] = "v1_urma_rtma_surface_truth"
+NDFD_FORECAST_CACHE_DIR: Final[Path] = OUTPUT_DIR / "ndfd_forecast_cache"
+NDFD_FORECAST_CACHE_VERSION: Final[str] = "v1_ndfd_archive_west_coast_d1"
+NDFD_ARCHIVE_BASE_URL: Final[str] = "https://www.ncei.noaa.gov/thredds"
+NDFD_FORECAST_TIMEOUT_SECONDS: Final[float] = 120.0
+NDFD_FORECAST_SUPPORTED_REGIONS: Final[tuple[str, ...]] = ("west_coast",)
+NDFD_FORECAST_POP_PROXY_QPF_FULL_IN: Final[float] = 0.04
 
 VERIFICATION_HIGH_COMFORT_CATEGORY_MIN_INDEX: Final[int] = 3
 VERIFICATION_BENCHMARK_THRESHOLDS: Final[dict[str, float]] = {

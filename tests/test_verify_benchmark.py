@@ -36,9 +36,11 @@ from comfortwx.validation.verify_benchmark_cases import DEFAULT_VERIFICATION_BEN
 from comfortwx.validation.verify_benchmark_cases import (
     FOCUSED_MAE_VERIFICATION_BENCHMARK_CASES,
     FULL_SEASONAL_VERIFICATION_BENCHMARK_CASES,
+    NDFD_WEST_COAST_VERIFICATION_BENCHMARK_CASES,
     VERIFICATION_BENCHMARK_TIER_DEFAULT,
     VERIFICATION_BENCHMARK_TIER_FOCUSED_MAE,
     VERIFICATION_BENCHMARK_TIER_FULL_SEASONAL,
+    VERIFICATION_BENCHMARK_TIER_NDFD_WEST_COAST,
 )
 
 
@@ -49,6 +51,8 @@ def test_resolved_cases_cover_required_regions_and_multiple_dates() -> None:
     focused_mae_regions = {case.region_name for case in FOCUSED_MAE_VERIFICATION_BENCHMARK_CASES}
     focused_mae_dates = {case.valid_date for case in FOCUSED_MAE_VERIFICATION_BENCHMARK_CASES}
     full_seasonal_regions = {case.region_name for case in FULL_SEASONAL_VERIFICATION_BENCHMARK_CASES}
+    ndfd_regions = {case.region_name for case in NDFD_WEST_COAST_VERIFICATION_BENCHMARK_CASES}
+    ndfd_leads = {case.forecast_lead_days for case in NDFD_WEST_COAST_VERIFICATION_BENCHMARK_CASES}
 
     assert {"southeast", "southwest", "plains", "northeast"}.issubset(regions)
     assert len(dates) >= 2
@@ -56,6 +60,8 @@ def test_resolved_cases_cover_required_regions_and_multiple_dates() -> None:
     assert focused_mae_regions == {"southeast", "plains", "northeast"}
     assert len(focused_mae_dates) >= 8
     assert {"west_coast", "rockies", "great_lakes"}.issubset(full_seasonal_regions)
+    assert ndfd_regions == {"west_coast"}
+    assert ndfd_leads == {1}
 
     override_cases = _resolved_cases(date(2026, 3, 20), VERIFICATION_BENCHMARK_TIER_DEFAULT)
     assert {case.valid_date for case in override_cases} == {date(2026, 3, 20)}
@@ -70,6 +76,11 @@ def test_resolved_cases_cover_required_regions_and_multiple_dates() -> None:
     full_seasonal_override_cases = _resolved_cases(date(2026, 3, 20), VERIFICATION_BENCHMARK_TIER_FULL_SEASONAL)
     assert {case.valid_date for case in full_seasonal_override_cases} == {date(2026, 3, 20)}
     assert {"west_coast", "rockies", "great_lakes"}.issubset({case.region_name for case in full_seasonal_override_cases})
+
+    ndfd_override_cases = _resolved_cases(date(2024, 3, 20), VERIFICATION_BENCHMARK_TIER_NDFD_WEST_COAST)
+    assert {case.valid_date for case in ndfd_override_cases} == {date(2024, 3, 20)}
+    assert {case.region_name for case in ndfd_override_cases} == {"west_coast"}
+    assert {case.forecast_lead_days for case in ndfd_override_cases} == {1}
 
 
 def test_parse_lead_days_preserves_order_and_deduplicates() -> None:

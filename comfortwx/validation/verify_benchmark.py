@@ -56,7 +56,9 @@ def _resolved_cases(
     lead_days_override: tuple[int, ...] | None = None,
 ) -> list[VerificationBenchmarkCase]:
     base_cases = get_benchmark_case_set(benchmark_tier)
-    lead_days = lead_days_override or OPENMETEO_VERIFICATION_BENCHMARK_LEAD_DAYS
+    lead_days = lead_days_override or tuple(
+        dict.fromkeys(case.forecast_lead_days for case in base_cases)
+    ) or OPENMETEO_VERIFICATION_BENCHMARK_LEAD_DAYS
     if date_override is None:
         if lead_days_override is None:
             return list(base_cases)
