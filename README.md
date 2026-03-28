@@ -229,6 +229,9 @@ When run manually from GitHub Actions, the verification workflow lets you choose
 - analysis model:
   - `noaa_urma_rtma` (default NOAA truth)
   - `best_match` (legacy Open-Meteo proxy truth)
+- forecast model:
+  - `gfs_seamless`
+  - `ncep_hrrr_conus`
 - verification aggregation policies as a comma-separated list such as `baseline,experimental_regime_aware`
 - case cache mode (`reuse` or `refresh`)
 - optional fresh-case cap, cooldown, region filter, and date filter for incremental chunked runs
@@ -255,6 +258,7 @@ When run manually from GitHub Actions, the tuning workflow lets you choose:
 - optional benchmark date override
 - lead days
 - analysis model
+- forecast model
 - candidate aggregation modes
 - case cache mode (`reuse` or `refresh`)
 - optional fresh-case cap, cooldown, region filter, and date filter for incremental chunked runs
