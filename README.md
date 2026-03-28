@@ -233,6 +233,8 @@ When run manually from GitHub Actions, the verification workflow lets you choose
 - forecast model:
   - `gfs_seamless`
   - `ncep_hrrr_conus`
+  - `ecmwf_ifs`
+  - `ecmwf_ifs025`
   - `nws_ndfd_hourly`
   - `nws_ndfd_gfs_blend`
   - `nws_ndfd_cloud_blend`
@@ -301,6 +303,9 @@ NDFD scaffold notes:
   - `nws_ndfd_cloud_blend`
   - `nws_ndfd_thermal_cloud_blend`
   - `nws_ndfd_surface_blend`
+- direct ECMWF historical forecast comparisons are also supported through Open-Meteo previous-runs:
+  - `ecmwf_ifs` for IFS HRES 9 km
+  - `ecmwf_ifs025` for IFS 0.25°
 - QPF is still a PoP-based proxy in this scaffold, so treat it as a source-comparison path, not final production science
 
 By default, the benchmark now verifies multiple forecast leads for each benchmark case:

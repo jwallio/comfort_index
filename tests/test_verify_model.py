@@ -239,6 +239,14 @@ def test_resolve_openmeteo_verification_forecast_model_prefers_hrrr_for_d1_defau
     )
     assert (
         resolve_openmeteo_verification_forecast_model(
+            requested_model="ecmwf_ifs",
+            forecast_lead_days=1,
+            forecast_model_mode="exact",
+        )
+        == "ecmwf_ifs"
+    )
+    assert (
+        resolve_openmeteo_verification_forecast_model(
             requested_model="nws_ndfd_hourly",
             forecast_lead_days=1,
             region_name="west_coast",

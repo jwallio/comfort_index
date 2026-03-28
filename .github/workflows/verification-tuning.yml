@@ -37,6 +37,8 @@ on:
         options:
           - gfs_seamless
           - ncep_hrrr_conus
+          - ecmwf_ifs
+          - ecmwf_ifs025
           - nws_ndfd_hourly
           - nws_ndfd_gfs_blend
           - nws_ndfd_cloud_blend
