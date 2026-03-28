@@ -39,6 +39,9 @@ on:
           - ncep_hrrr_conus
           - nws_ndfd_hourly
           - nws_ndfd_gfs_blend
+          - nws_ndfd_cloud_blend
+          - nws_ndfd_thermal_cloud_blend
+          - nws_ndfd_surface_blend
       forecast_model_mode:
         description: Auto prefers HRRR for Day 1; exact uses the chosen model literally
         required: true

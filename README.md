@@ -235,6 +235,9 @@ When run manually from GitHub Actions, the verification workflow lets you choose
   - `ncep_hrrr_conus`
   - `nws_ndfd_hourly`
   - `nws_ndfd_gfs_blend`
+  - `nws_ndfd_cloud_blend`
+  - `nws_ndfd_thermal_cloud_blend`
+  - `nws_ndfd_surface_blend`
 - forecast model mode:
   - `auto` prefers HRRR for `Day 1`
   - `exact` uses the selected model literally
@@ -294,6 +297,10 @@ NDFD scaffold notes:
 - current scope is `west_coast` and `Day 1` only
 - it currently ingests temperature, dew point, cloud cover, wind speed, gusts, and 12-hour PoP
 - `nws_ndfd_gfs_blend` uses those NDFD surface fields and falls back to exact `gfs_seamless` for the remaining hazard/support fields such as QPF, weather code, thunder proxy, CAPE, and visibility
+- narrower verification-only blend variants are also available:
+  - `nws_ndfd_cloud_blend`
+  - `nws_ndfd_thermal_cloud_blend`
+  - `nws_ndfd_surface_blend`
 - QPF is still a PoP-based proxy in this scaffold, so treat it as a source-comparison path, not final production science
 
 By default, the benchmark now verifies multiple forecast leads for each benchmark case:

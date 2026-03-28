@@ -26,8 +26,13 @@ from comfortwx.config import (
     OPENMETEO_VERIFICATION_FORECAST_HOURLY_VARS,
     OPENMETEO_VERIFICATION_FORECAST_LEAD_DAYS,
     OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
+    OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_CLOUD_BLEND,
     OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_GFS_BLEND,
     OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_HOURLY,
+    OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_SURFACE_BLEND,
+    OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_THERMAL_CLOUD_BLEND,
+    OPENMETEO_VERIFICATION_NDFD_BLEND_FIELDS,
+    OPENMETEO_VERIFICATION_NDFD_BLEND_SOURCE_LABELS,
     OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL,
     OPENMETEO_VERIFICATION_SHORT_LEAD_MODEL_REGION_OVERRIDES,
     OPENMETEO_VERIFICATION_REGIONAL_BATCH_SIZE,
@@ -167,7 +172,10 @@ def resolve_openmeteo_verification_forecast_model(
         raise ValueError("forecast_model_mode must be 'auto' or 'exact'.")
     if normalized_model in {
         OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_HOURLY,
+        OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_CLOUD_BLEND,
         OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_GFS_BLEND,
+        OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_THERMAL_CLOUD_BLEND,
+        OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_SURFACE_BLEND,
     }:
         return normalized_model
     if normalized_mode == "exact":
@@ -456,10 +464,7 @@ class OpenMeteoVerificationRegionalLoader:
             raise ValueError(f"Unsupported verification analysis model '{self.analysis_model}'.")
 
         forecast_metadata: dict[str, object] = {}
-        if resolved_forecast_model in {
-            OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_HOURLY,
-            OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_GFS_BLEND,
-        }:
+        if resolved_forecast_model == OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_HOURLY or resolved_forecast_model in OPENMETEO_VERIFICATION_NDFD_BLEND_FIELDS:
             ndfd_grid, ndfd_metadata = NdfdForecastRegionalLoader(
                 region_name=self.region_name,
                 mesh_profile=self.mesh_profile,
@@ -484,15 +489,15 @@ class OpenMeteoVerificationRegionalLoader:
                 forecast_grid = _blend_forecast_grids(
                     primary_grid=ndfd_grid,
                     fallback_grid=gfs_grid,
-                    primary_vars=("temp_f", "dewpoint_f", "wind_mph", "gust_mph", "cloud_pct", "pop_pct"),
+                    primary_vars=OPENMETEO_VERIFICATION_NDFD_BLEND_FIELDS[resolved_forecast_model],
                     source_label="ndfd_archive_core_kwbn+openmeteo_previous_runs:gfs_seamless",
                 )
                 forecast_metadata = {
                     "forecast_model_requested": self.forecast_model,
                     "forecast_model_mode": self.forecast_model_mode,
-                    "forecast_model": OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_GFS_BLEND,
+                    "forecast_model": resolved_forecast_model,
                     "forecast_run_timestamp_utc": gfs_grid.attrs.get("verification_run_timestamp_utc", run_timestamp),
-                    "forecast_source_label": "NWS NDFD + GFS Blend",
+                    "forecast_source_label": OPENMETEO_VERIFICATION_NDFD_BLEND_SOURCE_LABELS[resolved_forecast_model],
                     "forecast_grid_source": "ndfd_archive_core_kwbn+openmeteo_previous_runs:gfs_seamless",
                     "forecast_selected_entries": ndfd_metadata.get("forecast_selected_entries", {}),
                 }

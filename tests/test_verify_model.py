@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 
 import numpy as np
 import xarray as xr
@@ -17,6 +17,7 @@ from comfortwx.data.openmeteo_verification import (
     resolve_openmeteo_verification_forecast_model,
 )
 from comfortwx.data.noaa_analysis import _precip_analysis_url, _surface_analysis_url, _utc_hour_schedule
+from comfortwx.data.ndfd_forecast import _select_catalog_entry
 from comfortwx.validation.verify_model import (
     _apply_truth_observability_overrides,
     _verification_summary,
@@ -252,6 +253,14 @@ def test_resolve_openmeteo_verification_forecast_model_prefers_hrrr_for_d1_defau
         )
         == "nws_ndfd_gfs_blend"
     )
+    assert (
+        resolve_openmeteo_verification_forecast_model(
+            requested_model="nws_ndfd_cloud_blend",
+            forecast_lead_days=1,
+            region_name="west_coast",
+        )
+        == "nws_ndfd_cloud_blend"
+    )
 
 
 def test_blend_forecast_grids_subsets_fallback_to_primary_time_axis() -> None:
@@ -282,6 +291,32 @@ def test_blend_forecast_grids_subsets_fallback_to_primary_time_axis() -> None:
     assert blended["time"].equals(primary["time"])
     assert float(blended["temp_f"].isel(time=0).values.squeeze()) == 70.0
     assert np.isclose(float(blended["qpf_in"].isel(time=0).values.squeeze()), 0.02)
+
+
+def test_select_catalog_entry_prefers_conus_tile_for_west_coast() -> None:
+    entries = [
+        {
+            "dataset_id": "NDFD_kwbn/access/202403/20240319/YEAZ88_KWBN_202403191150",
+            "label": "Surface Temperature",
+            "run_timestamp_utc": datetime(2024, 3, 19, 11, 50, tzinfo=timezone.utc),
+            "wmo_code": "YEAZ88",
+            "center_code": "KWBN",
+        },
+        {
+            "dataset_id": "NDFD_kwbn/access/202403/20240319/YEUZ98_KWBN_202403191150",
+            "label": "Surface Temperature",
+            "run_timestamp_utc": datetime(2024, 3, 19, 11, 50, tzinfo=timezone.utc),
+            "wmo_code": "YEUZ98",
+            "center_code": "KWBN",
+        },
+    ]
+    selected = _select_catalog_entry(
+        entries,
+        label="Surface Temperature",
+        target_run_timestamp_utc=datetime(2024, 3, 19, 12, 0, tzinfo=timezone.utc),
+        region_name="west_coast",
+    )
+    assert selected["wmo_code"] == "YEUZ98"
 
 
 def test_forecast_batch_does_not_fan_out_on_rate_limit(monkeypatch) -> None:

@@ -96,12 +96,25 @@ def _catalog_entries(run_date: date) -> list[dict[str, object]]:
     return entries
 
 
-def _select_catalog_entry(entries: list[dict[str, object]], *, label: str, target_run_timestamp_utc: datetime) -> dict[str, object]:
+def _select_catalog_entry(
+    entries: list[dict[str, object]],
+    *,
+    label: str,
+    target_run_timestamp_utc: datetime,
+    region_name: str | None = None,
+) -> dict[str, object]:
     candidates = [entry for entry in entries if str(entry["label"]).startswith(label)]
     if not candidates:
         raise FileNotFoundError(f"No NDFD archive entry found for '{label}'.")
-    preferred = [entry for entry in candidates if str(entry["wmo_code"]).endswith("88")]
-    candidates = preferred or candidates
+    normalized_region = (region_name or "").strip().lower()
+    if normalized_region == "west_coast":
+        national = [entry for entry in candidates if str(entry["wmo_code"]).endswith("UZ98")]
+        if not national:
+            national = [entry for entry in candidates if str(entry["wmo_code"]).endswith("UZ97")]
+        candidates = national or candidates
+    else:
+        preferred = [entry for entry in candidates if str(entry["wmo_code"]).endswith("88")]
+        candidates = preferred or candidates
     earlier = [entry for entry in candidates if entry["run_timestamp_utc"] <= target_run_timestamp_utc]
     if earlier:
         return max(earlier, key=lambda entry: entry["run_timestamp_utc"])
@@ -242,7 +255,12 @@ class NdfdForecastRegionalLoader:
         field_lookups: dict[str, dict[tuple[float, float], object]] = {}
         selected_entries: dict[str, dict[str, object]] = {}
         for field_name, spec in _FIELD_SPECS.items():
-            entry = _select_catalog_entry(entries, label=spec["label"], target_run_timestamp_utc=run_timestamp_utc)
+            entry = _select_catalog_entry(
+                entries,
+                label=spec["label"],
+                target_run_timestamp_utc=run_timestamp_utc,
+                region_name=self.region_name,
+            )
             selected_entries[field_name] = entry
             dataset = _open_dataset(_download_cached_file(dataset_id=str(entry["dataset_id"])))
             field_datasets[field_name] = dataset
