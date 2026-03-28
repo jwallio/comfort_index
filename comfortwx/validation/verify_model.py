@@ -483,6 +483,7 @@ def run_verification(
         requested_model=forecast_model,
         forecast_lead_days=forecast_lead_days,
         forecast_model_mode=forecast_model_mode,
+        region_name=region_name,
     )
     aggregation_mode = resolve_verification_aggregation_mode(
         policy_name=aggregation_policy,

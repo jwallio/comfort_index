@@ -199,13 +199,23 @@ def test_resolve_openmeteo_verification_forecast_model_prefers_hrrr_for_d1_defau
         resolve_openmeteo_verification_forecast_model(
             requested_model="gfs_seamless",
             forecast_lead_days=1,
+            region_name="southeast",
         )
         == "ncep_hrrr_conus"
     )
     assert (
         resolve_openmeteo_verification_forecast_model(
             requested_model="gfs_seamless",
+            forecast_lead_days=1,
+            region_name="west_coast",
+        )
+        == "gfs_seamless"
+    )
+    assert (
+        resolve_openmeteo_verification_forecast_model(
+            requested_model="gfs_seamless",
             forecast_lead_days=2,
+            region_name="west_coast",
         )
         == "gfs_seamless"
     )
@@ -213,6 +223,7 @@ def test_resolve_openmeteo_verification_forecast_model_prefers_hrrr_for_d1_defau
         resolve_openmeteo_verification_forecast_model(
             requested_model="hrrr",
             forecast_lead_days=1,
+            region_name="west_coast",
         )
         == "ncep_hrrr_conus"
     )

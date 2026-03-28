@@ -196,6 +196,7 @@ def _existing_verification_case_outputs(
         requested_model=forecast_model,
         forecast_lead_days=forecast_lead_days,
         forecast_model_mode=forecast_model_mode,
+        region_name=region_name,
     )
     file_prefix = build_verification_file_prefix(
         region_name=region_name,

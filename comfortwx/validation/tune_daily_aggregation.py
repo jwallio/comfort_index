@@ -81,6 +81,7 @@ def _hourly_cache_paths(
         requested_model=forecast_model,
         forecast_lead_days=forecast_lead_days,
         forecast_model_mode=forecast_model_mode,
+        region_name=region_name,
     )
     normalized_analysis_model = "".join(character if character.isalnum() else "_" for character in analysis_model.strip().lower()).strip("_")
     prefix = f"comfortwx_verify_{region_name}_{resolved_forecast_model}_{normalized_analysis_model}_d{forecast_lead_days}_{VERIFICATION_HOURLY_CACHE_VERSION}"

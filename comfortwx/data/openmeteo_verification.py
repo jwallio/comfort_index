@@ -27,6 +27,7 @@ from comfortwx.config import (
     OPENMETEO_VERIFICATION_FORECAST_LEAD_DAYS,
     OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
     OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL,
+    OPENMETEO_VERIFICATION_SHORT_LEAD_MODEL_REGION_OVERRIDES,
     OPENMETEO_VERIFICATION_REGIONAL_BATCH_SIZE,
     OPENMETEO_VERIFICATION_FORECAST_RUN_HOUR_UTC,
     get_openmeteo_mesh_settings,
@@ -154,13 +155,21 @@ def resolve_openmeteo_verification_forecast_model(
     requested_model: str,
     forecast_lead_days: int,
     forecast_model_mode: str = "auto",
+    region_name: str | None = None,
 ) -> str:
     normalized_model = requested_model.strip().lower()
     normalized_mode = forecast_model_mode.strip().lower()
+    normalized_region = (region_name or "").strip().lower()
     if normalized_mode not in {"auto", "exact"}:
         raise ValueError("forecast_model_mode must be 'auto' or 'exact'.")
     if normalized_mode == "exact":
         return normalized_model
+    if (
+        normalized_model == OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT
+        and forecast_lead_days <= 1
+        and normalized_region in OPENMETEO_VERIFICATION_SHORT_LEAD_MODEL_REGION_OVERRIDES
+    ):
+        return str(OPENMETEO_VERIFICATION_SHORT_LEAD_MODEL_REGION_OVERRIDES[normalized_region])
     if normalized_model in {
         OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
         "hrrr",
@@ -348,6 +357,7 @@ class OpenMeteoVerificationRegionalLoader:
             requested_model=self.forecast_model,
             forecast_lead_days=self.forecast_lead_days,
             forecast_model_mode=self.forecast_model_mode,
+            region_name=self.region_name,
         )
         forecast_point_datasets: dict[tuple[float, float], xr.Dataset] = {}
         analysis_point_datasets: dict[tuple[float, float], xr.Dataset] = {}
