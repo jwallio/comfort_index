@@ -297,6 +297,26 @@ def test_apply_threshold_flags_marks_warn_cases() -> None:
     assert list(flagged["passes_benchmark_thresholds"]) == [True, False]
 
 
+def test_apply_threshold_flags_marks_deferred_cases_as_deferred() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "region": "plains",
+                "date": "2026-03-20",
+                "status": "deferred",
+                "score_bias_mean": "",
+                "score_mae": "",
+                "score_rmse": "",
+                "exact_category_agreement_fraction": "",
+                "near_category_agreement_fraction": "",
+            }
+        ]
+    )
+
+    flagged = _apply_threshold_flags(frame)
+    assert list(flagged["benchmark_threshold_status"]) == ["deferred"]
+
+
 def test_write_benchmark_charts_and_html_report(tmp_path: Path) -> None:
     summary = pd.DataFrame(
         [
@@ -506,6 +526,52 @@ def test_write_verification_site_skips_blank_or_directory_like_paths(tmp_path: P
     site_dir = tmp_path / "verification_site" / "blank_path_guard"
     assert (site_dir / "report.html").exists()
     assert (site_dir / "chart.png").exists()
+
+
+def test_write_verification_site_does_not_replace_latest_for_partial_runs(tmp_path: Path) -> None:
+    latest_dir = tmp_path / "verification_site" / "latest"
+    latest_dir.mkdir(parents=True, exist_ok=True)
+    existing_latest = latest_dir / "index.html"
+    existing_latest.write_text("<html>complete</html>", encoding="utf-8")
+
+    report_path = tmp_path / "report.html"
+    report_path.write_text("<html></html>", encoding="utf-8")
+    summary_csv_path = tmp_path / "summary.csv"
+    summary_csv_path.write_text("region,date\n", encoding="utf-8")
+    chart_path = tmp_path / "chart.png"
+    chart_path.write_bytes(b"fake")
+    summary = pd.DataFrame(
+        [
+            {
+                "region": "southeast",
+                "date": "2026-03-20",
+                "forecast_lead_days": 1,
+                "status": "deferred",
+                "error": "Deferred after reaching fresh-case cap.",
+                "forecast_score_map_path": "",
+                "analysis_score_map_path": "",
+                "score_difference_map_path": "",
+            }
+        ]
+    )
+
+    site_index = _write_verification_site(
+        summary=summary,
+        summary_path=summary_csv_path,
+        charts={"chart": chart_path},
+        report_path=report_path,
+        region_summary_csv_path=None,
+        lead_summary_csv_path=None,
+        region_lead_summary_csv_path=None,
+        component_priority_csv_path=None,
+        priority_cases_csv_path=None,
+        calibration_summary_csv_path=None,
+        output_dir=tmp_path,
+        stem="partial_run",
+    )
+
+    assert site_index.exists()
+    assert existing_latest.read_text(encoding="utf-8") == "<html>complete</html>"
 
 
 def test_build_calibration_summary_improves_synthetic_bias_case(tmp_path: Path) -> None:

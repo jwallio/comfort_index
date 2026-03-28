@@ -407,7 +407,8 @@ def _apply_threshold_flags(summary: pd.DataFrame) -> pd.DataFrame:
     flagged["passes_near_category_threshold"] = False
     flagged["passes_bias_threshold"] = False
     flagged["passes_benchmark_thresholds"] = False
-    flagged["benchmark_threshold_status"] = "error"
+    status_values = flagged.get("status", pd.Series(["error"] * len(flagged), index=flagged.index)).fillna("error").astype(str).str.lower()
+    flagged["benchmark_threshold_status"] = np.where(status_values == "deferred", "deferred", "error")
     flagged["threshold_score_mae_max"] = np.nan
     flagged["threshold_near_category_agreement_min"] = np.nan
     flagged["threshold_abs_score_bias_mean_max"] = np.nan
@@ -460,6 +461,13 @@ def _apply_threshold_flags(summary: pd.DataFrame) -> pd.DataFrame:
         + flagged.loc[ok_mask, "abs_score_bias_mean_excess"].astype(float) * 1.5
     )
     return flagged
+
+
+def _verification_site_is_complete(summary: pd.DataFrame) -> bool:
+    if summary.empty or "status" not in summary.columns:
+        return False
+    normalized = summary["status"].fillna("").astype(str).str.lower()
+    return bool((normalized == "ok").all())
 
 
 def format_benchmark_table(summary: pd.DataFrame) -> str:
@@ -1192,8 +1200,17 @@ def _write_benchmark_html_report(
         )
 
     ok_count = int((summary["status"] == "ok").sum()) if "status" in summary.columns else 0
+    deferred_count = int((summary["status"] == "deferred").sum()) if "status" in summary.columns else 0
+    error_count = int((summary["status"] == "error").sum()) if "status" in summary.columns else 0
     passing_count = int(summary.get("passes_benchmark_thresholds", pd.Series(dtype=bool)).fillna(False).sum())
     tier_label = benchmark_tier.replace("-", " ").title()
+    status_detail_columns = ["region", "date", "forecast_lead_days", "error"]
+    deferred_cases = summary.loc[summary["status"] == "deferred"].reindex(columns=status_detail_columns).copy() if "status" in summary.columns else pd.DataFrame()
+    error_cases = summary.loc[summary["status"] == "error"].reindex(columns=status_detail_columns).copy() if "status" in summary.columns else pd.DataFrame()
+    if not deferred_cases.empty:
+        deferred_cases["lead_label"] = deferred_cases["forecast_lead_days"].apply(lambda value: _lead_label(int(value)))
+    if not error_cases.empty:
+        error_cases["lead_label"] = error_cases["forecast_lead_days"].apply(lambda value: _lead_label(int(value)))
     if ok_cases.empty:
         best_case = ok_cases
         worst_case = ok_cases
@@ -1273,19 +1290,37 @@ def _write_benchmark_html_report(
                 ".thumb img { width: 100%; height: auto; border: 1px solid #d9dee5; border-radius: 6px; display: block; margin-bottom: 6px; }",
                 ".status-line { display: flex; gap: 20px; flex-wrap: wrap; margin: 12px 0 16px; }",
                 ".status-pill { background: #eef2f6; border-radius: 999px; padding: 6px 12px; font-size: 0.9rem; }",
+                ".notice { border: 1px solid #e4c46a; background: #fff7dd; color: #5b4b14; padding: 12px 14px; border-radius: 8px; margin: 16px 0; }",
                 "</style>",
                 "</head>",
                 "<body>",
                 "<h1>Comfort Index Verification Benchmark</h1>",
-                f"<p class='meta'>Tier: {html.escape(tier_label)} | Cases attempted: {len(summary)} | Successful cases: {ok_count} | Cases meeting thresholds: {passing_count}</p>",
+                f"<p class='meta'>Tier: {html.escape(tier_label)} | Cases attempted: {len(summary)} | Successful cases: {ok_count} | Deferred cases: {deferred_count} | Error cases: {error_count} | Cases meeting thresholds: {passing_count}</p>",
                 "<div class='status-line'>",
                 f"<div class='status-pill'>MAE threshold: ≤ {VERIFICATION_BENCHMARK_THRESHOLDS['score_mae_max']:.1f}</div>",
                 f"<div class='status-pill'>Near agreement threshold: ≥ {VERIFICATION_BENCHMARK_THRESHOLDS['near_category_agreement_min']:.0%}</div>",
                 f"<div class='status-pill'>Absolute bias threshold: ≤ {VERIFICATION_BENCHMARK_THRESHOLDS['abs_score_bias_mean_max']:.1f}</div>",
                 "</div>",
+                (
+                    "<div class='notice'>This benchmark run is partial. Deferred cases were intentionally skipped for this run and should not be interpreted as failures.</div>"
+                    if deferred_count > 0
+                    else ""
+                ),
                 f"<p>{html.escape(best_case_text)} | {html.escape(worst_case_text)}</p>",
                 "<h2>Summary</h2>",
                 _html_table(summary),
+                "<h2>Deferred Cases</h2>",
+                (
+                    deferred_cases[["region", "date", "lead_label", "error"]].to_html(index=False, border=0, classes="summary-table")
+                    if not deferred_cases.empty
+                    else "<p>No deferred cases.</p>"
+                ),
+                "<h2>Error Cases</h2>",
+                (
+                    error_cases[["region", "date", "lead_label", "error"]].to_html(index=False, border=0, classes="summary-table")
+                    if not error_cases.empty
+                    else "<p>No error cases.</p>"
+                ),
                 "<h2>Regional Rollup</h2>",
                 region_summary_link,
                 region_table_html,
@@ -1382,10 +1417,11 @@ def _write_verification_site(
     primary_index = site_dir / "index.html"
     shutil.copy2(report_path, primary_index)
 
-    latest_dir = output_dir / "verification_site" / "latest"
-    if latest_dir.exists():
-        shutil.rmtree(latest_dir)
-    shutil.copytree(site_dir, latest_dir)
+    if _verification_site_is_complete(summary):
+        latest_dir = output_dir / "verification_site" / "latest"
+        if latest_dir.exists():
+            shutil.rmtree(latest_dir)
+        shutil.copytree(site_dir, latest_dir)
     return primary_index
 
 
