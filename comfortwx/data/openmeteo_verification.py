@@ -152,6 +152,21 @@ def _subset_to_valid_local_day(dataset: xr.Dataset, valid_date: date) -> xr.Data
     return subset
 
 
+def _ensure_usable_forecast_dataset(dataset: xr.Dataset, *, model_name: str, valid_date: date) -> xr.Dataset:
+    core_fields = ("temp_f", "dewpoint_f", "wind_mph", "cloud_pct")
+    usable_points = 0
+    for field_name in core_fields:
+        if field_name not in dataset:
+            continue
+        values = np.asarray(dataset[field_name].values, dtype=float)
+        usable_points += int(np.isfinite(values).sum())
+    if usable_points == 0:
+        raise ValueError(
+            f"Forecast model '{model_name}' returned no usable previous-runs core fields for {valid_date:%Y-%m-%d}."
+        )
+    return dataset
+
+
 def _forecast_run_timestamp(valid_date: date, *, run_hour_utc: int, lead_days: int) -> str:
     run_datetime = datetime.combine(valid_date - timedelta(days=lead_days), datetime.min.time(), tzinfo=timezone.utc)
     run_datetime = run_datetime.replace(hour=run_hour_utc)
@@ -384,9 +399,13 @@ def _load_openmeteo_forecast_grid(
                 source_label=f"openmeteo_previous_runs:{forecast_payload_model}",
                 derive_pop_proxy=False,
             )
-            forecast_point_datasets[(requested_lat, requested_lon)] = _subset_to_valid_local_day(
-                forecast_dataset,
-                valid_date,
+            forecast_point_datasets[(requested_lat, requested_lon)] = _ensure_usable_forecast_dataset(
+                _subset_to_valid_local_day(
+                    forecast_dataset,
+                    valid_date,
+                ),
+                model_name=forecast_payload_model,
+                valid_date=valid_date,
             )
 
     forecast_grid = assemble_point_datasets_to_grid(
@@ -546,7 +565,11 @@ class OpenMeteoVerificationRegionalLoader:
                         source_label=f"openmeteo_previous_runs:{forecast_payload_model}",
                         derive_pop_proxy=False,
                     )
-                    forecast_point_datasets[(requested_lat, requested_lon)] = _subset_to_valid_local_day(forecast_dataset, valid_date)
+                    forecast_point_datasets[(requested_lat, requested_lon)] = _ensure_usable_forecast_dataset(
+                        _subset_to_valid_local_day(forecast_dataset, valid_date),
+                        model_name=forecast_payload_model,
+                        valid_date=valid_date,
+                    )
                     if analysis_query is not None:
                         analysis_point_datasets[(requested_lat, requested_lon)] = _normalize_openmeteo_verification_payload(
                             analysis_payloads[batch_index],

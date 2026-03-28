@@ -3,12 +3,15 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 
 import numpy as np
+import pytest
 import xarray as xr
 from urllib.error import HTTPError
 
 import comfortwx.data.openmeteo_verification as openmeteo_verification
 from comfortwx.data.openmeteo_verification import (
+    OpenMeteoVerificationRegionalLoader,
     _blend_forecast_grids,
+    _ensure_usable_forecast_dataset,
     _fetch_forecast_payloads_for_batch,
     _subset_to_valid_local_day,
     _forecast_query_for_batch,
@@ -299,6 +302,84 @@ def test_blend_forecast_grids_subsets_fallback_to_primary_time_axis() -> None:
     assert blended["time"].equals(primary["time"])
     assert float(blended["temp_f"].isel(time=0).values.squeeze()) == 70.0
     assert np.isclose(float(blended["qpf_in"].isel(time=0).values.squeeze()), 0.02)
+
+
+def test_ensure_usable_forecast_dataset_rejects_all_nan_core_fields() -> None:
+    dataset = xr.Dataset(
+        data_vars={
+            "temp_f": (("time", "lat", "lon"), np.array([[[np.nan]]], dtype=np.float32)),
+            "dewpoint_f": (("time", "lat", "lon"), np.array([[[np.nan]]], dtype=np.float32)),
+            "wind_mph": (("time", "lat", "lon"), np.array([[[np.nan]]], dtype=np.float32)),
+            "cloud_pct": (("time", "lat", "lon"), np.array([[[np.nan]]], dtype=np.float32)),
+        },
+        coords={"time": xr.date_range("2024-03-20T08:00", periods=1, freq="1h"), "lat": [40.0], "lon": [-123.0]},
+    )
+    with pytest.raises(ValueError, match="no usable previous-runs core fields"):
+        _ensure_usable_forecast_dataset(dataset, model_name="ecmwf_ifs", valid_date=date(2024, 3, 20))
+
+
+def test_loader_rejects_all_null_previous_runs_core_fields(monkeypatch) -> None:
+    analysis_grid = xr.Dataset(
+        data_vars={
+            "temp_f": (("time", "lat", "lon"), np.array([[[60.0]]], dtype=np.float32)),
+            "dewpoint_f": (("time", "lat", "lon"), np.array([[[50.0]]], dtype=np.float32)),
+            "wind_mph": (("time", "lat", "lon"), np.array([[[8.0]]], dtype=np.float32)),
+            "gust_mph": (("time", "lat", "lon"), np.array([[[12.0]]], dtype=np.float32)),
+            "cloud_pct": (("time", "lat", "lon"), np.array([[[20.0]]], dtype=np.float32)),
+            "pop_pct": (("time", "lat", "lon"), np.array([[[0.0]]], dtype=np.float32)),
+            "qpf_in": (("time", "lat", "lon"), np.array([[[0.0]]], dtype=np.float32)),
+            "weather_code": (("time", "lat", "lon"), np.array([[[1.0]]], dtype=np.float32)),
+            "thunder": (("time", "lat", "lon"), np.array([[[False]]], dtype=bool)),
+        },
+        coords={"time": xr.date_range("2024-03-20T08:00", periods=1, freq="1h"), "lat": [40.0], "lon": [-123.0]},
+        attrs={"source": "analysis"},
+    )
+
+    def _fake_load_hourly_grid(self, valid_date: date):
+        return analysis_grid, {"analysis_model": self.analysis_model, "analysis_source_label": "NOAA URMA/RTMA"}
+
+    def _fake_fetch_forecast_payloads_for_batch(**_kwargs):
+        payload = {
+            "latitude": 40.0,
+            "longitude": -123.0,
+            "timezone": "America/Los_Angeles",
+            "hourly_units": {
+                "temperature_2m": "degF",
+                "dew_point_2m": "degF",
+                "wind_speed_10m": "mph",
+                "cloud_cover": "%",
+                "precipitation": "inch",
+            },
+            "hourly": {
+                "time": ["2024-03-20T08:00"],
+                "temperature_2m": [None],
+                "dew_point_2m": [None],
+                "wind_speed_10m": [None],
+                "wind_gusts_10m": [None],
+                "cloud_cover": [None],
+                "precipitation_probability": [None],
+                "precipitation": [None],
+                "weather_code": [None],
+                "visibility": [None],
+                "cape": [None],
+            },
+        }
+        batch = _kwargs["batch"]
+        return [(payload, "ecmwf_ifs") for _ in batch], False
+
+    monkeypatch.setattr(openmeteo_verification.NoaaAnalysisRegionalLoader, "load_hourly_grid", _fake_load_hourly_grid)
+    monkeypatch.setattr(openmeteo_verification, "_fetch_forecast_payloads_for_batch", _fake_fetch_forecast_payloads_for_batch)
+
+    loader = OpenMeteoVerificationRegionalLoader(
+        region_name="west_coast",
+        forecast_model="ecmwf_ifs",
+        forecast_model_mode="exact",
+        analysis_model="noaa_urma_rtma",
+        forecast_lead_days=1,
+    )
+
+    with pytest.raises(ValueError, match="no usable previous-runs core fields"):
+        loader.load_pair(date(2024, 3, 20))
 
 
 def test_select_catalog_entry_prefers_conus_tile_for_west_coast() -> None:
