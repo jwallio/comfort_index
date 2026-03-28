@@ -26,6 +26,7 @@ from comfortwx.config import (
     OPENMETEO_VERIFICATION_FORECAST_HOURLY_VARS,
     OPENMETEO_VERIFICATION_FORECAST_LEAD_DAYS,
     OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
+    OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_GFS_BLEND,
     OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_HOURLY,
     OPENMETEO_VERIFICATION_FORECAST_SHORT_LEAD_MODEL,
     OPENMETEO_VERIFICATION_SHORT_LEAD_MODEL_REGION_OVERRIDES,
@@ -164,7 +165,10 @@ def resolve_openmeteo_verification_forecast_model(
     normalized_region = (region_name or "").strip().lower()
     if normalized_mode not in {"auto", "exact"}:
         raise ValueError("forecast_model_mode must be 'auto' or 'exact'.")
-    if normalized_model == OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_HOURLY:
+    if normalized_model in {
+        OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_HOURLY,
+        OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_GFS_BLEND,
+    }:
         return normalized_model
     if normalized_mode == "exact":
         return normalized_model
@@ -333,6 +337,78 @@ def _should_attempt_model_fallback(exc: Exception) -> bool:
     return isinstance(exc, ValueError)
 
 
+def _load_openmeteo_forecast_grid(
+    *,
+    coordinate_pairs: list[tuple[float, float]],
+    lat_values: list[float],
+    lon_values: list[float],
+    region_name: str,
+    valid_date: date,
+    timezone_name: str,
+    forecast_lead_days: int,
+    resolved_forecast_model: str,
+) -> tuple[xr.Dataset, bool]:
+    forecast_point_datasets: dict[tuple[float, float], xr.Dataset] = {}
+    forecast_used_fallback = False
+    batch_size = min(OPENMETEO_REGIONAL_BATCH_SIZE, OPENMETEO_VERIFICATION_REGIONAL_BATCH_SIZE)
+    for start in range(0, len(coordinate_pairs), batch_size):
+        batch = coordinate_pairs[start : start + batch_size]
+        forecast_payloads, batch_used_fallback = _fetch_forecast_payloads_for_batch(
+            batch=batch,
+            valid_date=valid_date,
+            forecast_lead_days=forecast_lead_days,
+            timezone_name=timezone_name,
+            resolved_forecast_model=resolved_forecast_model,
+        )
+        forecast_used_fallback = forecast_used_fallback or batch_used_fallback
+        if len(forecast_payloads) != len(batch):
+            raise ValueError("Verification batch response size did not match requested mesh points.")
+
+        for (requested_lat, requested_lon), (forecast_payload, forecast_payload_model) in zip(
+            batch,
+            forecast_payloads,
+            strict=False,
+        ):
+            forecast_dataset = _normalize_openmeteo_verification_payload(
+                forecast_payload,
+                requested_lat=requested_lat,
+                requested_lon=requested_lon,
+                source_label=f"openmeteo_previous_runs:{forecast_payload_model}",
+                derive_pop_proxy=False,
+            )
+            forecast_point_datasets[(requested_lat, requested_lon)] = _subset_to_valid_local_day(
+                forecast_dataset,
+                valid_date,
+            )
+
+    forecast_grid = assemble_point_datasets_to_grid(
+        point_datasets=forecast_point_datasets,
+        lat_values=lat_values,
+        lon_values=lon_values,
+        region_name=region_name,
+    )
+    return forecast_grid, forecast_used_fallback
+
+
+def _blend_forecast_grids(
+    *,
+    primary_grid: xr.Dataset,
+    fallback_grid: xr.Dataset,
+    primary_vars: tuple[str, ...],
+    source_label: str,
+) -> xr.Dataset:
+    if "time" in primary_grid.coords and "time" in fallback_grid.coords:
+        fallback_grid = fallback_grid.sel(time=primary_grid["time"])
+    primary_aligned, fallback_aligned = xr.align(primary_grid, fallback_grid, join="exact")
+    blended = fallback_aligned.copy(deep=True)
+    for field_name in primary_vars:
+        if field_name in primary_aligned:
+            blended[field_name] = primary_aligned[field_name]
+    blended.attrs.update(dict(fallback_aligned.attrs))
+    blended.attrs["source"] = source_label
+    return blended
+
+
 @dataclass
 class OpenMeteoVerificationRegionalLoader:
     """Archived forecast vs historical analysis regional mesh loader."""
@@ -380,13 +456,46 @@ class OpenMeteoVerificationRegionalLoader:
             raise ValueError(f"Unsupported verification analysis model '{self.analysis_model}'.")
 
         forecast_metadata: dict[str, object] = {}
-        if resolved_forecast_model == OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_HOURLY:
-            forecast_grid, forecast_metadata = NdfdForecastRegionalLoader(
+        if resolved_forecast_model in {
+            OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_HOURLY,
+            OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_GFS_BLEND,
+        }:
+            ndfd_grid, ndfd_metadata = NdfdForecastRegionalLoader(
                 region_name=self.region_name,
                 mesh_profile=self.mesh_profile,
                 forecast_run_hour_utc=self.forecast_run_hour_utc,
                 forecast_lead_days=self.forecast_lead_days,
             ).load_hourly_grid(valid_date)
+            if resolved_forecast_model == OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_HOURLY:
+                forecast_grid = ndfd_grid
+                forecast_metadata = ndfd_metadata
+            else:
+                gfs_grid, gfs_used_fallback = _load_openmeteo_forecast_grid(
+                    coordinate_pairs=coordinate_pairs,
+                    lat_values=lat_values,
+                    lon_values=lon_values,
+                    region_name=self.region_name,
+                    valid_date=valid_date,
+                    timezone_name=timezone_name,
+                    forecast_lead_days=self.forecast_lead_days,
+                    resolved_forecast_model=OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
+                )
+                forecast_used_fallback = forecast_used_fallback or gfs_used_fallback
+                forecast_grid = _blend_forecast_grids(
+                    primary_grid=ndfd_grid,
+                    fallback_grid=gfs_grid,
+                    primary_vars=("temp_f", "dewpoint_f", "wind_mph", "gust_mph", "cloud_pct", "pop_pct"),
+                    source_label="ndfd_archive_core_kwbn+openmeteo_previous_runs:gfs_seamless",
+                )
+                forecast_metadata = {
+                    "forecast_model_requested": self.forecast_model,
+                    "forecast_model_mode": self.forecast_model_mode,
+                    "forecast_model": OPENMETEO_VERIFICATION_FORECAST_MODEL_NWS_NDFD_GFS_BLEND,
+                    "forecast_run_timestamp_utc": gfs_grid.attrs.get("verification_run_timestamp_utc", run_timestamp),
+                    "forecast_source_label": "NWS NDFD + GFS Blend",
+                    "forecast_grid_source": "ndfd_archive_core_kwbn+openmeteo_previous_runs:gfs_seamless",
+                    "forecast_selected_entries": ndfd_metadata.get("forecast_selected_entries", {}),
+                }
         else:
             batch_size = min(OPENMETEO_REGIONAL_BATCH_SIZE, OPENMETEO_VERIFICATION_REGIONAL_BATCH_SIZE)
             for start in range(0, len(coordinate_pairs), batch_size):

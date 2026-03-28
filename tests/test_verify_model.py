@@ -8,6 +8,7 @@ from urllib.error import HTTPError
 
 import comfortwx.data.openmeteo_verification as openmeteo_verification
 from comfortwx.data.openmeteo_verification import (
+    _blend_forecast_grids,
     _fetch_forecast_payloads_for_batch,
     _subset_to_valid_local_day,
     _forecast_query_for_batch,
@@ -243,6 +244,44 @@ def test_resolve_openmeteo_verification_forecast_model_prefers_hrrr_for_d1_defau
         )
         == "nws_ndfd_hourly"
     )
+    assert (
+        resolve_openmeteo_verification_forecast_model(
+            requested_model="nws_ndfd_gfs_blend",
+            forecast_lead_days=1,
+            region_name="west_coast",
+        )
+        == "nws_ndfd_gfs_blend"
+    )
+
+
+def test_blend_forecast_grids_subsets_fallback_to_primary_time_axis() -> None:
+    primary = xr.Dataset(
+        data_vars={
+            "temp_f": (("time", "lat", "lon"), np.array([[[70.0]], [[71.0]]], dtype=np.float32)),
+            "pop_pct": (("time", "lat", "lon"), np.array([[[10.0]], [[20.0]]], dtype=np.float32)),
+        },
+        coords={"time": xr.date_range("2024-03-20T08:00", periods=2, freq="1h"), "lat": [40.0], "lon": [-123.0]},
+    )
+    fallback = xr.Dataset(
+        data_vars={
+            "temp_f": (("time", "lat", "lon"), np.array([[[60.0]], [[61.0]], [[62.0]]], dtype=np.float32)),
+            "pop_pct": (("time", "lat", "lon"), np.array([[[30.0]], [[40.0]], [[50.0]]], dtype=np.float32)),
+            "qpf_in": (("time", "lat", "lon"), np.array([[[0.01]], [[0.02]], [[0.03]]], dtype=np.float32)),
+        },
+        coords={"time": xr.date_range("2024-03-20T07:00", periods=3, freq="1h"), "lat": [40.0], "lon": [-123.0]},
+    )
+
+    blended = _blend_forecast_grids(
+        primary_grid=primary,
+        fallback_grid=fallback,
+        primary_vars=("temp_f", "pop_pct"),
+        source_label="blend",
+    )
+
+    assert blended.sizes["time"] == 2
+    assert blended["time"].equals(primary["time"])
+    assert float(blended["temp_f"].isel(time=0).values.squeeze()) == 70.0
+    assert np.isclose(float(blended["qpf_in"].isel(time=0).values.squeeze()), 0.02)
 
 
 def test_forecast_batch_does_not_fan_out_on_rate_limit(monkeypatch) -> None:

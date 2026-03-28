@@ -38,6 +38,7 @@ on:
           - gfs_seamless
           - ncep_hrrr_conus
           - nws_ndfd_hourly
+          - nws_ndfd_gfs_blend
       forecast_model_mode:
         description: Auto prefers HRRR for Day 1; exact uses the chosen model literally
         required: true
