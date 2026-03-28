@@ -26,13 +26,15 @@ on:
         required: false
         default: ""
       aggregation_policy:
-        description: Optional candidate aggregation policy. Use baseline for the normal public product path.
+        description: Scoring policy for the build. Use baseline for the normal public product path.
         required: true
         default: baseline
         type: choice
         options:
           - baseline
           - experimental_regime_aware
+          - experimental_regime_aware_plus
+          - experimental_all_leads_soft
   schedule:
     - cron: "20 0 * * *"
     - cron: "20 6 * * *"

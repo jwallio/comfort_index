@@ -39,7 +39,7 @@ python -m comfortwx.main --pilot-day-archive --source openmeteo --pilot-span-day
 Run a side-by-side candidate product build without changing the default public path:
 
 ```powershell
-python -m comfortwx.main --pilot-day-archive --source openmeteo --pilot-span-days 7 --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse --aggregation-policy experimental_regime_aware
+python -m comfortwx.main --pilot-day-archive --source openmeteo --pilot-span-days 7 --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse --aggregation-policy experimental_all_leads_soft
 ```
 
 ## Main Commands
@@ -177,8 +177,20 @@ When run manually from GitHub Actions, the workflow menu lets you choose:
 - aggregation policy:
   - `baseline`
   - `experimental_regime_aware`
+  - `experimental_regime_aware_plus`
+  - `experimental_all_leads_soft`
 
-The product workflow keeps `baseline` as the default public-scoring path. The candidate policy is available only as an explicit side-by-side evaluation option.
+Policy guidance:
+- `baseline`
+  - current public-control path
+- `experimental_regime_aware`
+  - older targeted softening candidate
+- `experimental_regime_aware_plus`
+  - refined targeted candidate that also softens the Northeast cool-season `D+2/D+3` path
+- `experimental_all_leads_soft`
+  - current best MAE candidate on the broader NOAA-truth verification gate
+
+The product workflow keeps `baseline` as the default public-scoring path. The other policies are available only as explicit side-by-side evaluation options.
 
 If GitHub Pages is enabled for the repository, the site-publish workflow updates the public site from the latest archived run artifact. If Pages is not available, the archive build still completes and uploads artifacts.
 
