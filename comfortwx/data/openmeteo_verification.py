@@ -153,8 +153,14 @@ def resolve_openmeteo_verification_forecast_model(
     *,
     requested_model: str,
     forecast_lead_days: int,
+    forecast_model_mode: str = "auto",
 ) -> str:
     normalized_model = requested_model.strip().lower()
+    normalized_mode = forecast_model_mode.strip().lower()
+    if normalized_mode not in {"auto", "exact"}:
+        raise ValueError("forecast_model_mode must be 'auto' or 'exact'.")
+    if normalized_mode == "exact":
+        return normalized_model
     if normalized_model in {
         OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT,
         "hrrr",
@@ -321,6 +327,7 @@ class OpenMeteoVerificationRegionalLoader:
     region_name: str
     mesh_profile: str = "standard"
     forecast_model: str = OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT
+    forecast_model_mode: str = "auto"
     analysis_model: str = OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT
     forecast_run_hour_utc: int = OPENMETEO_VERIFICATION_FORECAST_RUN_HOUR_UTC
     forecast_lead_days: int = OPENMETEO_VERIFICATION_FORECAST_LEAD_DAYS
@@ -340,6 +347,7 @@ class OpenMeteoVerificationRegionalLoader:
         resolved_forecast_model = resolve_openmeteo_verification_forecast_model(
             requested_model=self.forecast_model,
             forecast_lead_days=self.forecast_lead_days,
+            forecast_model_mode=self.forecast_model_mode,
         )
         forecast_point_datasets: dict[tuple[float, float], xr.Dataset] = {}
         analysis_point_datasets: dict[tuple[float, float], xr.Dataset] = {}
@@ -448,6 +456,7 @@ class OpenMeteoVerificationRegionalLoader:
             "region_name": self.region_name,
             "mesh_profile": self.mesh_profile,
             "forecast_model_requested": self.forecast_model,
+            "forecast_model_mode": self.forecast_model_mode,
             "forecast_model": (
                 resolved_forecast_model
                 if not forecast_used_fallback

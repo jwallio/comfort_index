@@ -216,6 +216,14 @@ def test_resolve_openmeteo_verification_forecast_model_prefers_hrrr_for_d1_defau
         )
         == "ncep_hrrr_conus"
     )
+    assert (
+        resolve_openmeteo_verification_forecast_model(
+            requested_model="gfs_seamless",
+            forecast_lead_days=1,
+            forecast_model_mode="exact",
+        )
+        == "gfs_seamless"
+    )
 
 
 def test_forecast_batch_does_not_fan_out_on_rate_limit(monkeypatch) -> None:

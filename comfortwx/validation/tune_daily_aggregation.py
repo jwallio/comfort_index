@@ -73,12 +73,14 @@ def _hourly_cache_paths(
     region_name: str,
     valid_date: date,
     forecast_model: str,
+    forecast_model_mode: str = "auto",
     analysis_model: str = OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT,
     forecast_lead_days: int,
 ) -> tuple[Path, Path]:
     resolved_forecast_model = resolve_openmeteo_verification_forecast_model(
         requested_model=forecast_model,
         forecast_lead_days=forecast_lead_days,
+        forecast_model_mode=forecast_model_mode,
     )
     normalized_analysis_model = "".join(character if character.isalnum() else "_" for character in analysis_model.strip().lower()).strip("_")
     prefix = f"comfortwx_verify_{region_name}_{resolved_forecast_model}_{normalized_analysis_model}_d{forecast_lead_days}_{VERIFICATION_HOURLY_CACHE_VERSION}"
@@ -95,6 +97,7 @@ def _load_or_build_hourly_case(
     region_name: str,
     mesh_profile: str,
     forecast_model: str,
+    forecast_model_mode: str = "auto",
     analysis_model: str = OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT,
     forecast_run_hour_utc: int,
     forecast_lead_days: int,
@@ -106,6 +109,7 @@ def _load_or_build_hourly_case(
         region_name=region_name,
         valid_date=valid_date,
         forecast_model=forecast_model,
+        forecast_model_mode=forecast_model_mode,
         analysis_model=analysis_model,
         forecast_lead_days=forecast_lead_days,
     )
@@ -120,6 +124,7 @@ def _load_or_build_hourly_case(
         region_name=region_name,
         mesh_profile=mesh_profile,
         forecast_model=forecast_model,
+        forecast_model_mode=forecast_model_mode,
         analysis_model=analysis_model,
         forecast_run_hour_utc=forecast_run_hour_utc,
         forecast_lead_days=forecast_lead_days,
@@ -157,6 +162,7 @@ def evaluate_daily_aggregation_modes(
     output_dir: Path,
     mesh_profile: str,
     forecast_model: str,
+    forecast_model_mode: str = "auto",
     analysis_model: str = OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT,
     forecast_run_hour_utc: int,
     candidate_modes: tuple[str, ...],
@@ -178,6 +184,7 @@ def evaluate_daily_aggregation_modes(
                 region_name=case.region_name,
                 valid_date=case.valid_date,
                 forecast_model=forecast_model,
+                forecast_model_mode=forecast_model_mode,
                 analysis_model=analysis_model,
                 forecast_lead_days=case.forecast_lead_days,
             )
@@ -207,6 +214,7 @@ def evaluate_daily_aggregation_modes(
                 region_name=case.region_name,
                 mesh_profile=mesh_profile,
                 forecast_model=forecast_model,
+                forecast_model_mode=forecast_model_mode,
                 analysis_model=analysis_model,
                 forecast_run_hour_utc=forecast_run_hour_utc,
                 forecast_lead_days=case.forecast_lead_days,
@@ -703,6 +711,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--date", default=None, help="Optional YYYY-MM-DD override for all benchmark regions.")
     parser.add_argument("--mesh-profile", default="standard", help="Regional mesh profile. Default: standard.")
     parser.add_argument("--forecast-model", default=OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT)
+    parser.add_argument("--forecast-model-mode", choices=("auto", "exact"), default="auto")
     parser.add_argument("--analysis-model", default=OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT)
     parser.add_argument("--forecast-run-hour-utc", type=int, default=OPENMETEO_VERIFICATION_FORECAST_RUN_HOUR_UTC)
     parser.add_argument(
@@ -765,6 +774,7 @@ def main() -> None:
         output_dir=output_dir,
         mesh_profile=args.mesh_profile,
         forecast_model=args.forecast_model,
+        forecast_model_mode=args.forecast_model_mode,
         analysis_model=args.analysis_model,
         forecast_run_hour_utc=args.forecast_run_hour_utc,
         candidate_modes=candidate_modes,

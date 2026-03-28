@@ -186,6 +186,7 @@ def _existing_verification_case_outputs(
     valid_date: date,
     region_name: str,
     forecast_model: str,
+    forecast_model_mode: str = "auto",
     analysis_model: str = OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT,
     forecast_lead_days: int,
     aggregation_policy: str,
@@ -194,6 +195,7 @@ def _existing_verification_case_outputs(
     resolved_forecast_model = resolve_openmeteo_verification_forecast_model(
         requested_model=forecast_model,
         forecast_lead_days=forecast_lead_days,
+        forecast_model_mode=forecast_model_mode,
     )
     file_prefix = build_verification_file_prefix(
         region_name=region_name,
@@ -1390,6 +1392,7 @@ def run_verification_benchmark(
     output_dir: Path,
     mesh_profile: str,
     forecast_model: str,
+    forecast_model_mode: str = "auto",
     analysis_model: str = OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT,
     forecast_run_hour_utc: int,
     benchmark_tier: str,
@@ -1414,6 +1417,7 @@ def run_verification_benchmark(
                         valid_date=case.valid_date,
                         region_name=case.region_name,
                         forecast_model=forecast_model,
+                        forecast_model_mode=forecast_model_mode,
                         analysis_model=analysis_model,
                         forecast_lead_days=case.forecast_lead_days,
                         aggregation_policy=aggregation_policy,
@@ -1497,6 +1501,7 @@ def run_verification_benchmark(
                     output_dir=output_dir,
                     mesh_profile=mesh_profile,
                     forecast_model=forecast_model,
+                    forecast_model_mode=forecast_model_mode,
                     analysis_model=analysis_model,
                     forecast_run_hour_utc=forecast_run_hour_utc,
                     forecast_lead_days=case.forecast_lead_days,
@@ -1631,6 +1636,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--date", default=None, help="Optional YYYY-MM-DD override for all benchmark regions.")
     parser.add_argument("--mesh-profile", default="standard", help="Regional mesh profile. Default: standard.")
     parser.add_argument("--forecast-model", default=OPENMETEO_VERIFICATION_FORECAST_MODEL_DEFAULT)
+    parser.add_argument("--forecast-model-mode", choices=("auto", "exact"), default="auto")
     parser.add_argument("--analysis-model", default=OPENMETEO_VERIFICATION_ANALYSIS_MODEL_DEFAULT)
     parser.add_argument("--forecast-run-hour-utc", type=int, default=OPENMETEO_VERIFICATION_FORECAST_RUN_HOUR_UTC)
     parser.add_argument(
@@ -1716,6 +1722,7 @@ def main() -> None:
         output_dir=output_dir,
         mesh_profile=args.mesh_profile,
         forecast_model=args.forecast_model,
+        forecast_model_mode=args.forecast_model_mode,
         analysis_model=args.analysis_model,
         forecast_run_hour_utc=args.forecast_run_hour_utc,
         benchmark_tier=benchmark_tier,

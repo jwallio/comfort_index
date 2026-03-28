@@ -232,6 +232,9 @@ When run manually from GitHub Actions, the verification workflow lets you choose
 - forecast model:
   - `gfs_seamless`
   - `ncep_hrrr_conus`
+- forecast model mode:
+  - `auto` prefers HRRR for `Day 1`
+  - `exact` uses the selected model literally
 - verification aggregation policies as a comma-separated list such as `baseline,experimental_regime_aware`
 - case cache mode (`reuse` or `refresh`)
 - optional fresh-case cap, cooldown, region filter, and date filter for incremental chunked runs
@@ -259,6 +262,7 @@ When run manually from GitHub Actions, the tuning workflow lets you choose:
 - lead days
 - analysis model
 - forecast model
+- forecast model mode
 - candidate aggregation modes
 - case cache mode (`reuse` or `refresh`)
 - optional fresh-case cap, cooldown, region filter, and date filter for incremental chunked runs

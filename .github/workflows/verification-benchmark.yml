@@ -44,6 +44,14 @@ on:
         options:
           - gfs_seamless
           - ncep_hrrr_conus
+      forecast_model_mode:
+        description: Auto prefers HRRR for Day 1; exact uses the chosen model literally
+        required: true
+        default: auto
+        type: choice
+        options:
+          - auto
+          - exact
       aggregation_policies:
         description: Comma-separated verification aggregation policies to compare
         required: false
@@ -148,6 +156,7 @@ jobs:
           WORKFLOW_LEAD_DAYS: ${{ github.event.inputs.lead_days }}
           WORKFLOW_ANALYSIS_MODEL: ${{ github.event.inputs.analysis_model }}
           WORKFLOW_FORECAST_MODEL: ${{ github.event.inputs.forecast_model }}
+          WORKFLOW_FORECAST_MODEL_MODE: ${{ github.event.inputs.forecast_model_mode }}
           WORKFLOW_AGGREGATION_POLICIES: ${{ github.event.inputs.aggregation_policies }}
           WORKFLOW_CASE_CACHE_MODE: ${{ github.event.inputs.case_cache_mode }}
           WORKFLOW_MAX_FRESH_CASES: ${{ github.event.inputs.max_fresh_cases }}
@@ -161,6 +170,7 @@ jobs:
           lead_days="${WORKFLOW_LEAD_DAYS:-1,2,3,7}"
           analysis_model="${WORKFLOW_ANALYSIS_MODEL:-noaa_urma_rtma}"
           forecast_model="${WORKFLOW_FORECAST_MODEL:-gfs_seamless}"
+          forecast_model_mode="${WORKFLOW_FORECAST_MODEL_MODE:-auto}"
           aggregation_policies="${WORKFLOW_AGGREGATION_POLICIES:-baseline}"
           case_cache_mode="${WORKFLOW_CASE_CACHE_MODE:-reuse}"
           max_fresh_cases="${WORKFLOW_MAX_FRESH_CASES:-}"
@@ -175,6 +185,7 @@ jobs:
             --mesh-profile "$mesh_profile"
             --lead-days "$lead_days"
             --forecast-model "$forecast_model"
+            --forecast-model-mode "$forecast_model_mode"
             --analysis-model "$analysis_model"
             --aggregation-policies "$aggregation_policies"
             --case-cache-mode "$case_cache_mode"
