@@ -124,11 +124,11 @@ def test_write_pilot_day_index_creates_csv_json_and_html(tmp_path) -> None:
     assert "<table" not in html_text
     assert "Most Comfortable" in html_text
     assert "San Diego, CA" in html_text
-    assert "Score 82.5" in html_text
+    assert ">82.5<" in html_text
     assert "Ideal" in html_text
     assert "--bucket-color:" in html_text
     assert "Least Comfortable" in html_text
-    assert "Score 31.2" in html_text
+    assert ">31.2<" in html_text
 
 
 def test_build_archive_run_directory_supports_configured_layouts(tmp_path) -> None:

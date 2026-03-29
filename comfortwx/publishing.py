@@ -293,11 +293,11 @@ def _render_city_ranking_list(title: str, rows: list[dict[str, object]]) -> str:
         items.append(
             "<li>"
             f"<span class='city-rank'>{int(row['ranking_position'])}.</span>"
-            "<span class='city-copy'>"
             f"<span class='city-name'>{html.escape(str(row['city']))}</span>"
+            "<span class='city-meta'>"
+            f"<span class='city-score'>{float(row['score']):.1f}</span>"
             f"<span class='city-bucket' style='--bucket-color: {html.escape(category_color, quote=True)};'>{html.escape(category_name)}</span>"
             "</span>"
-            f"<span class='city-meta'>Score {float(row['score']):.1f}</span>"
             "</li>"
         )
     return (
@@ -555,16 +555,21 @@ def _build_gallery_styles() -> str:
         color: var(--muted);
         font-weight: 700;
       }
-      .city-copy {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-        min-width: 0;
-      }
       .city-name {
         font-weight: 600;
         min-width: 0;
+      }
+      .city-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .city-score {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #18212f;
       }
       .city-bucket {
         display: inline-flex;
@@ -576,10 +581,6 @@ def _build_gallery_styles() -> str:
         letter-spacing: 0.01em;
         color: #fff;
         background: var(--bucket-color, #6b7280);
-      }
-      .city-meta {
-        color: var(--muted);
-        white-space: nowrap;
       }
       .section-heading {
         margin-bottom: 18px;
