@@ -233,6 +233,36 @@ DAILY_AGGREGATION_MODES: Final[dict[str, dict[str, object]]] = {
             "score_drop": 5.5,
         },
     },
+    "very_soft_reliability": {
+        "graded_reliability": True,
+        "usable_score_min": 55.0,
+        "usable_score_full": 78.0,
+        "strong_score_min": 66.0,
+        "strong_score_full": 88.0,
+        "prime_clean_penalty_weights": {"rain": 0.24, "thunder": 0.31, "gust": 0.08},
+        "soft_rain_signal": True,
+        "soft_gust_signal": True,
+        "soft_score_crash_signal": True,
+        "soft_score_drop_signal": True,
+        "measurable_rain_pop_min": 34.0,
+        "measurable_rain_pop_full": 64.0,
+        "measurable_rain_qpf_min": 0.003,
+        "measurable_rain_qpf_full": 0.024,
+        "gust_soft_min": 20.0,
+        "gust_soft_full": 33.0,
+        "score_crash_floor": 28.0,
+        "score_crash_ceiling": 52.0,
+        "score_drop_min": 8.0,
+        "score_drop_full": 18.0,
+        "disruption_weights": {
+            "measurable_rain": 7.5,
+            "heavy_precip": 5.5,
+            "thunder": 19.0,
+            "strong_gusts": 4.5,
+            "score_crash": 3.5,
+            "score_drop": 4.8,
+        },
+    },
 }
 
 DAILY_DISRUPTION_WEIGHTS: Final[dict[str, float]] = {
@@ -1252,6 +1282,7 @@ VERIFICATION_AGGREGATION_TUNING_CANDIDATE_MODES: Final[tuple[str, ...]] = (
     "soft_reliability",
     "balanced_soft",
     "long_lead_soft",
+    "very_soft_reliability",
 )
 VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES: Final[dict[str, dict[str, object]]] = {
     "baseline": {
@@ -1276,6 +1307,14 @@ VERIFICATION_AGGREGATION_EXPERIMENTAL_POLICIES: Final[dict[str, dict[str, object
             2: "long_lead_soft",
             3: "long_lead_soft",
             7: "long_lead_soft",
+        },
+    },
+    "experimental_all_leads_softer": {
+        "default": {
+            1: "very_soft_reliability",
+            2: "very_soft_reliability",
+            3: "very_soft_reliability",
+            7: "very_soft_reliability",
         },
     },
     "experimental_regional_blend": {

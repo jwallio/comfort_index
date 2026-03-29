@@ -137,7 +137,7 @@ def test_soft_aggregation_modes_do_not_propagate_nan_event_signals() -> None:
         coords={"time": times, "lat": [35.0], "lon": [-108.0]},
     )
 
-    for aggregation_mode in ("soft_reliability", "balanced_soft", "long_lead_soft"):
+    for aggregation_mode in ("soft_reliability", "balanced_soft", "long_lead_soft", "very_soft_reliability"):
         daily = aggregate_daily_scores(scored, aggregation_mode=aggregation_mode)
         assert np.isfinite(float(daily["daily_score"].values.squeeze()))
         assert np.isfinite(float(daily["reliability_score"].values.squeeze()))
