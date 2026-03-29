@@ -11,6 +11,10 @@ from pathlib import Path
 import pandas as pd
 
 from comfortwx.config import ARCHIVE_SETTINGS, PRODUCT_METADATA, PUBLISH_PRESETS
+from comfortwx.scoring.categories import category_colors, category_labels
+
+
+_CITY_RANKING_CATEGORY_COLOR_MAP = dict(zip(category_labels(), category_colors(), strict=False))
 
 
 def resolve_publish_preset(preset_name: str) -> dict[str, object]:
@@ -284,10 +288,15 @@ def _render_city_ranking_list(title: str, rows: list[dict[str, object]]) -> str:
         return ""
     items = []
     for row in rows:
+        category_name = str(row.get("category", "")).strip()
+        category_color = _CITY_RANKING_CATEGORY_COLOR_MAP.get(category_name, "#6b7280")
         items.append(
             "<li>"
             f"<span class='city-rank'>{int(row['ranking_position'])}.</span>"
+            "<span class='city-copy'>"
             f"<span class='city-name'>{html.escape(str(row['city']))}</span>"
+            f"<span class='city-bucket' style='--bucket-color: {html.escape(category_color, quote=True)};'>{html.escape(category_name)}</span>"
+            "</span>"
             f"<span class='city-meta'>Score {float(row['score']):.1f}</span>"
             "</li>"
         )
@@ -312,8 +321,8 @@ def _render_city_rankings(product_row: dict[str, object]) -> str:
         "<p>Daily Comfort Index rankings for a curated set of major cities across the contiguous U.S.</p>"
         "</div>"
         "<div class='city-rankings-grid'>"
-        f"{_render_city_ranking_list('Top 10 best cities', best_rows)}"
-        f"{_render_city_ranking_list('Top 10 toughest cities', worst_rows)}"
+        f"{_render_city_ranking_list('Most Comfortable', best_rows)}"
+        f"{_render_city_ranking_list('Least Comfortable', worst_rows)}"
         "</div>"
         "</section>"
     )
@@ -546,8 +555,27 @@ def _build_gallery_styles() -> str:
         color: var(--muted);
         font-weight: 700;
       }
+      .city-copy {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
       .city-name {
         font-weight: 600;
+        min-width: 0;
+      }
+      .city-bucket {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 3px 10px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        color: #fff;
+        background: var(--bucket-color, #6b7280);
       }
       .city-meta {
         color: var(--muted);
