@@ -1,0 +1,226 @@
+{
+  "valid_date": "2026-03-31",
+  "generated_at": "2026-03-29T08:23:16",
+  "cities": [
+    {
+      "city": "Charleston, SC",
+      "score": 82.1,
+      "category": "Ideal",
+      "sample_lat": 33.0,
+      "sample_lon": -80.0,
+      "distance_degrees": 0.231,
+      "priority": 50,
+      "ranking_group": "best",
+      "ranking_position": 1
+    },
+    {
+      "city": "Raleigh, NC",
+      "score": 77.6,
+      "category": "Ideal",
+      "sample_lat": 36.0,
+      "sample_lon": -78.5,
+      "distance_degrees": 0.247,
+      "priority": 35,
+      "ranking_group": "best",
+      "ranking_position": 2
+    },
+    {
+      "city": "Charlotte, NC",
+      "score": 76.1,
+      "category": "Ideal",
+      "sample_lat": 35.0,
+      "sample_lon": -81.0,
+      "distance_degrees": 0.261,
+      "priority": 13,
+      "ranking_group": "best",
+      "ranking_position": 3
+    },
+    {
+      "city": "San Diego, CA",
+      "score": 76.0,
+      "category": "Ideal",
+      "sample_lat": 32.5,
+      "sample_lon": -117.0,
+      "distance_degrees": 0.255,
+      "priority": 8,
+      "ranking_group": "best",
+      "ranking_position": 4
+    },
+    {
+      "city": "Los Angeles, CA",
+      "score": 75.9,
+      "category": "Ideal",
+      "sample_lat": 34.0,
+      "sample_lon": -118.0,
+      "distance_degrees": 0.209,
+      "priority": 2,
+      "ranking_group": "best",
+      "ranking_position": 5
+    },
+    {
+      "city": "Richmond, VA",
+      "score": 74.8,
+      "category": "Poor",
+      "sample_lat": 37.5,
+      "sample_lon": -77.5,
+      "distance_degrees": 0.065,
+      "priority": 48,
+      "ranking_group": "best",
+      "ranking_position": 6
+    },
+    {
+      "city": "Las Vegas, NV",
+      "score": 73.6,
+      "category": "Pleasant",
+      "sample_lat": 36.0,
+      "sample_lon": -115.0,
+      "distance_degrees": 0.204,
+      "priority": 23,
+      "ranking_group": "best",
+      "ranking_position": 7
+    },
+    {
+      "city": "Philadelphia, PA",
+      "score": 72.6,
+      "category": "Pleasant",
+      "sample_lat": 40.0,
+      "sample_lon": -75.0,
+      "distance_degrees": 0.135,
+      "priority": 6,
+      "ranking_group": "best",
+      "ranking_position": 8
+    },
+    {
+      "city": "Atlanta, GA",
+      "score": 72.2,
+      "category": "Pleasant",
+      "sample_lat": 33.5,
+      "sample_lon": -84.5,
+      "distance_degrees": 0.266,
+      "priority": 33,
+      "ranking_group": "best",
+      "ranking_position": 9
+    },
+    {
+      "city": "El Paso, TX",
+      "score": 72.0,
+      "category": "Pleasant",
+      "sample_lat": 32.0,
+      "sample_lon": -106.5,
+      "distance_degrees": 0.238,
+      "priority": 47,
+      "ranking_group": "best",
+      "ranking_position": 10
+    },
+    {
+      "city": "Detroit, MI",
+      "score": 12.1,
+      "category": "Poor",
+      "sample_lat": 42.5,
+      "sample_lon": -83.0,
+      "distance_degrees": 0.172,
+      "priority": 20,
+      "ranking_group": "worst",
+      "ranking_position": 1
+    },
+    {
+      "city": "Milwaukee, WI",
+      "score": 13.2,
+      "category": "Poor",
+      "sample_lat": 43.0,
+      "sample_lon": -88.0,
+      "distance_degrees": 0.079,
+      "priority": 27,
+      "ranking_group": "worst",
+      "ranking_position": 2
+    },
+    {
+      "city": "Chicago, IL",
+      "score": 13.3,
+      "category": "Poor",
+      "sample_lat": 42.0,
+      "sample_lon": -87.5,
+      "distance_degrees": 0.156,
+      "priority": 3,
+      "ranking_group": "worst",
+      "ranking_position": 3
+    },
+    {
+      "city": "Cleveland, OH",
+      "score": 19.5,
+      "category": "Poor",
+      "sample_lat": 41.5,
+      "sample_lon": -81.5,
+      "distance_degrees": 0.146,
+      "priority": 39,
+      "ranking_group": "worst",
+      "ranking_position": 4
+    },
+    {
+      "city": "Denver, CO",
+      "score": 24.8,
+      "category": "Poor",
+      "sample_lat": 39.5,
+      "sample_lon": -105.0,
+      "distance_degrees": 0.239,
+      "priority": 16,
+      "ranking_group": "worst",
+      "ranking_position": 5
+    },
+    {
+      "city": "Salt Lake City, UT",
+      "score": 28.7,
+      "category": "Poor",
+      "sample_lat": 41.0,
+      "sample_lon": -112.0,
+      "distance_degrees": 0.253,
+      "priority": 44,
+      "ranking_group": "worst",
+      "ranking_position": 6
+    },
+    {
+      "city": "Minneapolis, MN",
+      "score": 32.6,
+      "category": "Poor",
+      "sample_lat": 45.0,
+      "sample_lon": -93.5,
+      "distance_degrees": 0.168,
+      "priority": 38,
+      "ranking_group": "worst",
+      "ranking_position": 7
+    },
+    {
+      "city": "Spokane, WA",
+      "score": 34.9,
+      "category": "Poor",
+      "sample_lat": 47.5,
+      "sample_lon": -117.5,
+      "distance_degrees": 0.166,
+      "priority": 46,
+      "ranking_group": "worst",
+      "ranking_position": 8
+    },
+    {
+      "city": "Pittsburgh, PA",
+      "score": 35.9,
+      "category": "Poor",
+      "sample_lat": 40.5,
+      "sample_lon": -80.0,
+      "distance_degrees": 0.059,
+      "priority": 41,
+      "ranking_group": "worst",
+      "ranking_position": 9
+    },
+    {
+      "city": "Seattle, WA",
+      "score": 36.4,
+      "category": "Poor",
+      "sample_lat": 47.5,
+      "sample_lon": -122.5,
+      "distance_degrees": 0.155,
+      "priority": 15,
+      "ranking_group": "worst",
+      "ranking_position": 10
+    }
+  ]
+}

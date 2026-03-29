@@ -1,0 +1,259 @@
+<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>Comfort Index Daily Maps</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --page-bg: #f4f0e8;
+        --panel-bg: #fffdf9;
+        --text: #1e262d;
+        --muted: #5d676f;
+        --line: #d9d2c4;
+        --shadow: 0 16px 36px rgba(42, 48, 58, 0.08);
+        --radius: 18px;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        background:
+          radial-gradient(circle at top, rgba(255,255,255,0.92), rgba(244,240,232,0.98) 45%),
+          linear-gradient(180deg, #f1ede4 0%, #f7f3eb 100%);
+        color: var(--text);
+      }
+      main {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 32px 22px 56px;
+      }
+      .hero, .gallery-section, .run-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      .hero {
+        padding: 28px 28px 24px;
+        margin-bottom: 28px;
+      }
+      .eyebrow {
+        margin: 0 0 10px;
+        font: 700 0.8rem/1.2 "Segoe UI", Arial, sans-serif;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      h1, h2, h3 {
+        margin: 0;
+        font-weight: 700;
+        line-height: 1.08;
+      }
+      h1 { font-size: clamp(2rem, 4.2vw, 3.5rem); }
+      h2 { font-size: clamp(1.4rem, 2.6vw, 2.15rem); }
+      h3 { font-size: clamp(1.15rem, 2vw, 1.45rem); }
+      .subtitle, .meta, .section-heading p, .run-card p, figcaption, .archive-note {
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+      .subtitle {
+        margin: 10px 0 0;
+        font-size: 1.05rem;
+        color: var(--muted);
+      }
+      .meta {
+        margin: 18px 0 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .meta span {
+        background: #f3eee4;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 8px 12px;
+      }
+      .featured-grid, .image-grid {
+        display: grid;
+        gap: 18px;
+      }
+      .top-bar {
+        margin-top: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .day-selector-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: var(--muted);
+      }
+      .day-selector-wrap label {
+        font-size: 0.92rem;
+        font-weight: 600;
+      }
+      .day-selector-wrap select {
+        min-width: 180px;
+        padding: 9px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
+        font: 500 0.95rem/1.2 "Segoe UI", Arial, sans-serif;
+      }
+      .featured-grid {
+        margin-top: 22px;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      }
+      .gallery-section {
+        margin-top: 24px;
+        padding: 22px;
+      }
+      .city-rankings-section {
+        margin-top: 24px;
+        background: var(--panel-bg);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 22px;
+      }
+      .city-rankings-grid {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        margin-top: 18px;
+      }
+      .city-rankings-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px 18px;
+        background: #fff;
+      }
+      .city-rankings-card h3 {
+        font-size: 1.1rem;
+      }
+      .city-rankings-list {
+        margin: 14px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 10px;
+      }
+      .city-rankings-list li {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: baseline;
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+      .city-rank {
+        color: var(--muted);
+        font-weight: 700;
+      }
+      .city-name {
+        font-weight: 600;
+        min-width: 0;
+      }
+      .city-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .city-score {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #18212f;
+      }
+      .city-bucket {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 3px 10px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        color: #fff;
+        background: var(--bucket-color, #6b7280);
+      }
+      .section-heading {
+        margin-bottom: 18px;
+      }
+      .section-heading p, .archive-note {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+      .product-card {
+        border-top: 1px solid var(--line);
+        padding-top: 18px;
+        margin-top: 18px;
+      }
+      .product-card:first-of-type {
+        border-top: 0;
+        padding-top: 0;
+        margin-top: 0;
+      }
+      .product-card-header {
+        margin-bottom: 12px;
+      }
+      .product-kicker {
+        display: inline-block;
+        margin-bottom: 6px;
+        font: 700 0.76rem/1.2 "Segoe UI", Arial, sans-serif;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .image-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+      .image-panel {
+        margin: 0;
+      }
+      .image-panel img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: #edf1f4;
+      }
+      figcaption {
+        margin-top: 8px;
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+      .runs-grid {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        margin-top: 20px;
+      }
+      .run-card {
+        padding: 18px;
+      }
+      .run-card a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .run-card h3 {
+        margin-bottom: 8px;
+      }
+      .run-card .thumb {
+        margin-top: 12px;
+      }
+      .run-card .thumb img {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        display: block;
+      }
+      @media (max-width: 720px) {
+        main { padding: 18px 14px 38px; }
+        .hero, .gallery-section, .run-card { padding-left: 16px; padding-right: 16px; }
+      }
+    </style>
+    </head><body><main><section class='hero'><p class='eyebrow'>Comfort Index</p><h1>Daily Outdoor Comfort Maps</h1><p class='subtitle'>Select a forecast day to view the stitched CONUS score and category maps.</p><div class='top-bar'><div class='day-selector-wrap'><label for='day-selector'>Forecast day</label><select id='day-selector' onchange="if(this.value){window.location=this.value;}"><option value='2026/03/29/comfortwx_pilot_day_openmeteo_20260329_index.html' selected>Day 1 | Sun 03/29/26</option><option value='2026/03/30/comfortwx_pilot_day_openmeteo_20260330_index.html'>Day 2 | Mon 03/30/26</option><option value='2026/03/31/comfortwx_pilot_day_openmeteo_20260331_index.html'>Day 3 | Tue 03/31/26</option><option value='2026/04/01/comfortwx_pilot_day_openmeteo_20260401_index.html'>Day 4 | Wed 04/01/26</option><option value='2026/04/02/comfortwx_pilot_day_openmeteo_20260402_index.html'>Day 5 | Thu 04/02/26</option><option value='2026/04/03/comfortwx_pilot_day_openmeteo_20260403_index.html'>Day 6 | Fri 04/03/26</option><option value='2026/04/04/comfortwx_pilot_day_openmeteo_20260404_index.html'>Day 7 | Sat 04/04/26</option></select></div></div><div class='featured-grid'><figure class='image-panel'><img src='2026/03/29/comfortwx_mosaic_west_coast_southwest_rockies_plains_southeast_northeast_great_lakes_openmeteo_presentation_score_20260329.png' alt='Latest stitched score map' loading='lazy'><figcaption>Latest stitched score map</figcaption></figure><figure class='image-panel'><img src='2026/03/29/comfortwx_mosaic_west_coast_southwest_rockies_plains_southeast_northeast_great_lakes_openmeteo_presentation_category_20260329.png' alt='Latest stitched category map' loading='lazy'><figcaption>Latest stitched category map</figcaption></figure></div><section class='city-rankings-section'><div class='section-heading'><h2>City Rankings</h2><p>Daily Comfort Index rankings for a curated set of major cities across the contiguous U.S.</p></div><div class='city-rankings-grid'><section class='city-rankings-card'><h3>Most Comfortable</h3><ol class='city-rankings-list'><li><span class='city-rank'>1.</span><span class='city-name'>Houston, TX</span><span class='city-meta'><span class='city-score'>82.1</span><span class='city-bucket' style='--bucket-color: #4DB6AC;'>Ideal</span></span></li><li><span class='city-rank'>2.</span><span class='city-name'>Birmingham, AL</span><span class='city-meta'><span class='city-score'>80.2</span><span class='city-bucket' style='--bucket-color: #4DB6AC;'>Ideal</span></span></li><li><span class='city-rank'>3.</span><span class='city-name'>El Paso, TX</span><span class='city-meta'><span class='city-score'>79.0</span><span class='city-bucket' style='--bucket-color: #4DB6AC;'>Ideal</span></span></li><li><span class='city-rank'>4.</span><span class='city-name'>Austin, TX</span><span class='city-meta'><span class='city-score'>78.4</span><span class='city-bucket' style='--bucket-color: #4DB6AC;'>Ideal</span></span></li><li><span class='city-rank'>5.</span><span class='city-name'>Albuquerque, NM</span><span class='city-meta'><span class='city-score'>76.1</span><span class='city-bucket' style='--bucket-color: #4DB6AC;'>Ideal</span></span></li><li><span class='city-rank'>6.</span><span class='city-name'>Phoenix, AZ</span><span class='city-meta'><span class='city-score'>75.5</span><span class='city-bucket' style='--bucket-color: #4DB6AC;'>Ideal</span></span></li><li><span class='city-rank'>7.</span><span class='city-name'>Nashville, TN</span><span class='city-meta'><span class='city-score'>75.4</span><span class='city-bucket' style='--bucket-color: #4DB6AC;'>Ideal</span></span></li><li><span class='city-rank'>8.</span><span class='city-name'>Atlanta, GA</span><span class='city-meta'><span class='city-score'>73.3</span><span class='city-bucket' style='--bucket-color: #7FBF7B;'>Pleasant</span></span></li><li><span class='city-rank'>9.</span><span class='city-name'>Memphis, TN</span><span class='city-meta'><span class='city-score'>73.2</span><span class='city-bucket' style='--bucket-color: #7FBF7B;'>Pleasant</span></span></li><li><span class='city-rank'>10.</span><span class='city-name'>New Orleans, LA</span><span class='city-meta'><span class='city-score'>72.8</span><span class='city-bucket' style='--bucket-color: #7FBF7B;'>Pleasant</span></span></li></ol></section><section class='city-rankings-card'><h3>Least Comfortable</h3><ol class='city-rankings-list'><li><span class='city-rank'>1.</span><span class='city-name'>Seattle, WA</span><span class='city-meta'><span class='city-score'>12.5</span><span class='city-bucket' style='--bucket-color: #8A817C;'>Poor</span></span></li><li><span class='city-rank'>2.</span><span class='city-name'>Spokane, WA</span><span class='city-meta'><span class='city-score'>21.5</span><span class='city-bucket' style='--bucket-color: #8A817C;'>Poor</span></span></li><li><span class='city-rank'>3.</span><span class='city-name'>Portland, OR</span><span class='city-meta'><span class='city-score'>27.0</span><span class='city-bucket' style='--bucket-color: #8A817C;'>Poor</span></span></li><li><span class='city-rank'>4.</span><span class='city-name'>New York, NY</span><span class='city-meta'><span class='city-score'>30.9</span><span class='city-bucket' style='--bucket-color: #8A817C;'>Poor</span></span></li><li><span class='city-rank'>5.</span><span class='city-name'>Chicago, IL</span><span class='city-meta'><span class='city-score'>35.1</span><span class='city-bucket' style='--bucket-color: #8A817C;'>Poor</span></span></li><li><span class='city-rank'>6.</span><span class='city-name'>Milwaukee, WI</span><span class='city-meta'><span class='city-score'>36.9</span><span class='city-bucket' style='--bucket-color: #8A817C;'>Poor</span></span></li><li><span class='city-rank'>7.</span><span class='city-name'>Philadelphia, PA</span><span class='city-meta'><span class='city-score'>39.2</span><span class='city-bucket' style='--bucket-color: #8A817C;'>Poor</span></span></li><li><span class='city-rank'>8.</span><span class='city-name'>Boston, MA</span><span class='city-meta'><span class='city-score'>39.9</span><span class='city-bucket' style='--bucket-color: #8A817C;'>Poor</span></span></li><li><span class='city-rank'>9.</span><span class='city-name'>Detroit, MI</span><span class='city-meta'><span class='city-score'>43.7</span><span class='city-bucket' style='--bucket-color: #8A817C;'>Poor</span></span></li><li><span class='city-rank'>10.</span><span class='city-name'>Cleveland, OH</span><span class='city-meta'><span class='city-score'>45.1</span><span class='city-bucket' style='--bucket-color: #D8B365;'>Fair</span></span></li></ol></section></div></section><p class='archive-note'>Supporting CSV, JSON, and NetCDF files remain in the archive, but this public view focuses on the stitched CONUS products.</p></section></main></body></html>

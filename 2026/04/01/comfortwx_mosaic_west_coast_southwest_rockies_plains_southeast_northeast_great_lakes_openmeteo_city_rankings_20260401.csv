@@ -1,0 +1,21 @@
+city,score,category,sample_lat,sample_lon,distance_degrees,priority,ranking_group,ranking_position
+"Fresno, CA",83.5,Ideal,36.5,-120.0,0.293,30,best,1
+"Las Vegas, NV",81.6,Ideal,36.0,-115.0,0.204,23,best,2
+"Tucson, AZ",77.2,Ideal,32.0,-111.0,0.224,29,best,3
+"Los Angeles, CA",76.7,Ideal,34.0,-118.0,0.209,2,best,4
+"San Diego, CA",74.7,Poor,32.5,-117.0,0.255,8,best,5
+"Charleston, SC",71.4,Pleasant,33.0,-80.0,0.231,50,best,6
+"New York, NY",70.6,Pleasant,40.5,-74.0,0.213,1,best,7
+"Phoenix, AZ",68.2,Pleasant,33.5,-112.0,0.08,5,best,8
+"Richmond, VA",66.3,Pleasant,37.5,-77.5,0.065,48,best,9
+"Jacksonville, FL",66.0,Pleasant,30.5,-81.5,0.215,11,best,10
+"Seattle, WA",0.0,Poor,47.5,-122.5,0.155,15,worst,1
+"Portland, OR",0.0,Poor,45.5,-122.5,0.126,22,worst,2
+"Boise, ID",3.4,Poor,43.5,-116.0,0.186,45,worst,3
+"Detroit, MI",4.4,Poor,42.5,-83.0,0.172,20,worst,4
+"Spokane, WA",8.6,Poor,47.5,-117.5,0.166,46,worst,5
+"Omaha, NE",11.5,Poor,41.5,-96.0,0.248,34,worst,6
+"Denver, CO",11.9,Poor,39.5,-105.0,0.239,16,worst,7
+"Kansas City, MO",13.1,Poor,39.0,-94.5,0.117,32,worst,8
+"Chicago, IL",15.8,Poor,42.0,-87.5,0.156,3,worst,9
+"Salt Lake City, UT",16.4,Poor,41.0,-112.0,0.253,44,worst,10

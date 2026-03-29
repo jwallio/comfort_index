@@ -1,0 +1,3 @@
+best_3hr,best_6hr,daytime_weighted_mean,reliability_score,disruption_penalty,daily_score,category,prime_measurable_precip_fraction,prime_heavy_precip_fraction,prime_thunder_fraction,prime_gusty_fraction,prime_score_drop_fraction,prime_tail_clean_fraction,daytime_mean_dewpoint,daytime_mean_gust,explanation,sample_name,requested_lat,requested_lon,resolved_lat,resolved_lon
+81.0,76.6,74.8,81.4,0.0,77.9,Ideal,0.0,0.0,0.0,0.0,0.0,1.0,54.7,12.0,Excellent temperature profile.,best_point,38.0,-91.5,38.0,-91.5
+46.6,45.2,39.5,25.0,0.9,39.1,Poor,0.0,0.0,0.0,0.0,0.0,1.0,25.1,12.9,Temperature profile limited outdoor comfort. Persistent overcast suppressed elite potential.,region_center,44.75,-87.0,44.75,-87.0

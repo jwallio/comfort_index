@@ -1,0 +1,21 @@
+city,score,category,sample_lat,sample_lon,distance_degrees,priority,ranking_group,ranking_position
+"Los Angeles, CA",83.1,Ideal,34.0,-118.0,0.209,2,best,1
+"Fresno, CA",82.1,Ideal,36.5,-120.0,0.293,30,best,2
+"Tucson, AZ",80.2,Ideal,32.0,-111.0,0.224,29,best,3
+"Sacramento, CA",79.7,Ideal,38.5,-121.5,0.082,31,best,4
+"Las Vegas, NV",79.5,Ideal,36.0,-115.0,0.204,23,best,5
+"Phoenix, AZ",76.0,Ideal,33.5,-112.0,0.08,5,best,6
+"San Diego, CA",73.9,Pleasant,32.5,-117.0,0.255,8,best,7
+"El Paso, TX",72.6,Pleasant,32.0,-106.5,0.238,47,best,8
+"Charleston, SC",68.9,Pleasant,33.0,-80.0,0.231,50,best,9
+"Charlotte, NC",68.6,Pleasant,35.0,-81.0,0.261,13,best,10
+"Oklahoma City, OK",7.3,Poor,35.5,-97.5,0.035,21,worst,1
+"Milwaukee, WI",7.7,Poor,43.0,-88.0,0.079,27,worst,2
+"Kansas City, MO",10.1,Poor,39.0,-94.5,0.117,32,worst,3
+"Chicago, IL",10.4,Poor,42.0,-87.5,0.156,3,worst,4
+"Minneapolis, MN",13.3,Poor,45.0,-93.5,0.168,38,worst,5
+"New York, NY",17.7,Poor,40.5,-74.0,0.213,1,worst,6
+"Omaha, NE",20.3,Poor,41.5,-96.0,0.248,34,worst,7
+"Dallas, TX",20.6,Poor,33.0,-97.0,0.281,9,worst,8
+"Detroit, MI",22.4,Poor,42.5,-83.0,0.172,20,worst,9
+"Cleveland, OH",26.3,Poor,41.5,-81.5,0.146,39,worst,10

@@ -1,0 +1,3 @@
+best_3hr,best_6hr,daytime_weighted_mean,reliability_score,disruption_penalty,daily_score,category,prime_measurable_precip_fraction,prime_heavy_precip_fraction,prime_thunder_fraction,prime_gusty_fraction,prime_score_drop_fraction,prime_tail_clean_fraction,daytime_mean_dewpoint,daytime_mean_gust,explanation,sample_name,requested_lat,requested_lon,resolved_lat,resolved_lon
+88.7,86.4,83.7,100.0,0.0,88.5,Ideal,0.0,0.0,0.0,0.0,0.0,1.0,49.4,8.3,Excellent temperature profile. Clean prime hours preserved high reliability.,best_point,29.0,-114.5,29.0,-114.5
+64.7,60.4,56.8,25.0,0.0,53.8,Fair,0.0,0.0,0.0,0.0,0.0,1.0,6.3,3.7,Temperature profile limited outdoor comfort.,region_center,40.0,-120.5,39.0,-119.5

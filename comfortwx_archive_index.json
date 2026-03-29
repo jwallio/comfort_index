@@ -1,0 +1,102 @@
+{
+  "generated_at": "2026-03-29T08:49:49",
+  "metadata": {
+    "product_title": "Comfort Index",
+    "subtitle_source_line": "Open-Meteo regional blend",
+    "credit_line": "Weather Projects Lab",
+    "branding_footer": "Comfort Index Map Generator"
+  },
+  "runs": [
+    {
+      "valid_date": "2026-03-29",
+      "run_timestamp": "2026-03-29T08:04:26",
+      "source": "openmeteo",
+      "presentation_theme": "shareable",
+      "publish_preset": "standard",
+      "product_count": 11,
+      "index_csv_path": "2026/03/29/comfortwx_pilot_day_openmeteo_20260329_index.csv",
+      "index_json_path": "2026/03/29/comfortwx_pilot_day_openmeteo_20260329_index.json",
+      "index_html_path": "2026/03/29/comfortwx_pilot_day_openmeteo_20260329_index.html",
+      "status_summary_csv_path": "2026/03/29/comfortwx_pilot_day_openmeteo_20260329_status.csv",
+      "status_summary_json_path": "2026/03/29/comfortwx_pilot_day_openmeteo_20260329_status.json"
+    },
+    {
+      "valid_date": "2026-03-30",
+      "run_timestamp": "2026-03-29T08:10:37",
+      "source": "openmeteo",
+      "presentation_theme": "shareable",
+      "publish_preset": "standard",
+      "product_count": 11,
+      "index_csv_path": "2026/03/30/comfortwx_pilot_day_openmeteo_20260330_index.csv",
+      "index_json_path": "2026/03/30/comfortwx_pilot_day_openmeteo_20260330_index.json",
+      "index_html_path": "2026/03/30/comfortwx_pilot_day_openmeteo_20260330_index.html",
+      "status_summary_csv_path": "2026/03/30/comfortwx_pilot_day_openmeteo_20260330_status.csv",
+      "status_summary_json_path": "2026/03/30/comfortwx_pilot_day_openmeteo_20260330_status.json"
+    },
+    {
+      "valid_date": "2026-03-31",
+      "run_timestamp": "2026-03-29T08:17:13",
+      "source": "openmeteo",
+      "presentation_theme": "shareable",
+      "publish_preset": "standard",
+      "product_count": 11,
+      "index_csv_path": "2026/03/31/comfortwx_pilot_day_openmeteo_20260331_index.csv",
+      "index_json_path": "2026/03/31/comfortwx_pilot_day_openmeteo_20260331_index.json",
+      "index_html_path": "2026/03/31/comfortwx_pilot_day_openmeteo_20260331_index.html",
+      "status_summary_csv_path": "2026/03/31/comfortwx_pilot_day_openmeteo_20260331_status.csv",
+      "status_summary_json_path": "2026/03/31/comfortwx_pilot_day_openmeteo_20260331_status.json"
+    },
+    {
+      "valid_date": "2026-04-01",
+      "run_timestamp": "2026-03-29T08:23:16",
+      "source": "openmeteo",
+      "presentation_theme": "shareable",
+      "publish_preset": "standard",
+      "product_count": 11,
+      "index_csv_path": "2026/04/01/comfortwx_pilot_day_openmeteo_20260401_index.csv",
+      "index_json_path": "2026/04/01/comfortwx_pilot_day_openmeteo_20260401_index.json",
+      "index_html_path": "2026/04/01/comfortwx_pilot_day_openmeteo_20260401_index.html",
+      "status_summary_csv_path": "2026/04/01/comfortwx_pilot_day_openmeteo_20260401_status.csv",
+      "status_summary_json_path": "2026/04/01/comfortwx_pilot_day_openmeteo_20260401_status.json"
+    },
+    {
+      "valid_date": "2026-04-02",
+      "run_timestamp": "2026-03-29T08:29:52",
+      "source": "openmeteo",
+      "presentation_theme": "shareable",
+      "publish_preset": "standard",
+      "product_count": 11,
+      "index_csv_path": "2026/04/02/comfortwx_pilot_day_openmeteo_20260402_index.csv",
+      "index_json_path": "2026/04/02/comfortwx_pilot_day_openmeteo_20260402_index.json",
+      "index_html_path": "2026/04/02/comfortwx_pilot_day_openmeteo_20260402_index.html",
+      "status_summary_csv_path": "2026/04/02/comfortwx_pilot_day_openmeteo_20260402_status.csv",
+      "status_summary_json_path": "2026/04/02/comfortwx_pilot_day_openmeteo_20260402_status.json"
+    },
+    {
+      "valid_date": "2026-04-03",
+      "run_timestamp": "2026-03-29T08:36:27",
+      "source": "openmeteo",
+      "presentation_theme": "shareable",
+      "publish_preset": "standard",
+      "product_count": 11,
+      "index_csv_path": "2026/04/03/comfortwx_pilot_day_openmeteo_20260403_index.csv",
+      "index_json_path": "2026/04/03/comfortwx_pilot_day_openmeteo_20260403_index.json",
+      "index_html_path": "2026/04/03/comfortwx_pilot_day_openmeteo_20260403_index.html",
+      "status_summary_csv_path": "2026/04/03/comfortwx_pilot_day_openmeteo_20260403_status.csv",
+      "status_summary_json_path": "2026/04/03/comfortwx_pilot_day_openmeteo_20260403_status.json"
+    },
+    {
+      "valid_date": "2026-04-04",
+      "run_timestamp": "2026-03-29T08:43:12",
+      "source": "openmeteo",
+      "presentation_theme": "shareable",
+      "publish_preset": "standard",
+      "product_count": 11,
+      "index_csv_path": "2026/04/04/comfortwx_pilot_day_openmeteo_20260404_index.csv",
+      "index_json_path": "2026/04/04/comfortwx_pilot_day_openmeteo_20260404_index.json",
+      "index_html_path": "2026/04/04/comfortwx_pilot_day_openmeteo_20260404_index.html",
+      "status_summary_csv_path": "2026/04/04/comfortwx_pilot_day_openmeteo_20260404_status.csv",
+      "status_summary_json_path": "2026/04/04/comfortwx_pilot_day_openmeteo_20260404_status.json"
+    }
+  ]
+}

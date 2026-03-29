@@ -1,0 +1,85 @@
+{
+  "valid_date": "2026-03-29",
+  "publish_preset": "standard",
+  "product_kind": "region",
+  "product_slug": "region_southeast_openmeteo",
+  "presentation_theme": "shareable",
+  "metadata": {
+    "product_title": "Comfort Index",
+    "subtitle_source_line": "Open-Meteo regional blend",
+    "credit_line": "Weather Projects Lab",
+    "branding_footer": "Comfort Index Map Generator"
+  },
+  "files": [
+    {
+      "role": "daily_fields_netcdf",
+      "path": "/home/runner/work/comfort_index/comfort_index/output/archive/2026/03/29/comfortwx_region_southeast_openmeteo_daily_fields_20260329.nc",
+      "filename": "comfortwx_region_southeast_openmeteo_daily_fields_20260329.nc",
+      "exists": true,
+      "product_kind": "region",
+      "product_slug": "region_southeast_openmeteo",
+      "publish_preset": "standard",
+      "presentation_theme": "shareable"
+    },
+    {
+      "role": "debug_score_map",
+      "path": "/home/runner/work/comfort_index/comfort_index/output/archive/2026/03/29/comfortwx_region_southeast_openmeteo_score_20260329.png",
+      "filename": "comfortwx_region_southeast_openmeteo_score_20260329.png",
+      "exists": true,
+      "product_kind": "region",
+      "product_slug": "region_southeast_openmeteo",
+      "publish_preset": "standard",
+      "presentation_theme": "shareable"
+    },
+    {
+      "role": "debug_category_map",
+      "path": "/home/runner/work/comfort_index/comfort_index/output/archive/2026/03/29/comfortwx_region_southeast_openmeteo_category_20260329.png",
+      "filename": "comfortwx_region_southeast_openmeteo_category_20260329.png",
+      "exists": true,
+      "product_kind": "region",
+      "product_slug": "region_southeast_openmeteo",
+      "publish_preset": "standard",
+      "presentation_theme": "shareable"
+    },
+    {
+      "role": "presentation_score_map",
+      "path": "/home/runner/work/comfort_index/comfort_index/output/archive/2026/03/29/comfortwx_region_southeast_openmeteo_presentation_score_20260329.png",
+      "filename": "comfortwx_region_southeast_openmeteo_presentation_score_20260329.png",
+      "exists": true,
+      "product_kind": "region",
+      "product_slug": "region_southeast_openmeteo",
+      "publish_preset": "standard",
+      "presentation_theme": "shareable"
+    },
+    {
+      "role": "presentation_category_map",
+      "path": "/home/runner/work/comfort_index/comfort_index/output/archive/2026/03/29/comfortwx_region_southeast_openmeteo_presentation_category_20260329.png",
+      "filename": "comfortwx_region_southeast_openmeteo_presentation_category_20260329.png",
+      "exists": true,
+      "product_kind": "region",
+      "product_slug": "region_southeast_openmeteo",
+      "publish_preset": "standard",
+      "presentation_theme": "shareable"
+    },
+    {
+      "role": "summary_csv",
+      "path": "/home/runner/work/comfort_index/comfort_index/output/archive/2026/03/29/comfortwx_region_southeast_openmeteo_summary_20260329.csv",
+      "filename": "comfortwx_region_southeast_openmeteo_summary_20260329.csv",
+      "exists": true,
+      "product_kind": "region",
+      "product_slug": "region_southeast_openmeteo",
+      "publish_preset": "standard",
+      "presentation_theme": "shareable"
+    },
+    {
+      "role": "samples_csv",
+      "path": "/home/runner/work/comfort_index/comfort_index/output/archive/2026/03/29/comfortwx_region_southeast_openmeteo_samples_20260329.csv",
+      "filename": "comfortwx_region_southeast_openmeteo_samples_20260329.csv",
+      "exists": true,
+      "product_kind": "region",
+      "product_slug": "region_southeast_openmeteo",
+      "publish_preset": "standard",
+      "presentation_theme": "shareable"
+    }
+  ]
+}

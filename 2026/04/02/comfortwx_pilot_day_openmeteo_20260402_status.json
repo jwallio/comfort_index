@@ -1,0 +1,23 @@
+{
+  "valid_date": "2026-04-02",
+  "run_timestamp": "2026-03-29T08:29:52",
+  "source": "openmeteo",
+  "product_count_attempted": 11,
+  "product_count_completed": 11,
+  "regions_fetched": "west_coast,southwest,rockies,plains,southeast,northeast,great_lakes",
+  "regions_refreshed_from_stale_cache": "",
+  "regions_reused_from_cache": "",
+  "regions_failed": "",
+  "mosaics_built_from_cached_regional_fields": "",
+  "mosaics_built": "west_coast+southwest+rockies,southwest+rockies,plains+great_lakes+northeast,west_coast+southwest+rockies+plains+southeast+northeast+great_lakes",
+  "mosaics_skipped": "",
+  "mosaics_failed": "",
+  "openmeteo_total_requests": 49,
+  "openmeteo_successful_requests": 42,
+  "openmeteo_retry_events": 7,
+  "openmeteo_timeouts": 7,
+  "openmeteo_http_429s": 0,
+  "openmeteo_errors": 0,
+  "openmeteo_average_elapsed_seconds": 7.118,
+  "overall_run_status": "completed"
+}

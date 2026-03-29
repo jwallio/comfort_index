@@ -1,0 +1,7 @@
+component_name,mean_component_mae,warn_case_mean_component_mae,priority_weighted_component_mae,top_driver_case_count
+reliability,6.2681,9.495,521.7874,20
+temperature,2.2323,3.1193,203.8367,0
+disruption,1.5847,2.4667,195.524,2
+cloud,2.2013,2.4015,171.2343,2
+precipitation,1.3494,2.1328,167.0408,0
+dew point,1.3783,2.2457,130.8513,0

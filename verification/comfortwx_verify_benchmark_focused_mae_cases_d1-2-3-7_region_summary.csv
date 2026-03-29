@@ -1,0 +1,4 @@
+region,case_count,mean_score_bias,mean_score_mae,mean_score_rmse,mean_exact_category_agreement,mean_near_category_agreement,pass_rate,mean_high_comfort_precision,mean_high_comfort_recall
+plains,8,0.15250000000000002,7.016249999999999,9.02125,0.667075,0.9495125,1.0,0.6857142857142857,0.75
+southeast,8,1.8775,8.7,11.63625,0.47025,0.9167000000000001,0.75,0.146975,0.5
+northeast,8,-3.8187499999999996,8.92375,11.6725,0.79365,0.9603125,0.5,0.0,0.0

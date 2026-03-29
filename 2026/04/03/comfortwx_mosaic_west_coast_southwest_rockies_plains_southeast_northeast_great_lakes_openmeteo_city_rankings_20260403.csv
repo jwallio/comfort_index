@@ -1,0 +1,21 @@
+city,score,category,sample_lat,sample_lon,distance_degrees,priority,ranking_group,ranking_position
+"Fresno, CA",78.7,Ideal,36.5,-120.0,0.293,30,best,1
+"Los Angeles, CA",75.7,Ideal,34.0,-118.0,0.209,2,best,2
+"Tucson, AZ",75.6,Ideal,32.0,-111.0,0.224,29,best,3
+"San Diego, CA",69.4,Pleasant,32.5,-117.0,0.255,8,best,4
+"Sacramento, CA",68.7,Pleasant,38.5,-121.5,0.082,31,best,5
+"Charleston, SC",68.2,Pleasant,33.0,-80.0,0.231,50,best,6
+"El Paso, TX",67.4,Pleasant,32.0,-106.5,0.238,47,best,7
+"Houston, TX",67.0,Pleasant,30.0,-95.5,0.265,4,best,8
+"Dallas, TX",66.5,Pleasant,33.0,-97.0,0.281,9,best,9
+"Austin, TX",65.7,Pleasant,30.5,-97.5,0.313,10,best,10
+"Boston, MA",10.4,Poor,42.5,-71.0,0.147,18,worst,1
+"Minneapolis, MN",16.2,Poor,45.0,-93.5,0.168,38,worst,2
+"Denver, CO",23.1,Poor,39.5,-105.0,0.239,16,worst,3
+"Detroit, MI",29.9,Poor,42.5,-83.0,0.172,20,worst,4
+"Omaha, NE",31.1,Poor,41.5,-96.0,0.248,34,worst,5
+"Milwaukee, WI",33.5,Poor,43.0,-88.0,0.079,27,worst,6
+"Salt Lake City, UT",34.3,Poor,41.0,-112.0,0.253,44,worst,7
+"Cleveland, OH",35.4,Poor,41.5,-81.5,0.146,39,worst,8
+"Seattle, WA",35.9,Poor,47.5,-122.5,0.155,15,worst,9
+"Pittsburgh, PA",36.7,Poor,40.5,-80.0,0.059,41,worst,10

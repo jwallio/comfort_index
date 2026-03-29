@@ -1,0 +1,21 @@
+city,score,category,sample_lat,sample_lon,distance_degrees,priority,ranking_group,ranking_position
+"Nashville, TN",83.8,Ideal,36.0,-87.0,0.24,19,best,1
+"Birmingham, AL",82.8,Ideal,33.5,-87.0,0.159,49,best,2
+"Atlanta, GA",81.7,Ideal,33.5,-84.5,0.266,33,best,3
+"Raleigh, NC",80.6,Ideal,36.0,-78.5,0.247,35,best,4
+"Richmond, VA",77.7,Ideal,37.5,-77.5,0.065,48,best,5
+"Charlotte, NC",75.0,Poor,35.0,-81.0,0.261,13,best,6
+"Phoenix, AZ",73.8,Pleasant,33.5,-112.0,0.08,5,best,7
+"Tucson, AZ",72.6,Pleasant,32.0,-111.0,0.224,29,best,8
+"Omaha, NE",71.9,Pleasant,41.5,-96.0,0.248,34,best,9
+"Fresno, CA",70.9,Pleasant,36.5,-120.0,0.293,30,best,10
+"New York, NY",29.4,Poor,40.5,-74.0,0.213,1,worst,1
+"Boise, ID",30.2,Poor,43.5,-116.0,0.186,45,worst,2
+"Cleveland, OH",33.5,Poor,41.5,-81.5,0.146,39,worst,3
+"Boston, MA",34.1,Poor,42.5,-71.0,0.147,18,worst,4
+"Philadelphia, PA",35.1,Poor,40.0,-75.0,0.135,6,worst,5
+"Pittsburgh, PA",40.6,Poor,40.5,-80.0,0.059,41,worst,6
+"Portland, OR",42.3,Poor,45.5,-122.5,0.126,22,worst,7
+"Seattle, WA",45.0,Fair,47.5,-122.5,0.155,15,worst,8
+"Spokane, WA",46.8,Fair,47.5,-117.5,0.166,46,worst,9
+"Denver, CO",48.9,Fair,39.5,-105.0,0.239,16,worst,10

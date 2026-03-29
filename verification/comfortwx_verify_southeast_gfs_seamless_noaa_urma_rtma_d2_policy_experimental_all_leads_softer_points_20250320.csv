@@ -1,0 +1,6 @@
+sample_name,lat,lon,forecast_score,analysis_score,score_diff,forecast_category,analysis_category,exact_category_match,near_category_match
+center,32.5,-83.5,53.21,61.41,-8.2,Fair,Pleasant,False,True
+northwest,36.0,-90.5,44.33,45.83,-1.5,Poor,Fair,False,True
+northeast,36.0,-76.5,62.09,78.4,-16.31,Pleasant,Ideal,False,True
+southwest,25.5,-90.5,72.19,48.87,23.31,Pleasant,Fair,False,True
+southeast,25.5,-76.5,73.01,82.25,-9.25,Pleasant,Ideal,False,True

@@ -1,0 +1,2 @@
+run_slug,total_requests,successful_requests,retry_events,timeouts,http_429s,errors,average_elapsed_seconds,slowest_endpoint_name,slowest_workflow,slowest_label,slowest_elapsed_seconds
+comfortwx_pilot_day_openmeteo_20260401,49,42,7,7,0,0,7.122,openmeteo_forecast,pilot_day,region=great_lakes;date=2026-04-01,45.198

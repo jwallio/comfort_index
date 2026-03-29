@@ -1,0 +1,21 @@
+city,score,category,sample_lat,sample_lon,distance_degrees,priority,ranking_group,ranking_position
+"El Paso, TX",79.8,Ideal,32.0,-106.5,0.238,47,best,1
+"Charleston, SC",78.3,Ideal,33.0,-80.0,0.231,50,best,2
+"Phoenix, AZ",77.5,Ideal,33.5,-112.0,0.08,5,best,3
+"Tucson, AZ",76.4,Ideal,32.0,-111.0,0.224,29,best,4
+"Fresno, CA",75.1,Ideal,36.5,-120.0,0.293,30,best,5
+"Richmond, VA",74.7,Poor,37.5,-77.5,0.065,48,best,6
+"Raleigh, NC",73.4,Pleasant,36.0,-78.5,0.247,35,best,7
+"Charlotte, NC",73.2,Pleasant,35.0,-81.0,0.261,13,best,8
+"Los Angeles, CA",71.8,Pleasant,34.0,-118.0,0.209,2,best,9
+"Jacksonville, FL",70.3,Pleasant,30.5,-81.5,0.215,11,best,10
+"Milwaukee, WI",3.5,Poor,43.0,-88.0,0.079,27,worst,1
+"Chicago, IL",3.9,Poor,42.0,-87.5,0.156,3,worst,2
+"Portland, OR",8.1,Poor,45.5,-122.5,0.126,22,worst,3
+"Seattle, WA",8.3,Poor,47.5,-122.5,0.155,15,worst,4
+"Indianapolis, IN",9.4,Poor,40.0,-86.0,0.262,14,worst,5
+"Salt Lake City, UT",11.7,Poor,41.0,-112.0,0.253,44,worst,6
+"Detroit, MI",14.9,Poor,42.5,-83.0,0.172,20,worst,7
+"Boise, ID",16.7,Poor,43.5,-116.0,0.186,45,worst,8
+"Spokane, WA",18.6,Poor,47.5,-117.5,0.166,46,worst,9
+"Boston, MA",19.8,Poor,42.5,-71.0,0.147,18,worst,10

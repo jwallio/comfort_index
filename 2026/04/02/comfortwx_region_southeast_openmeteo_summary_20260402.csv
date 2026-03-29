@@ -1,0 +1,2 @@
+region_name,core_bounds,expanded_bounds,mean_daily_score,min_daily_score,max_daily_score,grid_points,overlap_fraction,poor_count,fair_count,pleasant_count,ideal_count,exceptional_count,lat_size,lon_size,lat_step,lon_step,lat_min,lat_max,lon_min,lon_max,source,mesh_profile,aggregation_mode,aggregation_policy,sample_best_lat,sample_best_lon,sample_center_lat,sample_center_lon
+southeast,"(-92.0, -75.0, 24.0, 37.5)","(-94.0, -73.0, 22.0, 39.5)",52.87,7.03,79.28,42,0.5238,14,9,16,3,0,6,7,3.5,3.5,22.0,39.5,-94.0,-73.0,openmeteo,standard,baseline,baseline,32.5,-80.0,30.75,-83.5

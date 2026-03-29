@@ -1,0 +1,1839 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<title>Comfort Index Verification Benchmark</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 24px; color: #1c2330; background: #fafbfc; }
+h1, h2, h3 { margin-bottom: 0.35rem; }
+.meta { color: #556070; margin-bottom: 1.2rem; }
+.summary-table { border-collapse: collapse; width: 100%; background: white; }
+.summary-table th, .summary-table td { border: 1px solid #d9dee5; padding: 8px 10px; font-size: 0.92rem; }
+.summary-table th { background: #eef2f6; }
+.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin: 22px 0; }
+.chart-card, .case-card { background: white; border: 1px solid #d9dee5; border-radius: 8px; padding: 12px; }
+.chart-card img { width: 100%; height: auto; display: block; }
+.chart-card figcaption { margin-top: 8px; color: #46505a; font-size: 0.9rem; }
+.thumb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.thumb { text-decoration: none; color: inherit; font-size: 0.84rem; }
+.thumb img { width: 100%; height: auto; border: 1px solid #d9dee5; border-radius: 6px; display: block; margin-bottom: 6px; }
+.status-line { display: flex; gap: 20px; flex-wrap: wrap; margin: 12px 0 16px; }
+.status-pill { background: #eef2f6; border-radius: 999px; padding: 6px 12px; font-size: 0.9rem; }
+.notice { border: 1px solid #e4c46a; background: #fff7dd; color: #5b4b14; padding: 12px 14px; border-radius: 8px; margin: 16px 0; }
+</style>
+</head>
+<body>
+<h1>Comfort Index Verification Benchmark</h1>
+<p class='meta'>Tier: Focused Mae | Cases attempted: 24 | Successful cases: 24 | Deferred cases: 0 | Error cases: 0 | Cases meeting thresholds: 18</p>
+<div class='status-line'>
+<div class='status-pill'>MAE threshold: ≤ 8.0</div>
+<div class='status-pill'>Near agreement threshold: ≥ 90%</div>
+<div class='status-pill'>Absolute bias threshold: ≤ 5.0</div>
+</div>
+
+<p>Best case: northeast 2025-01-15 D+2 (MAE 4.09) | Worst case: northeast 2025-03-20 D+7 (MAE 15.45)</p>
+<h2>Summary</h2>
+<table class="dataframe summary-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>region</th>
+      <th>date</th>
+      <th>forecast_lead_days</th>
+      <th>benchmark_threshold_status</th>
+      <th>score_bias_mean</th>
+      <th>score_mae</th>
+      <th>score_rmse</th>
+      <th>exact_category_agreement_fraction</th>
+      <th>near_category_agreement_fraction</th>
+      <th>missed_high_comfort_cell_count</th>
+      <th>false_high_comfort_cell_count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>southeast</td>
+      <td>2025-01-15</td>
+      <td>1</td>
+      <td>pass</td>
+      <td>3.88</td>
+      <td>7.37</td>
+      <td>10.30</td>
+      <td>0.4286</td>
+      <td>0.9286</td>
+      <td>0</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-01-15</td>
+      <td>2</td>
+      <td>pass</td>
+      <td>2.67</td>
+      <td>7.06</td>
+      <td>9.27</td>
+      <td>0.4524</td>
+      <td>0.9524</td>
+      <td>0</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-01-15</td>
+      <td>3</td>
+      <td>pass</td>
+      <td>3.65</td>
+      <td>7.40</td>
+      <td>10.27</td>
+      <td>0.5000</td>
+      <td>0.9048</td>
+      <td>0</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-01-15</td>
+      <td>7</td>
+      <td>pass</td>
+      <td>-0.34</td>
+      <td>8.80</td>
+      <td>12.02</td>
+      <td>0.5238</td>
+      <td>0.9286</td>
+      <td>0</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>1</td>
+      <td>pass</td>
+      <td>0.72</td>
+      <td>7.40</td>
+      <td>9.58</td>
+      <td>0.5714</td>
+      <td>0.9048</td>
+      <td>2</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>2</td>
+      <td>warn</td>
+      <td>2.13</td>
+      <td>10.09</td>
+      <td>12.87</td>
+      <td>0.4286</td>
+      <td>0.9286</td>
+      <td>3</td>
+      <td>9</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>3</td>
+      <td>warn</td>
+      <td>2.13</td>
+      <td>10.01</td>
+      <td>12.72</td>
+      <td>0.4286</td>
+      <td>0.9048</td>
+      <td>2</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>7</td>
+      <td>pass</td>
+      <td>0.18</td>
+      <td>11.47</td>
+      <td>16.06</td>
+      <td>0.4286</td>
+      <td>0.8810</td>
+      <td>3</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>2025-01-15</td>
+      <td>1</td>
+      <td>pass</td>
+      <td>-0.03</td>
+      <td>6.45</td>
+      <td>9.18</td>
+      <td>0.7404</td>
+      <td>0.9327</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>2025-01-15</td>
+      <td>2</td>
+      <td>pass</td>
+      <td>-2.12</td>
+      <td>7.35</td>
+      <td>9.33</td>
+      <td>0.7115</td>
+      <td>0.9615</td>
+      <td>0</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>2025-01-15</td>
+      <td>3</td>
+      <td>pass</td>
+      <td>-0.32</td>
+      <td>8.33</td>
+      <td>10.67</td>
+      <td>0.6635</td>
+      <td>0.9519</td>
+      <td>0</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>2025-01-15</td>
+      <td>7</td>
+      <td>pass</td>
+      <td>1.37</td>
+      <td>11.45</td>
+      <td>14.20</td>
+      <td>0.5385</td>
+      <td>0.9038</td>
+      <td>3</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>2025-03-20</td>
+      <td>1</td>
+      <td>pass</td>
+      <td>-0.62</td>
+      <td>4.71</td>
+      <td>6.15</td>
+      <td>0.7500</td>
+      <td>0.9615</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>2025-03-20</td>
+      <td>2</td>
+      <td>pass</td>
+      <td>0.02</td>
+      <td>5.12</td>
+      <td>6.54</td>
+      <td>0.7019</td>
+      <td>0.9712</td>
+      <td>0</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>2025-03-20</td>
+      <td>3</td>
+      <td>pass</td>
+      <td>0.79</td>
+      <td>5.51</td>
+      <td>6.95</td>
+      <td>0.6827</td>
+      <td>0.9712</td>
+      <td>3</td>
+      <td>7</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>2025-03-20</td>
+      <td>7</td>
+      <td>pass</td>
+      <td>2.13</td>
+      <td>7.21</td>
+      <td>9.15</td>
+      <td>0.5481</td>
+      <td>0.9423</td>
+      <td>2</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2025-01-15</td>
+      <td>1</td>
+      <td>pass</td>
+      <td>0.05</td>
+      <td>4.95</td>
+      <td>6.36</td>
+      <td>0.9206</td>
+      <td>1.0000</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2025-01-15</td>
+      <td>2</td>
+      <td>pass</td>
+      <td>0.56</td>
+      <td>4.09</td>
+      <td>5.89</td>
+      <td>0.9048</td>
+      <td>1.0000</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2025-01-15</td>
+      <td>3</td>
+      <td>pass</td>
+      <td>-0.02</td>
+      <td>4.43</td>
+      <td>6.31</td>
+      <td>0.9524</td>
+      <td>1.0000</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2025-01-15</td>
+      <td>7</td>
+      <td>pass</td>
+      <td>0.14</td>
+      <td>4.87</td>
+      <td>6.49</td>
+      <td>0.8571</td>
+      <td>1.0000</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>1</td>
+      <td>warn</td>
+      <td>-5.56</td>
+      <td>9.98</td>
+      <td>12.37</td>
+      <td>0.6984</td>
+      <td>0.9524</td>
+      <td>2</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>2</td>
+      <td>warn</td>
+      <td>-6.57</td>
+      <td>13.18</td>
+      <td>16.94</td>
+      <td>0.6667</td>
+      <td>0.9206</td>
+      <td>2</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>3</td>
+      <td>warn</td>
+      <td>-9.09</td>
+      <td>14.44</td>
+      <td>18.55</td>
+      <td>0.6825</td>
+      <td>0.9524</td>
+      <td>2</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>7</td>
+      <td>warn</td>
+      <td>-10.06</td>
+      <td>15.45</td>
+      <td>20.47</td>
+      <td>0.6667</td>
+      <td>0.8571</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Deferred Cases</h2>
+<p>No deferred cases.</p>
+<h2>Error Cases</h2>
+<p>No error cases.</p>
+<h2>Regional Rollup</h2>
+<p><a href='comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_region_summary.csv'>Download regional summary CSV</a></p>
+<table class="dataframe summary-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>region</th>
+      <th>case_count</th>
+      <th>mean_score_bias</th>
+      <th>mean_score_mae</th>
+      <th>mean_score_rmse</th>
+      <th>mean_exact_category_agreement</th>
+      <th>mean_near_category_agreement</th>
+      <th>pass_rate</th>
+      <th>mean_high_comfort_precision</th>
+      <th>mean_high_comfort_recall</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>plains</td>
+      <td>8</td>
+      <td>0.15250</td>
+      <td>7.01625</td>
+      <td>9.02125</td>
+      <td>0.667075</td>
+      <td>0.949512</td>
+      <td>1.00</td>
+      <td>0.685714</td>
+      <td>0.75</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>8</td>
+      <td>1.87750</td>
+      <td>8.70000</td>
+      <td>11.63625</td>
+      <td>0.470250</td>
+      <td>0.916700</td>
+      <td>0.75</td>
+      <td>0.146975</td>
+      <td>0.50</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>8</td>
+      <td>-3.81875</td>
+      <td>8.92375</td>
+      <td>11.67250</td>
+      <td>0.793650</td>
+      <td>0.960313</td>
+      <td>0.50</td>
+      <td>0.000000</td>
+      <td>0.00</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Forecast Lead Rollup</h2>
+<p><a href='comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_lead_summary.csv'>Download forecast lead summary CSV</a></p>
+<table class="dataframe summary-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>forecast_lead_days</th>
+      <th>case_count</th>
+      <th>mean_score_bias</th>
+      <th>mean_score_mae</th>
+      <th>mean_score_rmse</th>
+      <th>mean_exact_category_agreement</th>
+      <th>mean_near_category_agreement</th>
+      <th>pass_rate</th>
+      <th>lead_label</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>6</td>
+      <td>-0.260000</td>
+      <td>6.810000</td>
+      <td>8.990000</td>
+      <td>0.684900</td>
+      <td>0.946667</td>
+      <td>0.833333</td>
+      <td>D+1</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>6</td>
+      <td>-0.551667</td>
+      <td>7.815000</td>
+      <td>10.140000</td>
+      <td>0.644317</td>
+      <td>0.955717</td>
+      <td>0.666667</td>
+      <td>D+2</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>6</td>
+      <td>-0.476667</td>
+      <td>8.353333</td>
+      <td>10.911667</td>
+      <td>0.651617</td>
+      <td>0.947517</td>
+      <td>0.666667</td>
+      <td>D+3</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>6</td>
+      <td>-1.096667</td>
+      <td>9.875000</td>
+      <td>13.065000</td>
+      <td>0.593800</td>
+      <td>0.918800</td>
+      <td>0.833333</td>
+      <td>D+7</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Region and Lead Rollup</h2>
+<p><a href='comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_region_lead_summary.csv'>Download region/lead summary CSV</a></p>
+<table class="dataframe summary-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>region</th>
+      <th>forecast_lead_days</th>
+      <th>case_count</th>
+      <th>mean_score_mae</th>
+      <th>mean_score_rmse</th>
+      <th>mean_near_category_agreement</th>
+      <th>pass_rate</th>
+      <th>mean_priority_score</th>
+      <th>lead_label</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>northeast</td>
+      <td>3</td>
+      <td>2</td>
+      <td>9.435</td>
+      <td>12.430</td>
+      <td>0.97620</td>
+      <td>0.5</td>
+      <td>9.7275</td>
+      <td>D+3</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>7</td>
+      <td>2</td>
+      <td>10.160</td>
+      <td>13.480</td>
+      <td>0.92855</td>
+      <td>0.5</td>
+      <td>8.2200</td>
+      <td>D+7</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2</td>
+      <td>2</td>
+      <td>8.635</td>
+      <td>11.415</td>
+      <td>0.96030</td>
+      <td>0.5</td>
+      <td>7.4475</td>
+      <td>D+2</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>1</td>
+      <td>2</td>
+      <td>7.465</td>
+      <td>9.365</td>
+      <td>0.97620</td>
+      <td>0.5</td>
+      <td>3.3900</td>
+      <td>D+1</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2</td>
+      <td>2</td>
+      <td>8.575</td>
+      <td>11.070</td>
+      <td>0.94050</td>
+      <td>0.5</td>
+      <td>2.0100</td>
+      <td>D+2</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>3</td>
+      <td>2</td>
+      <td>8.705</td>
+      <td>11.495</td>
+      <td>0.90480</td>
+      <td>0.5</td>
+      <td>0.7650</td>
+      <td>D+3</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>7</td>
+      <td>2</td>
+      <td>10.135</td>
+      <td>14.040</td>
+      <td>0.90480</td>
+      <td>1.0</td>
+      <td>0.0000</td>
+      <td>D+7</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>7</td>
+      <td>2</td>
+      <td>9.330</td>
+      <td>11.675</td>
+      <td>0.92305</td>
+      <td>1.0</td>
+      <td>0.0000</td>
+      <td>D+7</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>1</td>
+      <td>2</td>
+      <td>7.385</td>
+      <td>9.940</td>
+      <td>0.91670</td>
+      <td>1.0</td>
+      <td>0.0000</td>
+      <td>D+1</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>3</td>
+      <td>2</td>
+      <td>6.920</td>
+      <td>8.810</td>
+      <td>0.96155</td>
+      <td>1.0</td>
+      <td>0.0000</td>
+      <td>D+3</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>2</td>
+      <td>2</td>
+      <td>6.235</td>
+      <td>7.935</td>
+      <td>0.96635</td>
+      <td>1.0</td>
+      <td>0.0000</td>
+      <td>D+2</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>1</td>
+      <td>2</td>
+      <td>5.580</td>
+      <td>7.665</td>
+      <td>0.94710</td>
+      <td>1.0</td>
+      <td>0.0000</td>
+      <td>D+1</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Improvement Priorities</h2>
+<p><a href='comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_priority_cases.csv'>Download ranked priority cases CSV</a></p>
+<table class="dataframe summary-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>region</th>
+      <th>date</th>
+      <th>lead_label</th>
+      <th>benchmark_threshold_status</th>
+      <th>improvement_priority_score</th>
+      <th>score_mae</th>
+      <th>score_rmse</th>
+      <th>problem_tags</th>
+      <th>primary_component</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>D+3</td>
+      <td>warn</td>
+      <td>19.455</td>
+      <td>14.44</td>
+      <td>18.55</td>
+      <td>negative bias, reliability driven</td>
+      <td>reliability</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>D+7</td>
+      <td>warn</td>
+      <td>16.440</td>
+      <td>15.45</td>
+      <td>20.47</td>
+      <td>negative bias, reliability driven</td>
+      <td>reliability</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>D+2</td>
+      <td>warn</td>
+      <td>14.895</td>
+      <td>13.18</td>
+      <td>16.94</td>
+      <td>negative bias, reliability driven</td>
+      <td>reliability</td>
+    </tr>
+    <tr>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>D+1</td>
+      <td>warn</td>
+      <td>6.780</td>
+      <td>9.98</td>
+      <td>12.37</td>
+      <td>negative bias, reliability driven</td>
+      <td>reliability</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>D+2</td>
+      <td>warn</td>
+      <td>4.020</td>
+      <td>10.09</td>
+      <td>12.87</td>
+      <td>overforecasted high comfort, reliability driven</td>
+      <td>reliability</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>D+3</td>
+      <td>warn</td>
+      <td>1.530</td>
+      <td>10.01</td>
+      <td>12.72</td>
+      <td>overforecasted high comfort, reliability driven</td>
+      <td>reliability</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>D+7</td>
+      <td>pass</td>
+      <td>0.000</td>
+      <td>11.47</td>
+      <td>16.06</td>
+      <td>reliability driven</td>
+      <td>reliability</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>2025-01-15</td>
+      <td>D+7</td>
+      <td>pass</td>
+      <td>0.000</td>
+      <td>11.45</td>
+      <td>14.20</td>
+      <td>underforecasted high comfort, reliability driven</td>
+      <td>reliability</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-01-15</td>
+      <td>D+7</td>
+      <td>pass</td>
+      <td>0.000</td>
+      <td>8.80</td>
+      <td>12.02</td>
+      <td>reliability driven</td>
+      <td>reliability</td>
+    </tr>
+    <tr>
+      <td>plains</td>
+      <td>2025-01-15</td>
+      <td>D+3</td>
+      <td>pass</td>
+      <td>0.000</td>
+      <td>8.33</td>
+      <td>10.67</td>
+      <td>reliability driven</td>
+      <td>reliability</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>D+1</td>
+      <td>pass</td>
+      <td>0.000</td>
+      <td>7.40</td>
+      <td>9.58</td>
+      <td>overforecasted high comfort, reliability driven</td>
+      <td>reliability</td>
+    </tr>
+    <tr>
+      <td>southeast</td>
+      <td>2025-01-15</td>
+      <td>D+3</td>
+      <td>pass</td>
+      <td>0.000</td>
+      <td>7.40</td>
+      <td>10.27</td>
+      <td>positive bias, overforecasted high comfort, reliability driven</td>
+      <td>reliability</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Component Priorities</h2>
+<p><a href='comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_component_priority.csv'>Download component priority CSV</a></p>
+<table class="dataframe summary-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>component_name</th>
+      <th>mean_component_mae</th>
+      <th>warn_case_mean_component_mae</th>
+      <th>priority_weighted_component_mae</th>
+      <th>top_driver_case_count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>reliability</td>
+      <td>6.2681</td>
+      <td>9.4950</td>
+      <td>521.7874</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <td>temperature</td>
+      <td>2.2323</td>
+      <td>3.1193</td>
+      <td>203.8367</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>disruption</td>
+      <td>1.5847</td>
+      <td>2.4667</td>
+      <td>195.5240</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td>cloud</td>
+      <td>2.2013</td>
+      <td>2.4015</td>
+      <td>171.2343</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td>precipitation</td>
+      <td>1.3494</td>
+      <td>2.1328</td>
+      <td>167.0408</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>dew point</td>
+      <td>1.3783</td>
+      <td>2.2457</td>
+      <td>130.8513</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Held-Out Calibration Review</h2>
+<p><a href='comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_calibration_summary.csv'>Download held-out calibration summary CSV</a></p>
+<table class="dataframe summary-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>case_label</th>
+      <th>region</th>
+      <th>date</th>
+      <th>forecast_lead_days</th>
+      <th>lead_label</th>
+      <th>calibration_scope</th>
+      <th>calibration_method</th>
+      <th>calibration_training_case_count</th>
+      <th>calibration_training_point_count</th>
+      <th>calibration_slope</th>
+      <th>calibration_intercept</th>
+      <th>raw_score_bias_mean</th>
+      <th>raw_score_mae</th>
+      <th>raw_score_rmse</th>
+      <th>raw_exact_category_agreement_fraction</th>
+      <th>raw_near_category_agreement_fraction</th>
+      <th>calibrated_score_bias_mean</th>
+      <th>calibrated_score_mae</th>
+      <th>calibrated_score_rmse</th>
+      <th>calibrated_exact_category_agreement_fraction</th>
+      <th>calibrated_near_category_agreement_fraction</th>
+      <th>score_mae_improvement</th>
+      <th>score_rmse_improvement</th>
+      <th>near_category_agreement_improvement</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>southeast 2025-03-20 D+3 [experimental_all_leads_softer]</td>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>3</td>
+      <td>D+3</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>42</td>
+      <td>1.0</td>
+      <td>-1.2169</td>
+      <td>2.13</td>
+      <td>10.01</td>
+      <td>12.72</td>
+      <td>0.4286</td>
+      <td>0.9048</td>
+      <td>0.91</td>
+      <td>9.69</td>
+      <td>12.57</td>
+      <td>0.4762</td>
+      <td>0.9048</td>
+      <td>0.32</td>
+      <td>0.15</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>southeast 2025-01-15 D+2 [experimental_all_leads_softer]</td>
+      <td>southeast</td>
+      <td>2025-01-15</td>
+      <td>2</td>
+      <td>D+2</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>42</td>
+      <td>1.0</td>
+      <td>-0.7090</td>
+      <td>2.67</td>
+      <td>7.06</td>
+      <td>9.27</td>
+      <td>0.4524</td>
+      <td>0.9524</td>
+      <td>1.98</td>
+      <td>6.81</td>
+      <td>9.09</td>
+      <td>0.5000</td>
+      <td>0.9762</td>
+      <td>0.25</td>
+      <td>0.18</td>
+      <td>0.0238</td>
+    </tr>
+    <tr>
+      <td>southeast 2025-01-15 D+3 [experimental_all_leads_softer]</td>
+      <td>southeast</td>
+      <td>2025-01-15</td>
+      <td>3</td>
+      <td>D+3</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>42</td>
+      <td>1.0</td>
+      <td>-0.7101</td>
+      <td>3.65</td>
+      <td>7.40</td>
+      <td>10.27</td>
+      <td>0.5000</td>
+      <td>0.9048</td>
+      <td>2.96</td>
+      <td>7.18</td>
+      <td>10.04</td>
+      <td>0.5000</td>
+      <td>0.9048</td>
+      <td>0.22</td>
+      <td>0.23</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>plains 2025-01-15 D+7 [experimental_all_leads_softer]</td>
+      <td>plains</td>
+      <td>2025-01-15</td>
+      <td>7</td>
+      <td>D+7</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>104</td>
+      <td>1.0</td>
+      <td>-0.7093</td>
+      <td>1.37</td>
+      <td>11.45</td>
+      <td>14.20</td>
+      <td>0.5385</td>
+      <td>0.9038</td>
+      <td>0.66</td>
+      <td>11.23</td>
+      <td>14.15</td>
+      <td>0.5865</td>
+      <td>0.9038</td>
+      <td>0.22</td>
+      <td>0.05</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>southeast 2025-03-20 D+2 [experimental_all_leads_softer]</td>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>2</td>
+      <td>D+2</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>42</td>
+      <td>1.0</td>
+      <td>-0.8910</td>
+      <td>2.13</td>
+      <td>10.09</td>
+      <td>12.87</td>
+      <td>0.4286</td>
+      <td>0.9286</td>
+      <td>1.24</td>
+      <td>9.89</td>
+      <td>12.75</td>
+      <td>0.4524</td>
+      <td>0.9524</td>
+      <td>0.20</td>
+      <td>0.12</td>
+      <td>0.0238</td>
+    </tr>
+    <tr>
+      <td>plains 2025-03-20 D+7 [experimental_all_leads_softer]</td>
+      <td>plains</td>
+      <td>2025-03-20</td>
+      <td>7</td>
+      <td>D+7</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>104</td>
+      <td>1.0</td>
+      <td>-0.4550</td>
+      <td>2.13</td>
+      <td>7.21</td>
+      <td>9.15</td>
+      <td>0.5481</td>
+      <td>0.9423</td>
+      <td>1.67</td>
+      <td>7.11</td>
+      <td>9.05</td>
+      <td>0.6154</td>
+      <td>0.9712</td>
+      <td>0.10</td>
+      <td>0.10</td>
+      <td>0.0289</td>
+    </tr>
+    <tr>
+      <td>southeast 2025-01-15 D+1 [experimental_all_leads_softer]</td>
+      <td>southeast</td>
+      <td>2025-01-15</td>
+      <td>1</td>
+      <td>D+1</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>42</td>
+      <td>1.0</td>
+      <td>-0.2392</td>
+      <td>3.88</td>
+      <td>7.37</td>
+      <td>10.30</td>
+      <td>0.4286</td>
+      <td>0.9286</td>
+      <td>3.65</td>
+      <td>7.28</td>
+      <td>10.22</td>
+      <td>0.4286</td>
+      <td>0.9286</td>
+      <td>0.09</td>
+      <td>0.08</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>plains 2025-01-15 D+1 [experimental_all_leads_softer]</td>
+      <td>plains</td>
+      <td>2025-01-15</td>
+      <td>1</td>
+      <td>D+1</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>104</td>
+      <td>1.0</td>
+      <td>0.2058</td>
+      <td>-0.03</td>
+      <td>6.45</td>
+      <td>9.18</td>
+      <td>0.7404</td>
+      <td>0.9327</td>
+      <td>0.18</td>
+      <td>6.45</td>
+      <td>9.18</td>
+      <td>0.7212</td>
+      <td>0.9327</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>plains 2025-03-20 D+1 [experimental_all_leads_softer]</td>
+      <td>plains</td>
+      <td>2025-03-20</td>
+      <td>1</td>
+      <td>D+1</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>104</td>
+      <td>1.0</td>
+      <td>0.0086</td>
+      <td>-0.62</td>
+      <td>4.71</td>
+      <td>6.15</td>
+      <td>0.7500</td>
+      <td>0.9615</td>
+      <td>-0.61</td>
+      <td>4.71</td>
+      <td>6.15</td>
+      <td>0.7500</td>
+      <td>0.9615</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>northeast 2025-03-20 D+3 [experimental_all_leads_softer]</td>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>3</td>
+      <td>D+3</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>63</td>
+      <td>1.0</td>
+      <td>0.0075</td>
+      <td>-9.09</td>
+      <td>14.44</td>
+      <td>18.55</td>
+      <td>0.6825</td>
+      <td>0.9524</td>
+      <td>-9.08</td>
+      <td>14.44</td>
+      <td>18.55</td>
+      <td>0.6825</td>
+      <td>0.9524</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>plains 2025-03-20 D+3 [experimental_all_leads_softer]</td>
+      <td>plains</td>
+      <td>2025-03-20</td>
+      <td>3</td>
+      <td>D+3</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>104</td>
+      <td>1.0</td>
+      <td>0.1050</td>
+      <td>0.79</td>
+      <td>5.51</td>
+      <td>6.95</td>
+      <td>0.6827</td>
+      <td>0.9712</td>
+      <td>0.89</td>
+      <td>5.51</td>
+      <td>6.96</td>
+      <td>0.6923</td>
+      <td>0.9808</td>
+      <td>0.00</td>
+      <td>-0.01</td>
+      <td>0.0096</td>
+    </tr>
+    <tr>
+      <td>northeast 2025-03-20 D+1 [experimental_all_leads_softer]</td>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>1</td>
+      <td>D+1</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>63</td>
+      <td>1.0</td>
+      <td>-0.0162</td>
+      <td>-5.56</td>
+      <td>9.98</td>
+      <td>12.37</td>
+      <td>0.6984</td>
+      <td>0.9524</td>
+      <td>-5.58</td>
+      <td>9.99</td>
+      <td>12.38</td>
+      <td>0.6984</td>
+      <td>0.9524</td>
+      <td>-0.01</td>
+      <td>-0.01</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>plains 2025-01-15 D+2 [experimental_all_leads_softer]</td>
+      <td>plains</td>
+      <td>2025-01-15</td>
+      <td>2</td>
+      <td>D+2</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>104</td>
+      <td>1.0</td>
+      <td>-0.0054</td>
+      <td>-2.12</td>
+      <td>7.35</td>
+      <td>9.33</td>
+      <td>0.7115</td>
+      <td>0.9615</td>
+      <td>-2.13</td>
+      <td>7.36</td>
+      <td>9.33</td>
+      <td>0.7115</td>
+      <td>0.9615</td>
+      <td>-0.01</td>
+      <td>0.00</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>southeast 2025-01-15 D+7 [experimental_all_leads_softer]</td>
+      <td>southeast</td>
+      <td>2025-01-15</td>
+      <td>7</td>
+      <td>D+7</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>42</td>
+      <td>1.0</td>
+      <td>-0.0586</td>
+      <td>-0.34</td>
+      <td>8.80</td>
+      <td>12.02</td>
+      <td>0.5238</td>
+      <td>0.9286</td>
+      <td>-0.40</td>
+      <td>8.81</td>
+      <td>12.02</td>
+      <td>0.5238</td>
+      <td>0.9286</td>
+      <td>-0.01</td>
+      <td>0.00</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>southeast 2025-03-20 D+7 [experimental_all_leads_softer]</td>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>7</td>
+      <td>D+7</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>42</td>
+      <td>1.0</td>
+      <td>0.1147</td>
+      <td>0.18</td>
+      <td>11.47</td>
+      <td>16.06</td>
+      <td>0.4286</td>
+      <td>0.8810</td>
+      <td>0.29</td>
+      <td>11.48</td>
+      <td>16.06</td>
+      <td>0.4286</td>
+      <td>0.8810</td>
+      <td>-0.01</td>
+      <td>0.00</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>plains 2025-03-20 D+2 [experimental_all_leads_softer]</td>
+      <td>plains</td>
+      <td>2025-03-20</td>
+      <td>2</td>
+      <td>D+2</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>104</td>
+      <td>1.0</td>
+      <td>0.7077</td>
+      <td>0.02</td>
+      <td>5.12</td>
+      <td>6.54</td>
+      <td>0.7019</td>
+      <td>0.9712</td>
+      <td>0.72</td>
+      <td>5.14</td>
+      <td>6.58</td>
+      <td>0.6731</td>
+      <td>0.9615</td>
+      <td>-0.02</td>
+      <td>-0.04</td>
+      <td>-0.0097</td>
+    </tr>
+    <tr>
+      <td>plains 2025-01-15 D+3 [experimental_all_leads_softer]</td>
+      <td>plains</td>
+      <td>2025-01-15</td>
+      <td>3</td>
+      <td>D+3</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>104</td>
+      <td>1.0</td>
+      <td>-0.2624</td>
+      <td>-0.32</td>
+      <td>8.33</td>
+      <td>10.67</td>
+      <td>0.6635</td>
+      <td>0.9519</td>
+      <td>-0.58</td>
+      <td>8.35</td>
+      <td>10.68</td>
+      <td>0.6635</td>
+      <td>0.9519</td>
+      <td>-0.02</td>
+      <td>-0.01</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>northeast 2025-03-20 D+7 [experimental_all_leads_softer]</td>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>7</td>
+      <td>D+7</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>63</td>
+      <td>1.0</td>
+      <td>-0.0468</td>
+      <td>-10.06</td>
+      <td>15.45</td>
+      <td>20.47</td>
+      <td>0.6667</td>
+      <td>0.8571</td>
+      <td>-10.10</td>
+      <td>15.47</td>
+      <td>20.49</td>
+      <td>0.6667</td>
+      <td>0.8571</td>
+      <td>-0.02</td>
+      <td>-0.02</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>northeast 2025-03-20 D+2 [experimental_all_leads_softer]</td>
+      <td>northeast</td>
+      <td>2025-03-20</td>
+      <td>2</td>
+      <td>D+2</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>63</td>
+      <td>1.0</td>
+      <td>-0.1851</td>
+      <td>-6.57</td>
+      <td>13.18</td>
+      <td>16.94</td>
+      <td>0.6667</td>
+      <td>0.9206</td>
+      <td>-6.75</td>
+      <td>13.22</td>
+      <td>17.01</td>
+      <td>0.6825</td>
+      <td>0.9206</td>
+      <td>-0.04</td>
+      <td>-0.07</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>southeast 2025-03-20 D+1 [experimental_all_leads_softer]</td>
+      <td>southeast</td>
+      <td>2025-03-20</td>
+      <td>1</td>
+      <td>D+1</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>42</td>
+      <td>1.0</td>
+      <td>-1.2950</td>
+      <td>0.72</td>
+      <td>7.40</td>
+      <td>9.58</td>
+      <td>0.5714</td>
+      <td>0.9048</td>
+      <td>-0.58</td>
+      <td>7.48</td>
+      <td>9.57</td>
+      <td>0.5238</td>
+      <td>0.8810</td>
+      <td>-0.08</td>
+      <td>0.01</td>
+      <td>-0.0238</td>
+    </tr>
+    <tr>
+      <td>northeast 2025-01-15 D+1 [experimental_all_leads_softer]</td>
+      <td>northeast</td>
+      <td>2025-01-15</td>
+      <td>1</td>
+      <td>D+1</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>63</td>
+      <td>1.0</td>
+      <td>1.8541</td>
+      <td>0.05</td>
+      <td>4.95</td>
+      <td>6.36</td>
+      <td>0.9206</td>
+      <td>1.0000</td>
+      <td>1.90</td>
+      <td>5.15</td>
+      <td>6.63</td>
+      <td>0.9206</td>
+      <td>1.0000</td>
+      <td>-0.20</td>
+      <td>-0.27</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>northeast 2025-01-15 D+7 [experimental_all_leads_softer]</td>
+      <td>northeast</td>
+      <td>2025-01-15</td>
+      <td>7</td>
+      <td>D+7</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>63</td>
+      <td>1.0</td>
+      <td>3.3521</td>
+      <td>0.14</td>
+      <td>4.87</td>
+      <td>6.49</td>
+      <td>0.8571</td>
+      <td>1.0000</td>
+      <td>3.49</td>
+      <td>5.44</td>
+      <td>7.36</td>
+      <td>0.8254</td>
+      <td>1.0000</td>
+      <td>-0.57</td>
+      <td>-0.87</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>northeast 2025-01-15 D+2 [experimental_all_leads_softer]</td>
+      <td>northeast</td>
+      <td>2025-01-15</td>
+      <td>2</td>
+      <td>D+2</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>63</td>
+      <td>1.0</td>
+      <td>2.1911</td>
+      <td>0.56</td>
+      <td>4.09</td>
+      <td>5.89</td>
+      <td>0.9048</td>
+      <td>1.0000</td>
+      <td>2.75</td>
+      <td>4.77</td>
+      <td>6.48</td>
+      <td>0.8730</td>
+      <td>1.0000</td>
+      <td>-0.68</td>
+      <td>-0.59</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <td>northeast 2025-01-15 D+3 [experimental_all_leads_softer]</td>
+      <td>northeast</td>
+      <td>2025-01-15</td>
+      <td>3</td>
+      <td>D+3</td>
+      <td>region+lead</td>
+      <td>bias_only</td>
+      <td>1</td>
+      <td>63</td>
+      <td>1.0</td>
+      <td>3.0295</td>
+      <td>-0.02</td>
+      <td>4.43</td>
+      <td>6.31</td>
+      <td>0.9524</td>
+      <td>1.0000</td>
+      <td>3.01</td>
+      <td>5.26</td>
+      <td>6.99</td>
+      <td>0.8254</td>
+      <td>1.0000</td>
+      <td>-0.83</td>
+      <td>-0.68</td>
+      <td>0.0000</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Benchmark Charts</h2>
+<div class='chart-grid'>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_mae_bar.png" alt="MAE by case"><figcaption>MAE by case</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_agreement_bar.png" alt="Category agreement by case"><figcaption>Category agreement by case</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_bias_rmse_scatter.png" alt="Bias vs RMSE"><figcaption>Bias vs RMSE</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_ranked_cases.png" alt="Ranked verification cases"><figcaption>Ranked verification cases</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_mae_timeseries.png" alt="MAE over time"><figcaption>MAE over time</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_agreement_timeseries.png" alt="Agreement over time"><figcaption>Agreement over time</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_bias_timeseries.png" alt="Bias over time"><figcaption>Bias over time</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_component_heatmap.png" alt="Component MAE heatmap"><figcaption>Component MAE heatmap</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_region_summary.png" alt="Regional verification summary"><figcaption>Regional verification summary</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_lead_summary.png" alt="Forecast lead summary"><figcaption>Forecast lead summary</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_region_lead_heatmap.png" alt="Region and lead MAE heatmap"><figcaption>Region and lead MAE heatmap</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_component_priority.png" alt="Components most worth improving"><figcaption>Components most worth improving</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_priority_cases.png" alt="Top cases to improve first"><figcaption>Top cases to improve first</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_calibration_mae.png" alt="Held-out calibration MAE by case"><figcaption>Held-out calibration MAE by case</figcaption></figure>
+<figure class="chart-card"><img src="comfortwx_verify_benchmark_focused_mae_cases_d1-2-3-7_calibration_lead.png" alt="Held-out calibration MAE by lead"><figcaption>Held-out calibration MAE by lead</figcaption></figure>
+</div>
+<h2>Case Maps</h2>
+<section class="case-card">
+<h3>northeast | 2025-01-15 | D+1</h3>
+<p>MAE 4.95 | RMSE 6.36 | Near agreement 100.0% | Status pass | <a href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>plains | 2025-01-15 | D+1</h3>
+<p>MAE 6.45 | RMSE 9.18 | Near agreement 93.3% | Status pass | <a href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>southeast | 2025-01-15 | D+1</h3>
+<p>MAE 7.37 | RMSE 10.30 | Near agreement 92.9% | Status pass | <a href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>northeast | 2025-03-20 | D+1</h3>
+<p>MAE 9.98 | RMSE 12.37 | Near agreement 95.2% | Status warn | <a href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>plains | 2025-03-20 | D+1</h3>
+<p>MAE 4.71 | RMSE 6.15 | Near agreement 96.2% | Status pass | <a href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>southeast | 2025-03-20 | D+1</h3>
+<p>MAE 7.40 | RMSE 9.58 | Near agreement 90.5% | Status pass | <a href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d1_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>northeast | 2025-01-15 | D+2</h3>
+<p>MAE 4.09 | RMSE 5.89 | Near agreement 100.0% | Status pass | <a href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>plains | 2025-01-15 | D+2</h3>
+<p>MAE 7.35 | RMSE 9.33 | Near agreement 96.2% | Status pass | <a href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>southeast | 2025-01-15 | D+2</h3>
+<p>MAE 7.06 | RMSE 9.27 | Near agreement 95.2% | Status pass | <a href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>northeast | 2025-03-20 | D+2</h3>
+<p>MAE 13.18 | RMSE 16.94 | Near agreement 92.1% | Status warn | <a href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>plains | 2025-03-20 | D+2</h3>
+<p>MAE 5.12 | RMSE 6.54 | Near agreement 97.1% | Status pass | <a href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>southeast | 2025-03-20 | D+2</h3>
+<p>MAE 10.09 | RMSE 12.87 | Near agreement 92.9% | Status warn | <a href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d2_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>northeast | 2025-01-15 | D+3</h3>
+<p>MAE 4.43 | RMSE 6.31 | Near agreement 100.0% | Status pass | <a href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>plains | 2025-01-15 | D+3</h3>
+<p>MAE 8.33 | RMSE 10.67 | Near agreement 95.2% | Status pass | <a href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>southeast | 2025-01-15 | D+3</h3>
+<p>MAE 7.40 | RMSE 10.27 | Near agreement 90.5% | Status pass | <a href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>northeast | 2025-03-20 | D+3</h3>
+<p>MAE 14.44 | RMSE 18.55 | Near agreement 95.2% | Status warn | <a href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>plains | 2025-03-20 | D+3</h3>
+<p>MAE 5.51 | RMSE 6.95 | Near agreement 97.1% | Status pass | <a href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>southeast | 2025-03-20 | D+3</h3>
+<p>MAE 10.01 | RMSE 12.72 | Near agreement 90.5% | Status warn | <a href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d3_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>northeast | 2025-01-15 | D+7</h3>
+<p>MAE 4.87 | RMSE 6.49 | Near agreement 100.0% | Status pass | <a href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>plains | 2025-01-15 | D+7</h3>
+<p>MAE 11.45 | RMSE 14.20 | Near agreement 90.4% | Status pass | <a href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>southeast | 2025-01-15 | D+7</h3>
+<p>MAE 8.80 | RMSE 12.02 | Near agreement 92.9% | Status pass | <a href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_components_20250115.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250115.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250115.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250115.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250115.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250115.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250115.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250115.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250115.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>northeast | 2025-03-20 | D+7</h3>
+<p>MAE 15.45 | RMSE 20.47 | Near agreement 85.7% | Status warn | <a href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_northeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>plains | 2025-03-20 | D+7</h3>
+<p>MAE 7.21 | RMSE 9.15 | Near agreement 94.2% | Status pass | <a href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_plains_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+<section class="case-card">
+<h3>southeast | 2025-03-20 | D+7</h3>
+<p>MAE 11.47 | RMSE 16.06 | Near agreement 88.1% | Status pass | <a href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_components_20250320.csv">component metrics CSV</a></p>
+<div class="thumb-grid">
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_forecast_score_20250320.png" alt="Forecast score"><span>Forecast score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_analysis_score_20250320.png" alt="Analysis score"><span>Analysis score</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_score_diff_20250320.png" alt="Score difference"><span>Score difference</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_absolute_error_20250320.png" alt="Absolute error"><span>Absolute error</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_category_disagreement_20250320.png" alt="Category disagreement"><span>Category disagreement</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_missed_high_comfort_20250320.png" alt="Missed high comfort"><span>Missed high comfort</span></a>
+<a class="thumb" href="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250320.png"><img src="comfortwx_verify_southeast_gfs_seamless_noaa_urma_rtma_d7_policy_experimental_all_leads_softer_false_high_comfort_20250320.png" alt="False high comfort"><span>False high comfort</span></a>
+</div>
+</section>
+</body>
+</html>

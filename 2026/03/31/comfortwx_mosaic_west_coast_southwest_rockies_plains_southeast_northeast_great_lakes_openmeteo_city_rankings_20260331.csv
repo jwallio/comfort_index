@@ -1,0 +1,21 @@
+city,score,category,sample_lat,sample_lon,distance_degrees,priority,ranking_group,ranking_position
+"Charleston, SC",82.1,Ideal,33.0,-80.0,0.231,50,best,1
+"Raleigh, NC",77.6,Ideal,36.0,-78.5,0.247,35,best,2
+"Charlotte, NC",76.1,Ideal,35.0,-81.0,0.261,13,best,3
+"San Diego, CA",76.0,Ideal,32.5,-117.0,0.255,8,best,4
+"Los Angeles, CA",75.9,Ideal,34.0,-118.0,0.209,2,best,5
+"Richmond, VA",74.8,Poor,37.5,-77.5,0.065,48,best,6
+"Las Vegas, NV",73.6,Pleasant,36.0,-115.0,0.204,23,best,7
+"Philadelphia, PA",72.6,Pleasant,40.0,-75.0,0.135,6,best,8
+"Atlanta, GA",72.2,Pleasant,33.5,-84.5,0.266,33,best,9
+"El Paso, TX",72.0,Pleasant,32.0,-106.5,0.238,47,best,10
+"Detroit, MI",12.1,Poor,42.5,-83.0,0.172,20,worst,1
+"Milwaukee, WI",13.2,Poor,43.0,-88.0,0.079,27,worst,2
+"Chicago, IL",13.3,Poor,42.0,-87.5,0.156,3,worst,3
+"Cleveland, OH",19.5,Poor,41.5,-81.5,0.146,39,worst,4
+"Denver, CO",24.8,Poor,39.5,-105.0,0.239,16,worst,5
+"Salt Lake City, UT",28.7,Poor,41.0,-112.0,0.253,44,worst,6
+"Minneapolis, MN",32.6,Poor,45.0,-93.5,0.168,38,worst,7
+"Spokane, WA",34.9,Poor,47.5,-117.5,0.166,46,worst,8
+"Pittsburgh, PA",35.9,Poor,40.5,-80.0,0.059,41,worst,9
+"Seattle, WA",36.4,Poor,47.5,-122.5,0.155,15,worst,10

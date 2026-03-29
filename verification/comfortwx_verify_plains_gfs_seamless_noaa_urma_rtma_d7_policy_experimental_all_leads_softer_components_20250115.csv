@@ -1,0 +1,13 @@
+component_group,component_name,forecast_mean,analysis_mean,bias_mean,mae
+hourly_component,temp,5.966,7.674,-1.708,2.87
+hourly_component,dewpoint,16.443,16.523,-0.08,1.418
+hourly_component,wind,6.727,5.429,1.298,2.421
+hourly_component,cloud,5.003,7.34,-2.337,2.841
+hourly_component,precip,14.047,13.924,0.123,1.319
+hourly_component,interaction,-2.925,-3.401,0.475,3.095
+hourly_component,hazard_penalty,1.133,1.536,-0.403,1.412
+daily_aggregate,best_3hr,52.131,51.417,0.714,11.272
+daily_aggregate,best_6hr,48.99,47.953,1.037,11.238
+daily_aggregate,daytime_weighted_mean,44.13,43.318,0.812,10.771
+daily_aggregate,reliability_score,26.674,29.212,-2.538,5.882
+daily_aggregate,disruption_penalty,0.545,1.66,-1.115,1.551

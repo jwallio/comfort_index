@@ -1,0 +1,21 @@
+city,score,category,sample_lat,sample_lon,distance_degrees,priority,ranking_group,ranking_position
+"Houston, TX",82.1,Ideal,30.0,-95.5,0.265,4,best,1
+"Birmingham, AL",80.2,Ideal,33.5,-87.0,0.159,49,best,2
+"El Paso, TX",79.0,Ideal,32.0,-106.5,0.238,47,best,3
+"Austin, TX",78.4,Ideal,30.5,-97.5,0.313,10,best,4
+"Albuquerque, NM",76.1,Ideal,35.0,-106.5,0.149,28,best,5
+"Phoenix, AZ",75.5,Ideal,33.5,-112.0,0.08,5,best,6
+"Nashville, TN",75.4,Ideal,36.0,-87.0,0.24,19,best,7
+"Atlanta, GA",73.3,Pleasant,33.5,-84.5,0.266,33,best,8
+"Memphis, TN",73.2,Pleasant,35.0,-90.0,0.155,24,best,9
+"New Orleans, LA",72.8,Pleasant,30.0,-90.0,0.079,37,best,10
+"Seattle, WA",12.5,Poor,47.5,-122.5,0.155,15,worst,1
+"Spokane, WA",21.5,Poor,47.5,-117.5,0.166,46,worst,2
+"Portland, OR",27.0,Poor,45.5,-122.5,0.126,22,worst,3
+"New York, NY",30.9,Poor,40.5,-74.0,0.213,1,worst,4
+"Chicago, IL",35.1,Poor,42.0,-87.5,0.156,3,worst,5
+"Milwaukee, WI",36.9,Poor,43.0,-88.0,0.079,27,worst,6
+"Philadelphia, PA",39.2,Poor,40.0,-75.0,0.135,6,worst,7
+"Boston, MA",39.9,Poor,42.5,-71.0,0.147,18,worst,8
+"Detroit, MI",43.7,Poor,42.5,-83.0,0.172,20,worst,9
+"Cleveland, OH",45.1,Fair,41.5,-81.5,0.146,39,worst,10
