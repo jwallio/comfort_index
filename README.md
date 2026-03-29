@@ -39,7 +39,7 @@ python -m comfortwx.main --pilot-day-archive --source openmeteo --pilot-span-day
 Run a side-by-side candidate product build without changing the default public path:
 
 ```powershell
-python -m comfortwx.main --pilot-day-archive --source openmeteo --pilot-span-days 7 --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse --aggregation-policy experimental_all_leads_soft
+python -m comfortwx.main --pilot-day-archive --source openmeteo --pilot-span-days 7 --publish-preset standard --presentation-theme shareable --pilot-cache-mode reuse --aggregation-policy experimental_all_leads_softer
 ```
 
 ## Main Commands
@@ -179,6 +179,7 @@ When run manually from GitHub Actions, the workflow menu lets you choose:
   - `experimental_regime_aware`
   - `experimental_regime_aware_plus`
   - `experimental_all_leads_soft`
+  - `experimental_all_leads_softer`
 
 Policy guidance:
 - `baseline`
@@ -188,7 +189,9 @@ Policy guidance:
 - `experimental_regime_aware_plus`
   - refined targeted candidate that also softens the Northeast cool-season `D+2/D+3` path
 - `experimental_all_leads_soft`
-  - current best MAE candidate on the broader NOAA-truth verification gate
+  - broader soft-aggregation candidate that beats baseline on NOAA-truth benchmarks
+- `experimental_all_leads_softer`
+  - current best MAE candidate on the tested NOAA-truth focused-mae slices
 
 The product workflow keeps `baseline` as the default public-scoring path. The other policies are available only as explicit side-by-side evaluation options.
 
@@ -254,6 +257,13 @@ Verification tuning command:
 ```powershell
 python -m comfortwx.validation.tune_daily_aggregation
 ```
+
+The tuning workflow now defaults to evaluating:
+- `baseline`
+- `soft_reliability`
+- `balanced_soft`
+- `long_lead_soft`
+- `very_soft_reliability`
 
 The `Comfort Index Verification Tuning` GitHub Actions workflow runs the held-out daily aggregation tuning harness and uploads a `comfortwx-verification-tuning` artifact containing:
 - per-case candidate score CSVs

@@ -54,7 +54,7 @@ on:
       candidate_modes:
         description: Comma-separated aggregation modes to compare
         required: false
-        default: "baseline,soft_reliability,balanced_soft,long_lead_soft"
+        default: "baseline,soft_reliability,balanced_soft,long_lead_soft,very_soft_reliability"
       case_cache_mode:
         description: Reuse existing scored-hourly verification cases when available
         required: true
@@ -162,7 +162,7 @@ jobs:
           analysis_model="${WORKFLOW_ANALYSIS_MODEL:-noaa_urma_rtma}"
           forecast_model="${WORKFLOW_FORECAST_MODEL:-gfs_seamless}"
           forecast_model_mode="${WORKFLOW_FORECAST_MODEL_MODE:-auto}"
-          candidate_modes="${WORKFLOW_CANDIDATE_MODES:-baseline,soft_reliability,balanced_soft,long_lead_soft}"
+          candidate_modes="${WORKFLOW_CANDIDATE_MODES:-baseline,soft_reliability,balanced_soft,long_lead_soft,very_soft_reliability}"
           case_cache_mode="${WORKFLOW_CASE_CACHE_MODE:-reuse}"
           max_fresh_cases="${WORKFLOW_MAX_FRESH_CASES:-}"
           case_cooldown_seconds="${WORKFLOW_CASE_COOLDOWN_SECONDS:-4.0}"

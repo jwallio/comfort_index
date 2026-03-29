@@ -35,6 +35,7 @@ on:
           - experimental_regime_aware
           - experimental_regime_aware_plus
           - experimental_all_leads_soft
+          - experimental_all_leads_softer
   schedule:
     - cron: "20 0 * * *"
     - cron: "20 6 * * *"
